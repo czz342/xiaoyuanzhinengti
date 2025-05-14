@@ -1,0 +1,362 @@
+
+.personal-page {
+	background-color: #f5f5f5;
+	min-height: 100vh;
+	padding-bottom: 40rpx;
+}
+
+/* 用户信息卡片样式 */
+.user-card {
+	background-color: #007AFF;
+	padding: 40rpx 30rpx;
+	color: #FFFFFF;
+	box-shadow: 0 4rpx 12rpx rgba(0, 122, 255, 0.3);
+}
+.user-info {
+	display: flex;
+	align-items: center;
+}
+.user-avatar {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 60rpx;
+	border: 4rpx solid rgba(255, 255, 255, 0.3);
+}
+.user-details {
+	margin-left: 30rpx;
+}
+.user-name {
+	font-size: 36rpx;
+	font-weight: bold;
+	margin-bottom: 6rpx;
+	display: block;
+}
+.user-id {
+	font-size: 26rpx;
+	opacity: 0.8;
+	margin-bottom: 6rpx;
+	display: block;
+}
+.user-college {
+	font-size: 24rpx;
+	opacity: 0.8;
+	display: block;
+}
+.user-status {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 30rpx;
+	padding-top: 20rpx;
+	border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+.status-text {
+	font-size: 28rpx;
+	font-weight: bold;
+}
+.qrcode-icon {
+	width: 50rpx;
+	height: 50rpx;
+}
+
+/* 通用面板样式 */
+.account-panel, .notification-panel, .system-panel {
+	margin: 30rpx;
+	background-color: #FFFFFF;
+	border-radius: 20rpx;
+	overflow: hidden;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.panel-header {
+	padding: 30rpx;
+	border-bottom: 1rpx solid #f0f0f0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.panel-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+.panel-more {
+	display: flex;
+	align-items: center;
+	font-size: 24rpx;
+	color: #999;
+}
+.panel-more image {
+	width: 24rpx;
+	height: 24rpx;
+	margin-left: 6rpx;
+}
+
+/* 账户信息样式 */
+.account-items {
+	padding: 0 30rpx;
+}
+.account-item {
+	display: flex;
+	align-items: center;
+	padding: 30rpx 0;
+	border-bottom: 1rpx solid #f0f0f0;
+}
+.account-item:last-child {
+	border-bottom: none;
+}
+.item-icon {
+	width: 80rpx;
+	height: 80rpx;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.item-icon.wallet {
+	background-color: #e6f2ff;
+}
+.item-icon.credits {
+	background-color: #e6fff2;
+}
+.item-icon.awards {
+	background-color: #fff2e6;
+}
+.item-icon.certificates {
+	background-color: #f0e6ff;
+}
+.item-icon image {
+	width: 40rpx;
+	height: 40rpx;
+}
+.item-content {
+	flex: 1;
+	margin-left: 20rpx;
+}
+.item-label {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: bold;
+	display: block;
+}
+.item-value {
+	font-size: 24rpx;
+	color: #999;
+	margin-top: 6rpx;
+	display: block;
+}
+.item-arrow {
+	width: 40rpx;
+	height: 40rpx;
+}
+.item-arrow image {
+	width: 24rpx;
+	height: 24rpx;
+}
+
+/* 通知中心样式 */
+.notification-list {
+	padding: 0 30rpx;
+}
+.notification-card {
+	display: flex;
+	padding: 30rpx 0;
+	border-bottom: 1rpx solid #f0f0f0;
+	position: relative;
+}
+.notification-card:last-child {
+	border-bottom: none;
+}
+.notification-icon {
+	width: 80rpx;
+	height: 80rpx;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-right: 20rpx;
+}
+.notification-icon.system {
+	background-color: #e6f2ff;
+}
+.notification-icon.course {
+	background-color: #e6fff2;
+}
+.notification-icon.activity {
+	background-color: #fff2e6;
+}
+.notification-icon image {
+	width: 40rpx;
+	height: 40rpx;
+}
+.notification-content {
+	flex: 1;
+}
+.notification-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10rpx;
+}
+.notification-title {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: bold;
+}
+.notification-time {
+	font-size: 24rpx;
+	color: #999;
+}
+.notification-desc {
+	font-size: 26rpx;
+	color: #666;
+	line-height: 1.5;
+}
+.notification-status {
+	position: absolute;
+	top: 40rpx;
+	right: 10rpx;
+	width: 16rpx;
+	height: 16rpx;
+	border-radius: 50%;
+	background-color: #FF3B30;
+}
+
+/* 系统功能样式 */
+.system-items {
+	display: flex;
+	flex-wrap: wrap;
+	padding: 20rpx 0;
+}
+.system-item {
+	width: 25%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20rpx 0;
+}
+.system-item .item-icon {
+	background-color: #f5f5f5;
+	margin-bottom: 16rpx;
+}
+.system-item .item-label {
+	font-size: 26rpx;
+	color: #666;
+	font-weight: normal;
+}
+
+/* 二维码弹窗样式 */
+.qrcode-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.popup-mask {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+}
+.popup-content {
+	width: 80%;
+	background-color: #FFFFFF;
+	border-radius: 20rpx;
+	overflow: hidden;
+	z-index: 10000;
+}
+.popup-header {
+	padding: 30rpx;
+	border-bottom: 1rpx solid #f0f0f0;
+	position: relative;
+}
+.popup-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	text-align: center;
+}
+.popup-close {
+	position: absolute;
+	top: 30rpx;
+	right: 30rpx;
+	width: 40rpx;
+	height: 40rpx;
+}
+.popup-close image {
+	width: 100%;
+	height: 100%;
+}
+.popup-body {
+	padding: 30rpx;
+}
+.qrcode-container {
+	width: 400rpx;
+	height: 400rpx;
+	margin: 0 auto;
+	padding: 20rpx;
+	border: 1rpx solid #f0f0f0;
+	border-radius: 10rpx;
+}
+.qrcode-image {
+	width: 100%;
+	height: 100%;
+}
+.qrcode-info {
+	text-align: center;
+	margin: 30rpx 0;
+}
+.qrcode-name {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	display: block;
+	margin-bottom: 10rpx;
+}
+.qrcode-id {
+	font-size: 28rpx;
+	color: #666;
+	display: block;
+	margin-bottom: 20rpx;
+}
+.qrcode-tips {
+	font-size: 24rpx;
+	color: #999;
+	display: block;
+}
+.action-buttons {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 40rpx;
+}
+.action-btn {
+	width: 48%;
+	height: 90rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 45rpx;
+}
+.action-btn image {
+	width: 36rpx;
+	height: 36rpx;
+	margin-right: 10rpx;
+}
+.action-btn text {
+	font-size: 28rpx;
+}
+.action-btn.primary {
+	background-color: #007AFF;
+	color: #FFFFFF;
+}
+.action-btn.secondary {
+	background-color: #f5f5f5;
+	color: #333;
+}
+

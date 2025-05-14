@@ -1,0 +1,371 @@
+
+.classroom-page {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background-color: #FFFFFF;
+}
+
+/* 楼层选择器样式 */
+.floor-selector {
+	padding: 20rpx;
+	background-color: #FFFFFF;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+	z-index: 10;
+}
+.building-picker {
+	margin-bottom: 20rpx;
+}
+.picker-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	height: 80rpx;
+	padding: 0 20rpx;
+	background-color: #f5f5f5;
+	border-radius: 10rpx;
+}
+.picker-text {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+.picker-arrow {
+	font-size: 24rpx;
+	color: #999;
+}
+.floor-tabs {
+	display: flex;
+	border-bottom: 1rpx solid #f0f0f0;
+}
+.floor-tab {
+	flex: 1;
+	height: 80rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 28rpx;
+	color: #666;
+	position: relative;
+}
+.floor-tab.active {
+	color: #007AFF;
+	font-weight: bold;
+}
+.floor-tab.active::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 25%;
+	width: 50%;
+	height: 6rpx;
+	background-color: #007AFF;
+	border-radius: 3rpx;
+}
+
+/* 3D楼层平面图样式 */
+.floor-map-container {
+	flex: 1;
+	position: relative;
+	padding: 20rpx;
+	overflow: hidden;
+}
+.map-legend {
+	display: flex;
+	margin-bottom: 10rpx;
+}
+.legend-item {
+	display: flex;
+	align-items: center;
+	margin-right: 20rpx;
+	font-size: 24rpx;
+	color: #666;
+}
+.legend-color {
+	width: 20rpx;
+	height: 20rpx;
+	border-radius: 4rpx;
+	margin-right: 6rpx;
+}
+.legend-color.available {
+	background-color: #4CD964;
+}
+.legend-color.occupied {
+	background-color: #FF3B30;
+}
+.legend-color.maintenance {
+	background-color: #FFCC00;
+}
+.floor-map {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	background-color: #f9f9f9;
+	border-radius: 10rpx;
+	overflow: hidden;
+}
+.map-image {
+	width: 100%;
+	height: 100%;
+	-webkit-transform-origin: center;
+	        transform-origin: center;
+}
+.room-marker {
+	position: absolute;
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.2);
+	-webkit-transform: translate(-50%, -50%);
+	        transform: translate(-50%, -50%);
+	z-index: 5;
+}
+.room-marker.available {
+	background-color: #4CD964;
+}
+.room-marker.occupied {
+	background-color: #FF3B30;
+}
+.room-marker.maintenance {
+	background-color: #FFCC00;
+}
+.room-code {
+	font-size: 20rpx;
+	color: #FFFFFF;
+	font-weight: bold;
+}
+.map-controls {
+	position: absolute;
+	right: 30rpx;
+	bottom: 30rpx;
+	display: flex;
+	flex-direction: column;
+}
+.control-btn {
+	width: 80rpx;
+	height: 80rpx;
+	background-color: #FFFFFF;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-top: 20rpx;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+.control-btn image {
+	width: 40rpx;
+	height: 40rpx;
+}
+
+/* 教室列表样式 */
+.room-list {
+	height: 300rpx;
+	background-color: #FFFFFF;
+	padding: 20rpx;
+	border-top: 1rpx solid #f0f0f0;
+}
+.list-title {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 20rpx;
+}
+.list-scroll {
+	height: calc(100% - 50rpx);
+}
+.room-item {
+	display: flex;
+	align-items: center;
+	padding: 20rpx;
+	border-bottom: 1rpx solid #f0f0f0;
+}
+.room-item.selected {
+	background-color: #f0f8ff;
+}
+.room-status-dot {
+	width: 20rpx;
+	height: 20rpx;
+	border-radius: 50%;
+	margin-right: 20rpx;
+}
+.room-status-dot.available {
+	background-color: #4CD964;
+}
+.room-status-dot.occupied {
+	background-color: #FF3B30;
+}
+.room-status-dot.maintenance {
+	background-color: #FFCC00;
+}
+.room-info {
+	flex: 1;
+}
+.room-name {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: bold;
+}
+.room-capacity {
+	font-size: 24rpx;
+	color: #999;
+	margin-top: 6rpx;
+}
+.room-equipment {
+	display: flex;
+	margin-left: 20rpx;
+}
+.equipment-icon {
+	width: 40rpx;
+	height: 40rpx;
+	margin-left: 10rpx;
+}
+.equipment-icon image {
+	width: 100%;
+	height: 100%;
+}
+
+/* 时间选择器样式 */
+.time-selector {
+	background-color: #FFFFFF;
+	padding: 20rpx;
+	border-top: 1rpx solid #f0f0f0;
+	-webkit-animation: slideUp 0.3s ease;
+	        animation: slideUp 0.3s ease;
+}
+@-webkit-keyframes slideUp {
+from {
+		-webkit-transform: translateY(100%);
+		        transform: translateY(100%);
+}
+to {
+		-webkit-transform: translateY(0);
+		        transform: translateY(0);
+}
+}
+@keyframes slideUp {
+from {
+		-webkit-transform: translateY(100%);
+		        transform: translateY(100%);
+}
+to {
+		-webkit-transform: translateY(0);
+		        transform: translateY(0);
+}
+}
+.selected-room-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+.room-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+.close-btn {
+	width: 60rpx;
+	height: 60rpx;
+	line-height: 60rpx;
+	text-align: center;
+	font-size: 40rpx;
+	color: #999;
+	background: none;
+	padding: 0;
+}
+.date-selector, .time-slots-container {
+	margin-bottom: 30rpx;
+}
+.date-title, .time-title {
+	font-size: 28rpx;
+	color: #666;
+	margin-bottom: 10rpx;
+}
+.date-picker {
+	height: 80rpx;
+	background-color: #f5f5f5;
+	border-radius: 10rpx;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 20rpx;
+	font-size: 28rpx;
+}
+.time-slots {
+	white-space: nowrap;
+	height: 120rpx;
+}
+.time-slot-item {
+	display: inline-block;
+	width: 180rpx;
+	height: 100rpx;
+	margin-right: 20rpx;
+	border-radius: 10rpx;
+	background-color: #f5f5f5;
+	padding: 10rpx;
+	position: relative;
+}
+.time-slot-item.selected {
+	background-color: #e6f2ff;
+	border: 2rpx solid #007AFF;
+}
+.time-slot-item.disabled {
+	background-color: #f5f5f5;
+	opacity: 0.5;
+}
+.time-text {
+	font-size: 28rpx;
+	color: #333;
+	display: block;
+}
+.slot-status {
+	font-size: 24rpx;
+	color: #999;
+	margin-top: 10rpx;
+	display: block;
+}
+.time-slot-item.selected .slot-status {
+	color: #007AFF;
+}
+.booking-summary {
+	background-color: #f9f9f9;
+	border-radius: 10rpx;
+	padding: 20rpx;
+	margin-bottom: 30rpx;
+}
+.summary-title {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 10rpx;
+}
+.summary-item {
+	display: flex;
+	margin-top: 10rpx;
+}
+.summary-label {
+	width: 100rpx;
+	font-size: 26rpx;
+	color: #666;
+}
+.summary-value {
+	flex: 1;
+	font-size: 26rpx;
+	color: #333;
+}
+.submit-btn {
+	height: 90rpx;
+	line-height: 90rpx;
+	background-color: #007AFF;
+	color: #FFFFFF;
+	font-size: 32rpx;
+	border-radius: 45rpx;
+}
+.submit-btn[disabled] {
+	background-color: #cccccc;
+	color: #FFFFFF;
+}
+

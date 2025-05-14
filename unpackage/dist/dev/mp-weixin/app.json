@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/assistant/index",
+    "pages/services/index",
+    "pages/features/schedule",
+    "pages/features/classroom",
+    "pages/features/library",
+    "pages/features/health",
+    "pages/personal/index"
+  ],
+  "subPackages": [],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "校园智能体",
+    "navigationBarBackgroundColor": "#007AFF",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#007AFF",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/assistant/index",
+        "iconPath": "static/images/assistant.png",
+        "selectedIconPath": "static/images/assistant-active.png",
+        "text": "智能助手"
+      },
+      {
+        "pagePath": "pages/services/index",
+        "iconPath": "static/images/services.png",
+        "selectedIconPath": "static/images/services-active.png",
+        "text": "服务大厅"
+      },
+      {
+        "pagePath": "pages/personal/index",
+        "iconPath": "static/images/personal.png",
+        "selectedIconPath": "static/images/personal-active.png",
+        "text": "个人中心"
+      }
+    ]
+  },
+  "usingComponents": {}
+}
