@@ -1,17 +1,5 @@
 <template>
 	<view class="assistant-page">
-		<!-- 顶部快捷指令菜单 -->
-		<view class="quick-access-menu">
-			<scroll-view scroll-x="true" class="menu-scroll">
-				<view class="menu-item" v-for="(item, index) in quickAccessItems" :key="index" @tap="handleQuickAccess(item)">
-					<view class="menu-icon">
-						<image :src="item.icon" mode="aspectFit"></image>
-					</view>
-					<text class="menu-text">{{item.text}}</text>
-				</view>
-			</scroll-view>
-		</view>
-		
 		<!-- 聊天窗口 -->
 		<scroll-view scroll-y="true" class="chat-container" :scroll-top="scrollTop" :scroll-with-animation="true" @scrolltoupper="loadMoreMessages">
 			<view class="chat-list">
@@ -45,6 +33,18 @@
 					<view class="task-status" :class="task.status">
 						<text>{{task.statusText}}</text>
 					</view>
+				</view>
+			</scroll-view>
+		</view>
+		
+		<!-- 底部快捷指令菜单 (原顶部菜单) -->
+		<view class="quick-access-menu">
+			<scroll-view scroll-x="true" class="menu-scroll">
+				<view class="menu-item" v-for="(item, index) in quickAccessItems" :key="index" @tap="handleQuickAccess(item)">
+					<view class="menu-icon">
+						<image :src="item.icon" mode="aspectFit"></image>
+					</view>
+					<text class="menu-text">{{item.text}}</text>
 				</view>
 			</scroll-view>
 		</view>
@@ -235,14 +235,13 @@ export default {
 	padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* 顶部快捷指令菜单 */
+/* 快捷指令菜单样式 - 现在放在底部 */
 .quick-access-menu {
 	background-color: #ffffff;
 	padding: 20rpx 0;
-	border-bottom: 1rpx solid #e0e0e0;
-	box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
-	position: sticky;
-	top: 0;
+	border-top: 1rpx solid #e0e0e0;
+	box-shadow: 0 -2rpx 6rpx rgba(0, 0, 0, 0.1);
+	position: relative;
 	z-index: 10;
 }
 

@@ -7,15 +7,13 @@
 	padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* 顶部快捷指令菜单 */
+/* 快捷指令菜单样式 - 现在放在底部 */
 .quick-access-menu {
 	background-color: #ffffff;
 	padding: 20rpx 0;
-	border-bottom: 1rpx solid #e0e0e0;
-	box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
-	position: -webkit-sticky;
-	position: sticky;
-	top: 0;
+	border-top: 1rpx solid #e0e0e0;
+	box-shadow: 0 -2rpx 6rpx rgba(0, 0, 0, 0.1);
+	position: relative;
 	z-index: 10;
 }
 .menu-scroll {
