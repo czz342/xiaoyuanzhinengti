@@ -73,6 +73,12 @@
 			}
 		},
 		{
+			"path": "pages/features/emergency",
+			"style": {
+				"navigationBarTitleText": "紧急呼救"
+			}
+		},
+		{
 			"path": "pages/personal/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"

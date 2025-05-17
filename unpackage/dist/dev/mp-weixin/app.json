@@ -12,6 +12,7 @@
     "pages/features/assessment-detail",
     "pages/features/report-detail",
     "pages/features/medical",
+    "pages/features/emergency",
     "pages/personal/index"
   ],
   "subPackages": [],

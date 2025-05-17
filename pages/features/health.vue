@@ -309,17 +309,8 @@ export default {
 					});
 					break;
 				case 'emergency':
-					uni.showModal({
-						title: '紧急求助',
-						content: '是否拨打校园紧急救助电话？',
-						confirmText: '拨打',
-						success: (res) => {
-							if (res.confirm) {
-								uni.makePhoneCall({
-									phoneNumber: '110' // 实际应用中应该是校园紧急电话
-								});
-							}
-						}
+					uni.navigateTo({
+						url: '/pages/features/emergency'
 					});
 					break;
 			}
@@ -873,3 +864,7 @@ export default {
 }
 
 .action-btn.cancel {
+	background-color: #fff1f0;
+	color: #FF3B30;
+}
+</style>
