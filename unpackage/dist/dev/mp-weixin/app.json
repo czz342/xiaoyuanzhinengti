@@ -8,6 +8,10 @@
     "pages/features/express",
     "pages/features/health",
     "pages/features/studyroom",
+    "pages/features/psychological-assessment",
+    "pages/features/assessment-detail",
+    "pages/features/report-detail",
+    "pages/features/medical",
     "pages/personal/index"
   ],
   "subPackages": [],

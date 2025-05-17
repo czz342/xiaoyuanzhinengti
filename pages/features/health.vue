@@ -293,15 +293,13 @@ export default {
 			// 根据类型导航到不同的健康服务页面
 			switch(type) {
 				case 'medical':
-					uni.showToast({
-						title: '前往校医预约',
-						icon: 'none'
+					uni.navigateTo({
+						url: '/pages/features/medical'
 					});
 					break;
 				case 'psychology':
-					uni.showToast({
-						title: '前往心理咨询',
-						icon: 'none'
+					uni.navigateTo({
+						url: '/pages/features/psychological-assessment'
 					});
 					break;
 				case 'examination':

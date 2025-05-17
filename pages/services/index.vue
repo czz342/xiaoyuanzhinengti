@@ -87,7 +87,7 @@
 				<view class="section-title">健康保障</view>
 				<view class="grid-row">
 					<!-- 心理测评 -->
-					<view class="grid-item" @tap="navigateTo('/pages/features/psychology')">
+					<view class="grid-item" @tap="navigateTo('/pages/features/psychological-assessment')">
 						<view class="grid-icon health">
 							<image src="/static/images/psychology.png" mode="aspectFit"></image>
 						</view>

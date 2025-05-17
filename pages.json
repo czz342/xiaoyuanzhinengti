@@ -1,5 +1,5 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"pages": [
 		{
 			"path": "pages/assistant/index",
 			"style": {
@@ -46,6 +46,30 @@
 			"path": "pages/features/studyroom",
 			"style": {
 				"navigationBarTitleText": "自习室预约"
+			}
+		},
+		{
+			"path": "pages/features/psychological-assessment",
+			"style": {
+				"navigationBarTitleText": "心理健康评估"
+			}
+		},
+		{
+			"path": "pages/features/assessment-detail",
+			"style": {
+				"navigationBarTitleText": "心理测评"
+			}
+		},
+		{
+			"path": "pages/features/report-detail",
+			"style": {
+				"navigationBarTitleText": "评估报告"
+			}
+		},
+		{
+			"path": "pages/features/medical",
+			"style": {
+				"navigationBarTitleText": "校医预约"
 			}
 		},
 		{
