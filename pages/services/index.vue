@@ -72,7 +72,7 @@
 					</view>
 					
 					<!-- 共享设备 -->
-					<view class="grid-item" @tap="navigateTo('/pages/features/devices')">
+					<view class="grid-item" @tap="navigateTo('/pages/features/shared-devices')">
 						<view class="grid-icon lifestyle">
 							<image src="/static/images/devices.png" mode="aspectFit"></image>
 						</view>

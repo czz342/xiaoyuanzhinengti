@@ -1,0 +1,390 @@
+
+.printing-page {
+	min-height: 100vh;
+	background-color: #f5f5f5;
+	padding: 30rpx;
+}
+
+/* 状态卡片样式 */
+.status-card {
+	background: linear-gradient(135deg, #007AFF, #00B578);
+	border-radius: 20rpx;
+	padding: 30rpx;
+	color: #FFFFFF;
+	margin-bottom: 30rpx;
+}
+.status-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+.location-name {
+	font-size: 32rpx;
+	font-weight: bold;
+}
+.distance-info {
+	display: flex;
+	align-items: center;
+	font-size: 24rpx;
+}
+.distance-info text {
+	margin-left: 8rpx;
+}
+.status-grid {
+	display: flex;
+	justify-content: space-between;
+}
+.status-item {
+	text-align: center;
+}
+.status-number {
+	font-size: 36rpx;
+	font-weight: bold;
+	display: block;
+	margin-bottom: 8rpx;
+}
+.status-number.available {
+	color: #00B578;
+}
+.status-number.busy {
+	color: #FF9500;
+}
+.status-label {
+	font-size: 24rpx;
+	color: rgba(255, 255, 255, 0.8);
+}
+
+/* 快速打印区域样式 */
+.quick-print {
+	background-color: #FFFFFF;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+}
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+.section-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+.upload-history {
+	font-size: 26rpx;
+	color: #007AFF;
+}
+.upload-area {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 300rpx;
+	background-color: #f9f9f9;
+	border: 2rpx dashed #ddd;
+	border-radius: 16rpx;
+}
+.upload-icon {
+	width: 80rpx;
+	height: 80rpx;
+	margin-bottom: 20rpx;
+}
+.upload-text {
+	font-size: 28rpx;
+	color: #333;
+	margin-bottom: 8rpx;
+}
+.upload-desc {
+	font-size: 24rpx;
+	color: #999;
+}
+
+/* 打印机列表样式 */
+.printers-section {
+	background-color: #FFFFFF;
+	border-radius: 20rpx;
+	padding: 30rpx;
+}
+.filter-options {
+	display: flex;
+	gap: 20rpx;
+}
+.filter-option {
+	font-size: 26rpx;
+	color: #666;
+	padding: 8rpx 24rpx;
+	border-radius: 20rpx;
+	background-color: #f5f5f5;
+}
+.filter-option.active {
+	color: #007AFF;
+	background-color: rgba(0, 122, 255, 0.1);
+}
+.printer-item {
+	background-color: #f9f9f9;
+	border-radius: 16rpx;
+	padding: 20rpx;
+	margin-bottom: 20rpx;
+}
+.printer-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16rpx;
+}
+.printer-basic {
+	display: flex;
+	align-items: center;
+}
+.printer-icon {
+	width: 80rpx;
+	height: 80rpx;
+	margin-right: 16rpx;
+}
+.printer-info {
+	display: flex;
+	flex-direction: column;
+}
+.printer-name {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+}
+.printer-type {
+	font-size: 24rpx;
+	color: #666;
+}
+.printer-status {
+	font-size: 24rpx;
+	padding: 4rpx 16rpx;
+	border-radius: 20rpx;
+}
+.status-available {
+	background-color: #e6fff2;
+	color: #00B578;
+}
+.status-busy {
+	background-color: #fff2e6;
+	color: #FF9500;
+}
+.printer-body {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16rpx;
+}
+.printer-details {
+	flex: 1;
+}
+.detail-item {
+	display: flex;
+	align-items: center;
+	font-size: 24rpx;
+	color: #666;
+	margin-bottom: 8rpx;
+}
+.detail-item uni-icons {
+	margin-right: 8rpx;
+}
+.printer-price {
+	display: flex;
+	align-items: baseline;
+}
+.price-amount {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #FF3B30;
+}
+.price-unit {
+	font-size: 24rpx;
+	color: #999;
+	margin-left: 4rpx;
+}
+.printer-features {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8rpx;
+}
+.feature-tag {
+	font-size: 24rpx;
+	color: #007AFF;
+	background-color: rgba(0, 122, 255, 0.1);
+	padding: 4rpx 16rpx;
+	border-radius: 20rpx;
+}
+
+/* 打印设置弹窗样式 */
+.print-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 999;
+}
+.popup-mask {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+}
+.popup-content {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #FFFFFF;
+	border-radius: 30rpx 30rpx 0 0;
+	padding: 30rpx;
+}
+.popup-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30rpx;
+}
+.popup-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+.file-info {
+	display: flex;
+	align-items: center;
+	padding: 20rpx;
+	background-color: #f9f9f9;
+	border-radius: 16rpx;
+	margin-bottom: 30rpx;
+}
+.file-icon {
+	width: 80rpx;
+	height: 80rpx;
+	margin-right: 16rpx;
+}
+.file-details {
+	display: flex;
+	flex-direction: column;
+}
+.file-name {
+	font-size: 28rpx;
+	color: #333;
+	margin-bottom: 4rpx;
+}
+.file-size {
+	font-size: 24rpx;
+	color: #999;
+}
+.print-settings {
+	margin-bottom: 30rpx;
+}
+.setting-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+.setting-label {
+	font-size: 28rpx;
+	color: #333;
+}
+.copies-control {
+	display: flex;
+	align-items: center;
+}
+.control-btn {
+	width: 60rpx;
+	height: 60rpx;
+	line-height: 60rpx;
+	text-align: center;
+	background-color: #f5f5f5;
+	border-radius: 30rpx;
+	font-size: 28rpx;
+	color: #333;
+}
+.copies-input {
+	width: 80rpx;
+	text-align: center;
+	margin: 0 16rpx;
+}
+.color-options {
+	display: flex;
+	gap: 16rpx;
+}
+.color-option {
+	padding: 8rpx 24rpx;
+	border-radius: 20rpx;
+	font-size: 26rpx;
+	background-color: #f5f5f5;
+	color: #666;
+}
+.color-option.active {
+	background-color: #007AFF;
+	color: #FFFFFF;
+}
+.page-input {
+	width: 300rpx;
+	height: 60rpx;
+	background-color: #f5f5f5;
+	border-radius: 30rpx;
+	padding: 0 20rpx;
+	font-size: 26rpx;
+}
+.printer-selection {
+	display: flex;
+	align-items: center;
+	font-size: 26rpx;
+	color: #666;
+}
+.change-printer {
+	color: #007AFF;
+	margin-left: 16rpx;
+}
+.price-summary {
+	background-color: #f9f9f9;
+	border-radius: 16rpx;
+	padding: 20rpx;
+	margin-bottom: 30rpx;
+}
+.price-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 26rpx;
+	color: #666;
+	margin-bottom: 12rpx;
+}
+.price-row.total {
+	margin-top: 16rpx;
+	padding-top: 16rpx;
+	border-top: 2rpx solid #eee;
+	font-size: 28rpx;
+	color: #333;
+}
+.total-price {
+	color: #FF3B30;
+	font-weight: bold;
+}
+.popup-footer {
+	display: flex;
+	gap: 20rpx;
+}
+.popup-footer button {
+	flex: 1;
+	height: 88rpx;
+	line-height: 88rpx;
+	font-size: 28rpx;
+	border-radius: 44rpx;
+}
+.cancel-btn {
+	background-color: #f5f5f5;
+	color: #666;
+}
+.confirm-btn {
+	background-color: #007AFF;
+	color: #FFFFFF;
+}
+

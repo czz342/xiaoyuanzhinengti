@@ -79,6 +79,24 @@
 			}
 		},
 		{
+			"path": "pages/features/shared-devices",
+			"style": {
+				"navigationBarTitleText": "共享设备"
+			}
+		},
+		{
+			"path": "pages/features/laundry",
+			"style": {
+				"navigationBarTitleText": "智能洗衣"
+			}
+		},
+		{
+			"path": "pages/features/printing",
+			"style": {
+				"navigationBarTitleText": "自助打印"
+			}
+		},
+		{
 			"path": "pages/personal/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"

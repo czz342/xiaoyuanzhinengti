@@ -13,6 +13,9 @@
     "pages/features/report-detail",
     "pages/features/medical",
     "pages/features/emergency",
+    "pages/features/shared-devices",
+    "pages/features/laundry",
+    "pages/features/printing",
     "pages/personal/index"
   ],
   "subPackages": [],
