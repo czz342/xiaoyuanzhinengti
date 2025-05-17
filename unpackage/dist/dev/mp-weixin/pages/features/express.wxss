@@ -1,0 +1,542 @@
+
+.express-page {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  padding-bottom: 20rpx;
+}
+
+/* 头部区域 */
+.header {
+  padding: 40rpx 30rpx 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+.scan-btn {
+  display: flex;
+  align-items: center;
+  background: #007AFF;
+  color: #fff;
+  padding: 12rpx 24rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+}
+.btn-icon {
+  margin-right: 6rpx;
+  font-size: 28rpx;
+}
+
+/* 搜索框 */
+.search-box {
+  margin: 10rpx 30rpx 30rpx;
+  display: flex;
+  align-items: center;
+}
+.search-input {
+  flex: 1;
+  height: 80rpx;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 0 30rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.search-btn {
+  width: 120rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: #007AFF;
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  margin-left: 20rpx;
+  padding: 0;
+}
+
+/* 快递汇总 */
+.summary-section {
+  margin: 0 30rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.summary-row {
+  display: flex;
+  justify-content: space-around;
+}
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10rpx 20rpx;
+}
+.summary-number {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+.summary-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 6rpx;
+}
+
+/* 快递列表 */
+.package-list {
+  margin: 30rpx;
+}
+.package-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.package-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.courier-info {
+  display: flex;
+  align-items: center;
+}
+.courier-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 10rpx;
+}
+.courier-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+.status-tag {
+  font-size: 24rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+.status-transit {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+.status-arrived {
+  background: #fff7e6;
+  color: #ff8000;
+}
+.status-completed {
+  background: #f0f0f0;
+  color: #999;
+}
+.package-content {
+  padding-top: 16rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.package-info {
+  flex: 1;
+}
+.tracking-number {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  display: block;
+}
+.package-desc {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+  display: block;
+}
+.update-time {
+  font-size: 22rpx;
+  color: #999;
+}
+.action-area {
+  min-width: 140rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+.action-btn {
+  font-size: 26rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 30rpx;
+  background: #fff;
+  border: 1rpx solid;
+}
+.pickup {
+  color: #ff8000;
+  border-color: #ff8000;
+}
+.empty-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+.empty-icon {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.5;
+}
+
+/* 快递详情弹窗 */
+.detail-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+}
+.detail-content {
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  overflow-y: auto;
+}
+.detail-header {
+  padding: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.popup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+.close-btn {
+  font-size: 48rpx;
+  line-height: 1;
+  color: #999;
+  padding: 0 20rpx;
+}
+.courier-row {
+  padding: 20rpx 30rpx;
+  display: flex;
+  align-items: center;
+  background: #f9f9f9;
+}
+.detail-courier-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 10rpx;
+}
+.detail-courier-name {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+}
+.detail-status {
+  font-size: 24rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+.detail-info {
+  padding: 20rpx 30rpx;
+}
+.detail-item {
+  margin-bottom: 20rpx;
+  display: flex;
+  flex-wrap: wrap;
+}
+.detail-label {
+  width: 140rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+.detail-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333;
+}
+.pickup-code {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ff8000;
+}
+.copy-btn {
+  font-size: 24rpx;
+  color: #007AFF;
+  margin-left: 10rpx;
+}
+.detail-timeline {
+  padding: 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+.timeline-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+.timeline-item {
+  position: relative;
+  padding-left: 30rpx;
+  padding-bottom: 30rpx;
+}
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+.timeline-item:before {
+  content: '';
+  position: absolute;
+  left: 6rpx;
+  top: 16rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #e0e0e0;
+}
+.timeline-item:last-child:before {
+  display: none;
+}
+.timeline-point {
+  position: absolute;
+  left: 0;
+  top: 16rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #e0e0e0;
+}
+.timeline-point.active {
+  background: #007AFF;
+}
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+}
+.timeline-status {
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.5;
+}
+.timeline-time {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+.detail-actions {
+  display: flex;
+  padding: 20rpx 30rpx 40rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+.detail-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  margin: 0 10rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28rpx;
+}
+.navigate {
+  background: #007AFF;
+  color: white;
+}
+.remind {
+  background: #f5f5f5;
+  color: #ff8000;
+}
+
+/* 取件码弹窗 */
+.pickup-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+.pickup-content {
+  width: 80%;
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+.pickup-header {
+  background: #ff8000;
+  padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pickup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: white;
+}
+.code-display {
+  padding: 40rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.code {
+  font-size: 60rpx;
+  font-weight: bold;
+  color: #ff8000;
+}
+.code-tip {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+.station-info {
+  background: #f9f9f9;
+  padding: 20rpx 30rpx;
+  text-align: center;
+}
+.station-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10rpx;
+  display: block;
+}
+.operation-hours {
+  font-size: 24rpx;
+  color: #666;
+}
+.pickup-nav-btn {
+  margin: 30rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: #007AFF;
+  color: white;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 导航弹窗 */
+.navigation-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.navigation-content {
+  width: 90%;
+  max-height: 80vh;
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+.navigation-header {
+  padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #007AFF;
+}
+.navigation-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: white;
+}
+.map-container {
+  position: relative;
+}
+.map-image {
+  width: 100%;
+  height: 360rpx;
+}
+.route-info {
+  position: absolute;
+  bottom: 20rpx;
+  left: 20rpx;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10rpx 20rpx;
+  border-radius: 10rpx;
+}
+.route-distance {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-right: 20rpx;
+}
+.route-time {
+  font-size: 24rpx;
+  color: #666;
+}
+.nav-steps {
+  padding: 20rpx 30rpx;
+  max-height: 300rpx;
+  overflow-y: auto;
+}
+.nav-step {
+  display: flex;
+  padding: 15rpx 0;
+}
+.step-number {
+  width: 50rpx;
+  height: 50rpx;
+  background: #f0f0f0;
+  border-radius: 25rpx;
+  text-align: center;
+  line-height: 50rpx;
+  font-size: 24rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+.step-instruction {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+  line-height: 50rpx;
+}
+.nav-actions {
+  display: flex;
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+.nav-action-btn {
+  flex: 1;
+  margin: 0 10rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: #007AFF;
+  color: white;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}
+.nav-action-btn.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+

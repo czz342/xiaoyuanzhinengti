@@ -31,6 +31,12 @@
 			}
 		},
 		{
+			"path": "pages/features/express",
+			"style": {
+				"navigationBarTitleText": "快递服务"
+			}
+		},
+		{
 			"path": "pages/features/health",
 			"style": {
 				"navigationBarTitleText": "健康服务"
