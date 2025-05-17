@@ -873,7 +873,3 @@ export default {
 }
 
 .action-btn.cancel {
-	background-color: #f5f5f5;
-	color: #FF3B30;
-}
-</style> 
