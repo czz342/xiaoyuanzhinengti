@@ -355,6 +355,15 @@ exports.default = void 0;
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
   data: function data() {
     return {
@@ -367,6 +376,7 @@ var _default = {
       deviceCount: 0,
       psychologyCount: 0,
       medicalCount: 0,
+      studyRoomCount: 8,
       // 场景判断
       isBeforeClass: true,
       isLunchTime: true,
@@ -461,7 +471,7 @@ var _default = {
     },
     bookStudyRoom: function bookStudyRoom() {
       uni.navigateTo({
-        url: '/pages/features/study-room'
+        url: '/pages/features/studyroom'
       });
     },
     checkIfExamPeriod: function checkIfExamPeriod() {

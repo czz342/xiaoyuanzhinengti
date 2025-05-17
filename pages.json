@@ -37,6 +37,12 @@
 			}
 		},
 		{
+			"path": "pages/features/studyroom",
+			"style": {
+				"navigationBarTitleText": "自习室预约"
+			}
+		},
+		{
 			"path": "pages/personal/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"

@@ -37,6 +37,15 @@
 						<text class="grid-text">图书借阅</text>
 						<view class="grid-badge" v-if="libraryCount > 0">{{libraryCount}}</view>
 					</view>
+					
+					<!-- 自习室预约 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/studyroom')">
+						<view class="grid-icon academic">
+							<image src="/static/images/study.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">自习室预约</text>
+						<view class="grid-badge" v-if="studyRoomCount > 0">{{studyRoomCount}}</view>
+					</view>
 				</view>
 			</view>
 			
@@ -204,7 +213,7 @@
 								</view>
 							</view>
 						</view>
-						<button class="study-btn" @tap="bookStudyRoom">预约自习座位</button>
+						<button class="study-btn" @tap="navigateTo('/pages/features/studyroom')">预约自习座位</button>
 					</view>
 				</view>
 			</view>
@@ -225,6 +234,7 @@ export default {
 			deviceCount: 0,
 			psychologyCount: 0,
 			medicalCount: 0,
+			studyRoomCount: 8,
 			
 			// 场景判断
 			isBeforeClass: true,
@@ -329,7 +339,7 @@ export default {
 		},
 		bookStudyRoom() {
 			uni.navigateTo({
-				url: '/pages/features/study-room'
+				url: '/pages/features/studyroom'
 			});
 		},
 		checkIfExamPeriod() {
@@ -750,4 +760,4 @@ export default {
 	border-radius: 40rpx;
 	font-size: 28rpx;
 }
-</style> 
+</style>

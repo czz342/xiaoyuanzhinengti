@@ -6,6 +6,7 @@
     "pages/features/classroom",
     "pages/features/library",
     "pages/features/health",
+    "pages/features/studyroom",
     "pages/personal/index"
   ],
   "subPackages": [],
