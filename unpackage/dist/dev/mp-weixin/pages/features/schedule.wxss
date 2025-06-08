@@ -5,6 +5,127 @@
 	height: 100vh;
 	background-color: #FFFFFF;
 }
+.header-controls {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20rpx;
+	background-color: #ffffff;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.view-toggle {
+	padding: 10rpx 20rpx;
+	background-color: #f5f5f5;
+	border-radius: 30rpx;
+	font-size: 24rpx;
+	color: #666;
+}
+.weekday-header {
+	display: flex;
+	background-color: #f9f9f9;
+	border-bottom: 1rpx solid #f0f0f0;
+	position: -webkit-sticky;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+}
+.timeline-scale-header {
+	width: 120rpx;
+	flex-shrink: 0;
+}
+.weekday-labels {
+	flex: 1;
+	display: flex;
+}
+.weekday-label {
+	flex: 1;
+	text-align: center;
+	padding: 16rpx 4rpx;
+	font-size: 26rpx;
+	color: #333;
+	font-weight: 500;
+	box-sizing: border-box;
+	border-left: 1rpx solid #f0f0f0;
+}
+.week-grid {
+	flex: 1;
+	display: flex;
+	position: relative;
+	margin-left: 120rpx;
+}
+.day-column {
+	flex: 1;
+	position: relative;
+	border-left: 1rpx solid #f0f0f0;
+	min-height: 1700rpx;
+	padding: 0 4rpx;
+	box-sizing: border-box;
+}
+.day-column .course-card {
+	position: absolute;
+	left: 4rpx;
+	right: 4rpx;
+	border-radius: 8rpx;
+	padding: 8rpx;
+	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+	z-index: 1;
+	min-width: 120rpx;
+	box-sizing: border-box;
+}
+.day-column .course-content {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 4rpx;
+}
+.day-column .course-name {
+	font-size: 22rpx;
+	font-weight: bold;
+	color: #333;
+	line-height: 1.2;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	word-break: break-all;
+}
+.day-column .course-location {
+	font-size: 18rpx;
+	color: #666;
+	line-height: 1.2;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+	overflow: hidden;
+}
+.day-column .course-time {
+	font-size: 18rpx;
+	color: #999;
+	margin-top: auto;
+	line-height: 1.2;
+}
+
+/* 添加网格线 */
+.timeline-container {
+	position: relative;
+}
+.grid-lines {
+	position: absolute;
+	top: 0;
+	left: 120rpx;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+}
+.grid-line {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 1rpx;
+	background-color: #f5f5f5;
+	z-index: 0;
+}
 
 /* 日期选择器样式 */
 .date-selector {
@@ -51,12 +172,13 @@
 	display: flex;
 	padding: 20rpx 0;
 	position: relative;
-	min-height: 1700rpx; /* 足够高以容纳所有时间段 */
+	min-height: 1700rpx;
 }
 .timeline-scale {
 	width: 120rpx;
 	border-right: 1rpx solid #f0f0f0;
 	flex-shrink: 0;
+	background-color: #f9f9f9;
 }
 .time-slot {
 	height: 120rpx;
@@ -220,5 +342,9 @@
 .action-btn.secondary {
 	background-color: #f5f5f5;
 	color: #333;
+}
+.weekday-labels > .weekday-label:first-child,
+.week-grid > .day-column:first-child {
+	border-left: none;
 }
 

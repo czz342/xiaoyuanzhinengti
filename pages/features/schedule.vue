@@ -1,21 +1,85 @@
 <template>
 	<view class="schedule-page">
-		<!-- 日期选择器 -->
-		<view class="date-selector">
-			<view class="date-arrow" @tap="changeDate(-1)">
-				<image src="/static/images/arrow-left.png" mode="aspectFit"></image>
+		<!-- 日期选择器和视图切换 -->
+		<view class="header-controls">
+			<view class="date-selector">
+				<view class="date-arrow" @tap="changeDate(-1)">
+					<image src="/static/images/arrow-left.png" mode="aspectFit"></image>
+				</view>
+				<view class="date-display" @tap="showDatePicker">
+					<text class="date-text">{{currentDateDisplay}}</text>
+					<text class="date-label">{{isWeeklyView ? currentWeekRange : currentWeekday}}</text>
+				</view>
+				<view class="date-arrow" @tap="changeDate(1)">
+					<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
+				</view>
 			</view>
-			<view class="date-display" @tap="showDatePicker">
-				<text class="date-text">{{currentDateDisplay}}</text>
-				<text class="date-label">{{currentWeekday}}</text>
-			</view>
-			<view class="date-arrow" @tap="changeDate(1)">
-				<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
+			<view class="view-toggle" @tap="toggleView">
+				<text>{{isWeeklyView ? '切换到日视图' : '切换到周视图'}}</text>
 			</view>
 		</view>
 		
-		<!-- 时间轴课表视图 -->
-		<scroll-view scroll-y="true" class="schedule-container">
+		<!-- 周视图 -->
+		<view v-if="isWeeklyView" class="weekly-view">
+			<!-- 星期标题栏 -->
+			<view class="weekday-header">
+				<view class="timeline-scale-header"></view>
+				<view class="weekday-labels">
+					<view v-for="(day, index) in weekdays" :key="index" class="weekday-label">
+						<text>{{day}}</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 时间轴课表视图 -->
+			<scroll-view scroll-y="true" class="schedule-container">
+				<view class="timeline-container">
+					<!-- 时间刻度 -->
+					<view class="timeline-scale">
+						<view class="time-slot" v-for="slot in timeSlots" :key="slot.id">
+							<text class="time-text">{{slot.time}}</text>
+							<view class="time-line"></view>
+						</view>
+					</view>
+					
+					<!-- 网格线 -->
+					<view class="grid-lines">
+						<view 
+							class="grid-line" 
+							v-for="(slot, index) in timeSlots" 
+							:key="index"
+							:style="{ top: (index * 120) + 'rpx' }"
+						></view>
+					</view>
+					
+					<!-- 周课程网格 -->
+					<view class="week-grid">
+						<view v-for="(day, dayIndex) in 5" :key="dayIndex" class="day-column">
+							<view 
+								class="course-card" 
+								v-for="course in getCoursesForDay(dayIndex)"
+								:key="course.id" 
+								:style="{ 
+									top: calculateTop(course.startTime) + 'rpx', 
+									height: calculateHeight(course.startTime, course.endTime) + 'rpx', 
+									backgroundColor: course.color 
+								}"
+								@tap="showCourseDetail(course)"
+							>
+								<view class="course-content">
+									<text class="course-name">{{course.name}}</text>
+									<text class="course-location">{{course.location}}</text>
+									<text class="course-time">{{course.startTime}} - {{course.endTime}}</text>
+								</view>
+							</view>
+						</view>
+					</view>
+				</view>
+			</scroll-view>
+		</view>
+		
+		<!-- 日视图 -->
+		<scroll-view v-else scroll-y="true" class="schedule-container">
 			<view class="timeline-container">
 				<!-- 时间刻度 -->
 				<view class="timeline-scale">
@@ -29,7 +93,7 @@
 				<view class="course-container">
 					<view 
 						class="course-card" 
-						v-for="course in courses" 
+						v-for="course in getCoursesForDay(currentDate.getDay() - 1)"
 						:key="course.id" 
 						:style="{ top: calculateTop(course.startTime) + 'rpx', height: calculateHeight(course.startTime, course.endTime) + 'rpx', backgroundColor: course.color }"
 						@tap="showCourseDetail(course)"
@@ -134,6 +198,8 @@ export default {
 			showCalendar: false,
 			showDetail: false,
 			currentCourse: {},
+			isWeeklyView: true,
+			weekdays: ['周一', '周二', '周三', '周四', '周五'],
 			timeSlots: [
 				{ id: 1, time: '08:00' },
 				{ id: 2, time: '09:00' },
@@ -159,7 +225,8 @@ export default {
 					startTime: '08:00',
 					endTime: '09:40',
 					textbook: '《高等数学》（第七版）同济大学数学系',
-					color: '#DFEEFF'
+					color: '#DFEEFF',
+					weekday: 0 // 周一
 				},
 				{
 					id: 2,
@@ -169,7 +236,8 @@ export default {
 					startTime: '10:00',
 					endTime: '11:40',
 					textbook: '《大学英语》（第四册）外研社',
-					color: '#E6FFF2'
+					color: '#E6FFF2',
+					weekday: 1 // 周二
 				},
 				{
 					id: 3,
@@ -179,7 +247,8 @@ export default {
 					startTime: '14:00',
 					endTime: '15:40',
 					textbook: '《数据结构》（C语言版）严蔚敏',
-					color: '#FFF2E6'
+					color: '#FFF2E6',
+					weekday: 2 // 周三
 				},
 				{
 					id: 4,
@@ -189,7 +258,41 @@ export default {
 					startTime: '16:00',
 					endTime: '17:40',
 					textbook: '《Java程序设计》第5版 耿祥义',
-					color: '#FFECF5'
+					color: '#FFECF5',
+					weekday: 4 // 周五
+				},
+				{
+					id: 5,
+					name: '线性代数',
+					teacher: '陈教授',
+					location: '理科楼 B201',
+					startTime: '14:00',
+					endTime: '15:40',
+					textbook: '《线性代数》第六版',
+					color: '#FFE6E6',
+					weekday: 0 // 周一
+				},
+				{
+					id: 6,
+					name: '计算机网络',
+					teacher: '赵教授',
+					location: '计算机楼 B305',
+					startTime: '08:00',
+					endTime: '09:40',
+					textbook: '《计算机网络》第七版',
+					color: '#E6FFE6',
+					weekday: 2 // 周三
+				},
+				{
+					id: 7,
+					name: '概率论',
+					teacher: '孙教授',
+					location: '理科楼 A205',
+					startTime: '10:00',
+					endTime: '11:40',
+					textbook: '《概率论与数理统计》第四版',
+					color: '#E6E6FF',
+					weekday: 4 // 周五
 				}
 			]
 		}
@@ -204,16 +307,34 @@ export default {
 		currentWeekday() {
 			const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 			return weekdays[this.currentDate.getDay()];
+		},
+		currentWeekRange() {
+			const weekStart = new Date(this.currentDate);
+			weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+			const weekEnd = new Date(weekStart);
+			weekEnd.setDate(weekEnd.getDate() + 4);
+			
+			const formatDate = (date) => `${date.getMonth() + 1}/${date.getDate()}`;
+			return `${formatDate(weekStart)}-${formatDate(weekEnd)}`;
 		}
 	},
 	methods: {
+		toggleView() {
+			this.isWeeklyView = !this.isWeeklyView;
+		},
 		changeDate(offset) {
 			const newDate = new Date(this.currentDate);
-			newDate.setDate(newDate.getDate() + offset);
+			if (this.isWeeklyView) {
+				newDate.setDate(newDate.getDate() + offset * 7);
+			} else {
+				newDate.setDate(newDate.getDate() + offset);
+			}
 			this.currentDate = newDate;
 			
-			// 在实际应用中，这里应该根据日期加载对应的课程数据
 			this.loadCoursesForDate(this.currentDate);
+		},
+		getCoursesForDay(dayIndex) {
+			return this.courses.filter(course => course.weekday === dayIndex);
 		},
 		showDatePicker() {
 			this.showCalendar = true;
@@ -301,6 +422,141 @@ export default {
 	background-color: #FFFFFF;
 }
 
+.header-controls {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20rpx;
+	background-color: #ffffff;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.view-toggle {
+	padding: 10rpx 20rpx;
+	background-color: #f5f5f5;
+	border-radius: 30rpx;
+	font-size: 24rpx;
+	color: #666;
+}
+
+.weekday-header {
+	display: flex;
+	background-color: #f9f9f9;
+	border-bottom: 1rpx solid #f0f0f0;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+}
+
+.timeline-scale-header {
+	width: 120rpx;
+	flex-shrink: 0;
+}
+
+.weekday-labels {
+	flex: 1;
+	display: flex;
+}
+
+.weekday-label {
+	flex: 1;
+	text-align: center;
+	padding: 16rpx 4rpx;
+	font-size: 26rpx;
+	color: #333;
+	font-weight: 500;
+	box-sizing: border-box;
+	border-left: 1rpx solid #f0f0f0;
+}
+
+.week-grid {
+	flex: 1;
+	display: flex;
+	position: relative;
+	margin-left: 120rpx;
+}
+
+.day-column {
+	flex: 1;
+	position: relative;
+	border-left: 1rpx solid #f0f0f0;
+	min-height: 1700rpx;
+	padding: 0 4rpx;
+	box-sizing: border-box;
+}
+
+.day-column .course-card {
+	position: absolute;
+	left: 4rpx;
+	right: 4rpx;
+	border-radius: 8rpx;
+	padding: 8rpx;
+	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+	z-index: 1;
+	min-width: 120rpx;
+	box-sizing: border-box;
+}
+
+.day-column .course-content {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 4rpx;
+}
+
+.day-column .course-name {
+	font-size: 22rpx;
+	font-weight: bold;
+	color: #333;
+	line-height: 1.2;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	word-break: break-all;
+}
+
+.day-column .course-location {
+	font-size: 18rpx;
+	color: #666;
+	line-height: 1.2;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+	overflow: hidden;
+}
+
+.day-column .course-time {
+	font-size: 18rpx;
+	color: #999;
+	margin-top: auto;
+	line-height: 1.2;
+}
+
+/* 添加网格线 */
+.timeline-container {
+	position: relative;
+}
+
+.grid-lines {
+	position: absolute;
+	top: 0;
+	left: 120rpx;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+}
+
+.grid-line {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 1rpx;
+	background-color: #f5f5f5;
+	z-index: 0;
+}
+
 /* 日期选择器样式 */
 .date-selector {
 	display: flex;
@@ -352,13 +608,14 @@ export default {
 	display: flex;
 	padding: 20rpx 0;
 	position: relative;
-	min-height: 1700rpx; /* 足够高以容纳所有时间段 */
+	min-height: 1700rpx;
 }
 
 .timeline-scale {
 	width: 120rpx;
 	border-right: 1rpx solid #f0f0f0;
 	flex-shrink: 0;
+	background-color: #f9f9f9;
 }
 
 .time-slot {
@@ -549,5 +806,10 @@ export default {
 .action-btn.secondary {
 	background-color: #f5f5f5;
 	color: #333;
+}
+
+.weekday-labels > .weekday-label:first-child,
+.week-grid > .day-column:first-child {
+	border-left: none;
 }
 </style> 

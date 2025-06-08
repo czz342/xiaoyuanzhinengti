@@ -1,23 +1,14 @@
 {
-  "libVersion": "3.8.3",
-  "projectname": "校园智能体小程序",
-  "condition": {},
+  "libVersion": "3.8.6",
+  "projectname": "%E6%A0%A1%E5%9B%AD%E6%99%BA%E8%83%BD%E4%BD%93%E5%B0%8F%E7%A8%8B%E5%BA%8F",
   "setting": {
     "urlCheck": false,
-    "coverView": false,
+    "coverView": true,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,
     "preloadBackgroundData": false,
     "autoAudits": false,
-    "useApiHook": true,
-    "useApiHostProcess": true,
-    "showShadowRootInWxmlPanel": false,
-    "useStaticServer": false,
-    "useLanDebug": false,
-    "showES6CompileOption": false,
-    "compileHotReLoad": true,
-    "checkInvalidKey": true,
-    "ignoreDevUnusedFiles": true,
-    "bigPackageSizeSupport": true
+    "showShadowRootInWxmlPanel": true,
+    "compileHotReLoad": true
   }
 }

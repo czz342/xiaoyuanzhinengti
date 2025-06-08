@@ -180,7 +180,7 @@
 									<checkbox value="wechat" checked />
 									<text>微信提醒</text>
 								</label>
-							</view>
+							</checkbox-group>
 						</view>
 					</view>
 				</view>

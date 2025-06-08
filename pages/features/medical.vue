@@ -157,7 +157,7 @@
 						<view class="appointment-action">
 							<view 
 								class="appointment-status" 
-								:class="getStatusClass(appointment.status)"
+								:class="appointment.statusClass"
 							>
 								<text>{{appointment.status}}</text>
 							</view>
@@ -252,7 +252,7 @@
 						</view>
 						<view class="report-footer">
 							<text class="report-location">{{report.location}}</text>
-							<view class="report-status" :class="getReportStatusClass(report.status)">
+							<view class="report-status" :class="report.statusClass">
 								<text>{{report.status}}</text>
 							</view>
 						</view>
@@ -268,7 +268,7 @@
 					>
 						<view class="vaccine-header">
 							<text class="vaccine-name">{{vaccine.name}}</text>
-							<view class="vaccine-status" :class="getVaccineStatusClass(vaccine.status)">
+							<view class="vaccine-status" :class="vaccine.statusClass">
 								<text>{{vaccine.status}}</text>
 							</view>
 						</view>
@@ -368,7 +368,7 @@
 					</view>
 				</view>
 				<view class="detail-content">
-					<view class="detail-status" :class="getStatusClass(currentAppointment.status)">
+					<view class="detail-status" :class="currentAppointmentStatusClass">
 						<text>{{currentAppointment.status}}</text>
 					</view>
 					<view class="detail-item">
@@ -638,18 +638,40 @@ export default {
 	},
 	computed: {
 		filteredAppointments() {
-			if (this.currentStatusTab === 0) {
-				return this.myAppointments;
-			} else {
+			let appointmentsToFilter = this.myAppointments;
+			if (this.currentStatusTab !== 0) {
 				const statusMap = {
 					1: '待就诊',
 					2: '已完成', 
 					3: '已取消'
 				};
 				const statusFilter = statusMap[this.currentStatusTab];
-				return this.myAppointments.filter(item => item.status === statusFilter);
+				appointmentsToFilter = this.myAppointments.filter(item => item.status === statusFilter);
 			}
+			return appointmentsToFilter.map(appointment => ({
+				...appointment,
+				statusClass: this.getStatusClass(appointment.status)
+			}));
+		},
+		currentAppointmentStatusClass() {
+			if (this.currentAppointment && this.currentAppointment.status) {
+				return this.getStatusClass(this.currentAppointment.status);
+			}
+			return '';
 		}
+	},
+	created() {
+		// 为 examReports 添加 statusClass
+		this.examReports = this.examReports.map(report => ({
+			...report,
+			statusClass: this.getReportStatusClass(report.status)
+		}));
+
+		// 为 vaccineRecords 添加 statusClass
+		this.vaccineRecords = this.vaccineRecords.map(vaccine => ({
+			...vaccine,
+			statusClass: this.getVaccineStatusClass(vaccine.status)
+		}));
 	},
 	methods: {
 		// 标签切换

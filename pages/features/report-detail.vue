@@ -1,7 +1,7 @@
 <template>
 	<view class="report-detail-page">
 		<!-- 顶部状态栏 -->
-		<view class="status-bar" :class="getLevelClass(reportData.level)">
+		<view class="status-bar" :class="levelClass">
 			<view class="status-content">
 				<view class="status-left">
 					<text class="status-label">状态评估</text>
@@ -195,6 +195,9 @@ export default {
 		}
 	},
 	computed: {
+		levelClass() {
+			return this.getLevelClass(this.reportData.level);
+		},
 		scoreLevels() {
 			return this.assessmentId == 1 ? this.phq9Levels : this.gad7Levels;
 		},
