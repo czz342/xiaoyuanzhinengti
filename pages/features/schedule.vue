@@ -473,7 +473,6 @@ export default {
 	flex: 1;
 	display: flex;
 	position: relative;
-	margin-left: 120rpx;
 }
 
 .day-column {

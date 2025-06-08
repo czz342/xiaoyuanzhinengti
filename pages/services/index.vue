@@ -76,7 +76,7 @@
 						<view class="grid-icon lifestyle">
 							<image src="/static/images/devices.png" mode="aspectFit"></image>
 						</view>
-						<text class="grid-text">共享设备</text>
+						<text class="grid-text">智慧洗衣打印</text>
 						<view class="grid-badge" v-if="deviceCount > 0">{{deviceCount}}</view>
 					</view>
 				</view>
