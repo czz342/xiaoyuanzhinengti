@@ -54,11 +54,11 @@ const script = {
 					value: "今天 15:00 - 17:00"
 				},
 			],
-			qrCode: "/static/images/qr_code_placeholder.png",
+			qrCode: "/static/images/预约凭证.png",
 			buttons: [{
 				text: "查看我的凭证",
 				action: "navigate",
-				path: "/pages/features/studyroom"
+				path: "/pages/features/studyroom?showVoucher=true"
 			}],
 			footer: "您的预约凭证已生成，可进入凭证中心查看。"
 		}

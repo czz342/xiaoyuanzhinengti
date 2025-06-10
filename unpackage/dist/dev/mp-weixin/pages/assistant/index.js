@@ -102,6 +102,15 @@ var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
+  var g0 = _vm.ongoingTasks.length
+  _vm.$mp.data = Object.assign(
+    {},
+    {
+      $root: {
+        g0: g0,
+      },
+    }
+  )
 }
 var recyclableRender = false
 var staticRenderFns = []
@@ -155,7 +164,59 @@ var _default = {
       userAvatar: '/static/images/avatar.png',
       botAvatar: '/static/images/assistant.png',
       chatMessages: [],
-      isTyping: false
+      isTyping: false,
+      ongoingTasks: [{
+        id: 'task1',
+        icon: '/static/images/icon-repair.png',
+        title: '宿舍报修',
+        description: '水管漏水，请求处理',
+        progress: 75,
+        remainingTime: '2小时',
+        status: 'processing',
+        statusText: '处理中',
+        path: '/pages/tasks/detail?id=task1'
+      }, {
+        id: 'task2',
+        icon: '/static/images/icon-express.png',
+        title: '快递代取',
+        description: '京东快递，请尽快处理',
+        progress: 25,
+        remainingTime: '30分钟',
+        status: 'waiting',
+        statusText: '待领取',
+        path: '/pages/tasks/detail?id=task2'
+      }, {
+        id: 'task3',
+        icon: '/static/images/icon-library.png',
+        title: '图书续借',
+        description: '《深入理解计算机系统》',
+        progress: 90,
+        remainingTime: '1天',
+        status: 'processing',
+        statusText: '即将到期',
+        path: '/pages/tasks/detail?id=task3'
+      }],
+      quickAccessItems: [{
+        text: '查课表',
+        icon: '/static/images/schedule.png',
+        path: '/pages/features/schedule'
+      }, {
+        icon: '/static/images/food.png',
+        text: '订餐',
+        path: '/pages/features/food'
+      }, {
+        icon: '/static/images/library.png',
+        text: '借书',
+        path: '/pages/features/library'
+      }, {
+        icon: '/static/images/classroom.png',
+        text: '教室预约',
+        path: '/pages/features/classroom'
+      }, {
+        icon: '/static/images/express.png',
+        text: '快递',
+        path: '/pages/features/express'
+      }]
     };
   },
   computed: {
@@ -265,6 +326,12 @@ var _default = {
           });
         }
       });
+    },
+    viewTaskDetail: function viewTaskDetail(task) {
+      this.navigateTo(task.path);
+    },
+    handleQuickAccess: function handleQuickAccess(item) {
+      this.navigateTo(item.path);
     }
   }
 };

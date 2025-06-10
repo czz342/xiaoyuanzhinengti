@@ -351,23 +351,22 @@ export default {
 			console.log('加载日期的课程：', date);
 			// 为演示，这里不做实际加载
 		},
-		calculateTop(startTime) {
-			// 将时间转换为距离顶部的像素值
-			const [hours, minutes] = startTime.split(':').map(Number);
-			const timeInMinutes = hours * 60 + minutes;
-			const startOfDay = 8 * 60; // 8:00 AM
-			
-			return (timeInMinutes - startOfDay) * 2 + 10; // 2rpx per minute + 10rpx padding
+		calculateTop(time) {
+			const startMinutes = this.timeToMinutes(time);
+			// 课表从8:00开始, 8 * 60 = 480分钟
+			const offsetMinutes = startMinutes - 480;
+			// 每分钟的高度为2rpx (120rpx/60min)
+			return offsetMinutes * 2;
 		},
 		calculateHeight(startTime, endTime) {
-			// 计算课程块的高度
-			const [startHours, startMinutes] = startTime.split(':').map(Number);
-			const [endHours, endMinutes] = endTime.split(':').map(Number);
-			
-			const startInMinutes = startHours * 60 + startMinutes;
-			const endInMinutes = endHours * 60 + endMinutes;
-			
-			return (endInMinutes - startInMinutes) * 2 - 20; // 2rpx per minute - 20rpx for gaps
+			const startMinutes = this.timeToMinutes(startTime);
+			const endMinutes = this.timeToMinutes(endTime);
+			const duration = endMinutes - startMinutes;
+			return duration * 2;
+		},
+		timeToMinutes(time) {
+			const [hours, minutes] = time.split(':').map(Number);
+			return hours * 60 + minutes;
 		},
 		showCourseDetail(course) {
 			this.currentCourse = course;
@@ -481,14 +480,16 @@ export default {
 	position: relative;
 	border-left: 1rpx solid #f0f0f0;
 	min-height: 1700rpx;
-	padding: 0 4rpx;
+	/* Remove horizontal padding to align with header */
+	/* padding: 0 4rpx; */ 
 	box-sizing: border-box;
 }
 
 .day-column .course-card {
 	position: absolute;
-	left: 4rpx;
-	right: 4rpx;
+	/* Adjust left/right to align with the column edges */
+	left: 2rpx;
+	right: 2rpx;
 	border-radius: 8rpx;
 	padding: 8rpx;
 	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);

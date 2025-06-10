@@ -579,30 +579,25 @@ var _default = {
       console.log('加载日期的课程：', date);
       // 为演示，这里不做实际加载
     },
-    calculateTop: function calculateTop(startTime) {
-      // 将时间转换为距离顶部的像素值
-      var _startTime$split$map = startTime.split(':').map(Number),
-        _startTime$split$map2 = (0, _slicedToArray2.default)(_startTime$split$map, 2),
-        hours = _startTime$split$map2[0],
-        minutes = _startTime$split$map2[1];
-      var timeInMinutes = hours * 60 + minutes;
-      var startOfDay = 8 * 60; // 8:00 AM
-
-      return (timeInMinutes - startOfDay) * 2 + 10; // 2rpx per minute + 10rpx padding
+    calculateTop: function calculateTop(time) {
+      var startMinutes = this.timeToMinutes(time);
+      // 课表从8:00开始, 8 * 60 = 480分钟
+      var offsetMinutes = startMinutes - 480;
+      // 每分钟的高度为2rpx (120rpx/60min)
+      return offsetMinutes * 2;
     },
     calculateHeight: function calculateHeight(startTime, endTime) {
-      // 计算课程块的高度
-      var _startTime$split$map3 = startTime.split(':').map(Number),
-        _startTime$split$map4 = (0, _slicedToArray2.default)(_startTime$split$map3, 2),
-        startHours = _startTime$split$map4[0],
-        startMinutes = _startTime$split$map4[1];
-      var _endTime$split$map = endTime.split(':').map(Number),
-        _endTime$split$map2 = (0, _slicedToArray2.default)(_endTime$split$map, 2),
-        endHours = _endTime$split$map2[0],
-        endMinutes = _endTime$split$map2[1];
-      var startInMinutes = startHours * 60 + startMinutes;
-      var endInMinutes = endHours * 60 + endMinutes;
-      return (endInMinutes - startInMinutes) * 2 - 20; // 2rpx per minute - 20rpx for gaps
+      var startMinutes = this.timeToMinutes(startTime);
+      var endMinutes = this.timeToMinutes(endTime);
+      var duration = endMinutes - startMinutes;
+      return duration * 2;
+    },
+    timeToMinutes: function timeToMinutes(time) {
+      var _time$split$map = time.split(':').map(Number),
+        _time$split$map2 = (0, _slicedToArray2.default)(_time$split$map, 2),
+        hours = _time$split$map2[0],
+        minutes = _time$split$map2[1];
+      return hours * 60 + minutes;
     },
     showCourseDetail: function showCourseDetail(course) {
       this.currentCourse = course;

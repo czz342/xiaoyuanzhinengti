@@ -25,7 +25,7 @@
 											<text class="field-value">{{ item.value }}</text>
 										</view>
 									</view>
-									<image v-if="msg.payload.qrCode" :src="msg.payload.qrCode" class="card-qrcode" mode="aspectFit"></image>
+									<image v-if="msg.payload.qrCode" :src="msg.payload.qrCode" class="card-qrcode" mode="widthFix"></image>
 								</view>
 								<view class="card-footer" v-if="msg.payload.footer">{{ msg.payload.footer }}</view>
 								<view class="card-buttons" v-if="msg.payload.buttons">
@@ -88,6 +88,41 @@
 				</view>
 			</scroll-view>
 		
+		<!-- 动态任务追踪面板 -->
+		<view class="task-panel" v-if="ongoingTasks.length > 0">
+			<text class="panel-title">进行中的任务</text>
+			<scroll-view scroll-x="true" class="task-scroll">
+				<view class="task-card" v-for="(task, index) in ongoingTasks" :key="index" @tap="viewTaskDetail(task)">
+					<view class="task-icon">
+						<image :src="task.icon" mode="aspectFit"></image>
+					</view>
+					<view class="task-info">
+						<text class="task-title">{{task.title}}</text>
+						<text class="task-desc">{{task.description}}</text>
+						<view class="progress-bar">
+							<view class="progress-fill" :style="{ width: task.progress + '%' }"></view>
+						</view>
+						<text class="task-time">剩余时间: {{task.remainingTime}}</text>
+					</view>
+					<view class="task-status" :class="task.status">
+						<text>{{task.statusText}}</text>
+					</view>
+				</view>
+			</scroll-view>
+		</view>
+		
+		<!-- 底部快捷指令菜单 (原顶部菜单) -->
+		<view class="quick-access-menu">
+			<scroll-view scroll-x="true" class="menu-scroll">
+				<view class="menu-item" v-for="(item, index) in quickAccessItems" :key="index" @tap="handleQuickAccess(item)">
+					<view class="menu-icon">
+						<image :src="item.icon" mode="aspectFit"></image>
+					</view>
+					<text class="menu-text">{{item.text}}</text>
+				</view>
+			</scroll-view>
+		</view>
+		
 		<!-- 底部输入区域 -->
 		<view class="input-area">
 			<input type="text" class="text-input" v-model="inputMessage" placeholder="问点什么..." @confirm="handleSendMessage"/>
@@ -107,6 +142,68 @@ export default {
 			botAvatar: '/static/images/assistant.png',
 			chatMessages: [],
 			isTyping: false,
+			ongoingTasks: [
+				{
+					id: 'task1',
+					icon: '/static/images/icon-repair.png',
+					title: '宿舍报修',
+					description: '水管漏水，请求处理',
+					progress: 75,
+					remainingTime: '2小时',
+					status: 'processing',
+					statusText: '处理中',
+					path: '/pages/tasks/detail?id=task1'
+				},
+				{
+					id: 'task2',
+					icon: '/static/images/icon-express.png',
+					title: '快递代取',
+					description: '京东快递，请尽快处理',
+					progress: 25,
+					remainingTime: '30分钟',
+					status: 'waiting',
+					statusText: '待领取',
+					path: '/pages/tasks/detail?id=task2'
+				},
+				{
+					id: 'task3',
+					icon: '/static/images/icon-library.png',
+					title: '图书续借',
+					description: '《深入理解计算机系统》',
+					progress: 90,
+					remainingTime: '1天',
+					status: 'processing',
+					statusText: '即将到期',
+					path: '/pages/tasks/detail?id=task3'
+				}
+			],
+			quickAccessItems: [
+				{
+					text: '查课表',
+					icon: '/static/images/schedule.png',
+					path: '/pages/features/schedule'
+				},
+				{
+					icon: '/static/images/food.png',
+					text: '订餐',
+					path: '/pages/features/food'
+				},
+				{
+					icon: '/static/images/library.png',
+					text: '借书',
+					path: '/pages/features/library'
+				},
+				{
+					icon: '/static/images/classroom.png',
+					text: '教室预约',
+					path: '/pages/features/classroom'
+				},
+				{
+					icon: '/static/images/express.png',
+					text: '快递',
+					path: '/pages/features/express'
+				}
+			],
 		}
 	},
 	computed: {
@@ -194,6 +291,12 @@ export default {
 					})
 				}
 			});
+		},
+		viewTaskDetail(task) {
+			this.navigateTo(task.path);
+		},
+		handleQuickAccess(item) {
+			this.navigateTo(item.path);
 		}
 	}
 }
@@ -244,7 +347,7 @@ export default {
 	border-radius: 20rpx;
 		background-color: #ffffff;
 		word-break: break-word;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+		box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.08);
 	}
 }
 
@@ -264,6 +367,7 @@ export default {
 		background-color: #4f80ff;
 		color: #ffffff;
 	border-top-right-radius: 0;
+	box-shadow: 0 4rpx 15rpx rgba(77, 128, 255, 0.2);
 }
 }
 
@@ -271,16 +375,17 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 20rpx;
-	background-color: #ffffff;
-	border-top: 1rpx solid #e0e0e0;
+	background-color: #f4f6f9;
+	border-top: none;
 
 	.text-input {
 		flex: 1;
 		height: 80rpx;
 		padding: 0 20rpx;
 		border-radius: 40rpx;
-		background-color: #f4f6f9;
+		background-color: #ffffff;
 		margin-right: 20rpx;
+		box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.04);
 }
 
 	.send-btn {
@@ -347,10 +452,11 @@ export default {
 			}
 		}
 		.card-qrcode {
-			width: 200rpx;
-			height: 200rpx;
+			width: 100%;
+			max-width: 450rpx;
 			margin: 20rpx auto 0;
 			display: block;
+			border-radius: 12rpx;
 		}
 	}
 	.card-footer {
@@ -487,6 +593,167 @@ export default {
 		padding: 10rpx;
 		margin: -10rpx;
 		border-radius: 8rpx;
+	}
+}
+
+// 动态任务追踪面板
+.task-panel {
+	padding: 20rpx;
+	padding-bottom: 10rpx;
+	background-color: #f4f6f9;
+	
+	.panel-title {
+		font-size: 28rpx;
+		font-weight: 500;
+		margin-left: 10rpx;
+		margin-bottom: 20rpx;
+		color: #5f6368;
+	}
+
+	.task-scroll {
+		white-space: nowrap;
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	.task-card {
+		display: inline-flex;
+		align-items: flex-start;
+		padding: 25rpx;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		margin-right: 20rpx;
+		margin-left: 5rpx;
+		margin-bottom: 10rpx;
+		width: 550rpx;
+		position: relative;
+		box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.06);
+		vertical-align: top;
+	}
+
+	.task-icon {
+		width: 70rpx;
+		height: 70rpx;
+		margin-right: 20rpx;
+		flex-shrink: 0;
+		image {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	.task-info {
+		display: flex;
+		flex-direction: column;
+		gap: 4rpx;
+		flex-grow: 1;
+		width: calc(100% - 90rpx);
+	}
+
+	.task-title {
+		font-weight: 500;
+		font-size: 30rpx;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: #202124;
+	}
+
+	.task-desc {
+		font-size: 24rpx;
+		color: #5f6368;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.progress-bar {
+		width: 100%;
+		height: 8rpx;
+		background-color: #e9ecef;
+		border-radius: 4rpx;
+		overflow: hidden;
+		margin-top: 12rpx;
+	}
+
+	.progress-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #4d80ff, #6a9eff);
+		border-radius: 4rpx;
+	}
+	
+	.task-time {
+		font-size: 22rpx;
+		color: #999;
+		margin-top: 8rpx;
+	}
+
+	.task-status {
+		position: absolute;
+		top: 25rpx;
+		right: 25rpx;
+		font-size: 22rpx;
+		font-weight: 500;
+		padding: 6rpx 15rpx;
+		border-radius: 8rpx;
+		
+		&.processing {
+			background-color: rgba(255, 152, 0, 0.15);
+			color: #ff9800;
+		}
+
+		&.waiting {
+			background-color: rgba(77, 128, 255, 0.15);
+			color: #4d80ff;
+		}
+	}
+}
+
+// 底部快捷指令菜单
+.quick-access-menu {
+	padding: 20rpx 0 15rpx 0;
+	background-color: #f4f6f9;
+
+	.menu-scroll {
+		white-space: nowrap;
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	.menu-item {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		width: 150rpx;
+		gap: 12rpx;
+		&:first-child {
+			margin-left: 25rpx;
+		}
+		&:last-child {
+			margin-right: 25rpx;
+		}
+	}
+
+	.menu-icon {
+		width: 90rpx;
+		height: 90rpx;
+		background-color: #ffffff;
+		border-radius: 25rpx;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.04);
+		image {
+			width: 50rpx;
+			height: 50rpx;
+		}
+	}
+
+	.menu-text {
+		font-size: 24rpx;
+		color: #3c4043;
 	}
 }
 </style> 

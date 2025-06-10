@@ -453,6 +453,20 @@ var _default = {
       return this.rooms;
     }
   },
+  onLoad: function onLoad(options) {
+    // 检查URL中是否有showVoucher参数
+    if (options.showVoucher === 'true') {
+      // 模拟一个凭证数据
+      this.voucher = {
+        room: '中央图书馆',
+        seat: '2-1',
+        date: '2025-6-10',
+        time: '08:00 - 13:00',
+        expire: '2025-6-10 13:00'
+      };
+      this.showVoucher = true;
+    }
+  },
   methods: {
     // 人流量文字描述
     crowdText: function crowdText(level) {
