@@ -11,25 +11,24 @@ const script = {
 				{
 					type: "field",
 					label: "课程",
-					value: "《大学物理》",
-					path: "/pages/features/schedule"
+					value: "《大学英语(4)》",
+					
 				},
 				{
 					type: "field",
 					label: "时间",
-					value: "08:30 - 10:05"
+					value: "10:00 - 11:40"
 				},
 				{
 					type: "field",
 					label: "地点",
-					value: "2号教学楼 A301教室",
-					path: "/pages/features/map?location=2A301"
+					value: "外语楼 B201教室"
 				},
 			],
 			buttons: [{
-				text: "地图导航",
+				text: "查看详情",
 				action: "navigate",
-				path: "/pages/features/map?location=2A301"
+				path: "/pages/features/schedule?courseName=大学英语（4）"
 			}],
 			footer: "今天天气晴朗，最高温度28度，记得做好防晒哦！☀️"
 		}
@@ -67,12 +66,12 @@ const script = {
 		type: "richContent",
 		payload: {
 			title: "根据校园实时人流数据分析：",
+			displayType: 'barChart',
 			list: [
-				{ text: "一食堂： 人流密集 🔴", path: "/pages/features/food?canteen=1" },
-				{ text: "二食堂： 人流适中 🟡", path: "/pages/features/food?canteen=2" },
-				{ text: "清真食堂： 人流稀少 🟢", path: "/pages/features/food?canteen=3" }
+				{ label: "一食堂", text: "人流密集 🔴", path: "/pages/features/food?canteen=1", value: 90, color: '#FF3B30' },
+				{ label: "二食堂", text: "人流适中 🟡", path: "/pages/features/food?canteen=2", value: 60, color: '#FF9500' },
+				{ label: "清真食堂", text: "人流稀少 🟢", path: "/pages/features/food?canteen=3", value: 20, color: '#00B578' }
 			],
-			image: "/static/images/canteen_heatmap.png",
 			suggestion: "建议： 目前前往【清真食堂】用餐，预计无需排队。"
 		}
 	},
@@ -81,16 +80,16 @@ const script = {
 		payload: {
 			title: "好的，小明。为您找到2个待取包裹：",
 			parcels: [{
-					title: "包裹1 (京东快递):",
+					title: "包裹1 (顺丰速运):",
 					location: "菜鸟驿站 (三食堂旁)",
-					code: "1-2-3456",
-					path: "/pages/features/express?id=JD123"
+					code: "SF8842",
+					path: "/pages/features/express?packageId=1"
 				},
 				{
-					title: "包裹2 (顺丰快递):",
-					location: "丰巢快递柜 (五栋宿舍楼下)",
-					code: "886655",
-					path: "/pages/features/express?id=SF456"
+					title: "包裹2 (圆通速递):",
+					location: "图书馆南侧快递驿站",
+					code: "YT2468",
+					path: "/pages/features/express?packageId=3"
 				}
 			]
 		}
@@ -113,7 +112,7 @@ const script = {
 			buttons: [{
 				text: "查看共享设备",
 				action: "navigate",
-				path: "/pages/features/shared-devices"
+				path: "/pages/features/printing-history"
 			}]
 		}
 	},
@@ -135,7 +134,7 @@ const script = {
 			buttons: [{
 				text: "查看附近洗衣机",
 				action: "navigate",
-				path: "/pages/features/shared-devices"
+				path: "/pages/features/laundry"
 			}]
 		}
 	},

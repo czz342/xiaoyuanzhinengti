@@ -522,7 +522,34 @@ var _default = {
       }]
     };
   },
+  onLoad: function onLoad(options) {
+    var _this = this;
+    if (options.courseName) {
+      var courseName = decodeURIComponent(options.courseName);
+      var course = this.courses.find(function (c) {
+        return c.name === courseName;
+      });
+      if (course) {
+        // 确保是周视图
+        this.isWeeklyView = true;
 
+        // 计算并设置到课程所在的日期
+        var today = new Date();
+        // getDay() 返回 0 (周日) 到 6 (周六)
+        // course.weekday 是 0 (周一) 到 4 (周五)
+        var currentDayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1; // 转换为 0 (周一) 到 6 (周日)
+        var dayDifference = course.weekday - currentDayOfWeek;
+        var targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + dayDifference);
+        this.currentDate = targetDate;
+
+        // 延迟执行，确保UI更新
+        this.$nextTick(function () {
+          _this.showCourseDetail(course);
+        });
+      }
+    }
+  },
   computed: {
     currentDateDisplay: function currentDateDisplay() {
       var year = this.currentDate.getFullYear();
@@ -579,25 +606,30 @@ var _default = {
       console.log('加载日期的课程：', date);
       // 为演示，这里不做实际加载
     },
-    calculateTop: function calculateTop(time) {
-      var startMinutes = this.timeToMinutes(time);
-      // 课表从8:00开始, 8 * 60 = 480分钟
-      var offsetMinutes = startMinutes - 480;
-      // 每分钟的高度为2rpx (120rpx/60min)
-      return offsetMinutes * 2;
+    calculateTop: function calculateTop(startTime) {
+      // 将时间转换为距离顶部的像素值
+      var _startTime$split$map = startTime.split(':').map(Number),
+        _startTime$split$map2 = (0, _slicedToArray2.default)(_startTime$split$map, 2),
+        hours = _startTime$split$map2[0],
+        minutes = _startTime$split$map2[1];
+      var timeInMinutes = hours * 60 + minutes;
+      var startOfDay = 8 * 60; // 8:00 AM
+
+      return (timeInMinutes - startOfDay) * 2 + 10; // 2rpx per minute + 10rpx padding
     },
     calculateHeight: function calculateHeight(startTime, endTime) {
-      var startMinutes = this.timeToMinutes(startTime);
-      var endMinutes = this.timeToMinutes(endTime);
-      var duration = endMinutes - startMinutes;
-      return duration * 2;
-    },
-    timeToMinutes: function timeToMinutes(time) {
-      var _time$split$map = time.split(':').map(Number),
-        _time$split$map2 = (0, _slicedToArray2.default)(_time$split$map, 2),
-        hours = _time$split$map2[0],
-        minutes = _time$split$map2[1];
-      return hours * 60 + minutes;
+      // 计算课程块的高度
+      var _startTime$split$map3 = startTime.split(':').map(Number),
+        _startTime$split$map4 = (0, _slicedToArray2.default)(_startTime$split$map3, 2),
+        startHours = _startTime$split$map4[0],
+        startMinutes = _startTime$split$map4[1];
+      var _endTime$split$map = endTime.split(':').map(Number),
+        _endTime$split$map2 = (0, _slicedToArray2.default)(_endTime$split$map, 2),
+        endHours = _endTime$split$map2[0],
+        endMinutes = _endTime$split$map2[1];
+      var startInMinutes = startHours * 60 + startMinutes;
+      var endInMinutes = endHours * 60 + endMinutes;
+      return (endInMinutes - startInMinutes) * 2 - 20; // 2rpx per minute - 20rpx for gaps
     },
     showCourseDetail: function showCourseDetail(course) {
       this.currentCourse = course;
@@ -607,7 +639,7 @@ var _default = {
       this.showDetail = false;
     },
     navigateToCourse: function navigateToCourse() {
-      var _this = this;
+      var _this2 = this;
       uni.showToast({
         title: '正在导航至：' + this.currentCourse.location,
         icon: 'none',
@@ -617,7 +649,7 @@ var _default = {
       // 实际应用中，这里应该调用地图API进行导航
       // 例如调用高德地图API
       setTimeout(function () {
-        _this.hideDetail();
+        _this2.hideDetail();
       }, 2000);
     },
     downloadMaterials: function downloadMaterials() {

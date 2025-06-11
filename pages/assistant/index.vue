@@ -38,9 +38,23 @@
 						<template v-else-if="msg.type === 'richContent'">
 							<view class="rich-content-message">
 								<view class="rich-title" v-if="msg.payload.title">{{ msg.payload.title }}</view>
-								<view class="rich-list" v-if="msg.payload.list">
+								
+								<!-- 柱状图视图 -->
+								<view class="bar-chart-container" v-if="msg.payload.list && msg.payload.displayType === 'barChart'">
+									<view v-for="(item, itemIndex) in msg.payload.list" :key="itemIndex" class="bar-chart-item is-link" @tap="navigateTo(item.path)">
+										<view class="bar-label">{{ item.label }}</view>
+										<view class="bar-wrapper">
+											<view class="bar" :style="{ width: item.value + '%', backgroundColor: item.color }"></view>
+										</view>
+										<view class="bar-text">{{ item.text }}</view>
+									</view>
+								</view>
+								
+								<!-- 默认列表视图 -->
+								<view class="rich-list" v-else-if="msg.payload.list">
 									<view v-for="(item, itemIndex) in msg.payload.list" :key="itemIndex" class="rich-list-item is-link" @tap="navigateTo(item.path)">{{ item.text }}</view>
 								</view>
+								
 								<image v-if="msg.payload.image" :src="msg.payload.image" class="rich-image" mode="widthFix"></image>
 								<view class="rich-suggestion" v-if="msg.payload.suggestion">{{ msg.payload.suggestion }}</view>
 							</view>
@@ -501,6 +515,45 @@ export default {
 }
 }
 
+// Bar Chart Styles
+.bar-chart-container {
+	margin-top: 10rpx;
+	.bar-chart-item {
+		display: flex;
+		align-items: center;
+		margin-bottom: 18rpx;
+		padding: 10rpx;
+		border-radius: 8rpx;
+		transition: background-color 0.2s;
+
+		.bar-label {
+			width: 110rpx;
+			font-size: 26rpx;
+			color: #555;
+			flex-shrink: 0;
+		}
+		.bar-wrapper {
+			flex-grow: 1;
+			height: 25rpx;
+			background-color: #f0f0f0;
+			border-radius: 25rpx;
+			margin: 0 15rpx;
+			overflow: hidden;
+			.bar {
+				height: 100%;
+				border-radius: 25rpx;
+				transition: width 0.5s ease-in-out;
+			}
+		}
+		.bar-text {
+			font-size: 24rpx;
+			color: #888;
+			min-width: 140rpx;
+			text-align: right;
+		}
+	}
+}
+
 // Parcel Message Styles
 .parcel-message {
 	.parcel-title {
@@ -620,22 +673,22 @@ export default {
 	.task-card {
 		display: inline-flex;
 		align-items: flex-start;
-		padding: 25rpx;
+		padding: 20rpx;
 		background-color: #ffffff;
-		border-radius: 20rpx;
+		border-radius: 18rpx;
 		margin-right: 20rpx;
 		margin-left: 5rpx;
 		margin-bottom: 10rpx;
-		width: 550rpx;
+		width: 480rpx;
 		position: relative;
 		box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.06);
 		vertical-align: top;
 	}
 
 	.task-icon {
-		width: 70rpx;
-		height: 70rpx;
-		margin-right: 20rpx;
+		width: 60rpx;
+		height: 60rpx;
+		margin-right: 18rpx;
 		flex-shrink: 0;
 		image {
 			width: 100%;
@@ -653,7 +706,7 @@ export default {
 
 	.task-title {
 		font-weight: 500;
-		font-size: 30rpx;
+		font-size: 28rpx;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -661,7 +714,7 @@ export default {
 	}
 
 	.task-desc {
-		font-size: 24rpx;
+		font-size: 22rpx;
 		color: #5f6368;
 		white-space: nowrap;
 		overflow: hidden;
@@ -691,11 +744,11 @@ export default {
 
 	.task-status {
 		position: absolute;
-		top: 25rpx;
-		right: 25rpx;
-		font-size: 22rpx;
+		top: 20rpx;
+		right: 20rpx;
+		font-size: 20rpx;
 		font-weight: 500;
-		padding: 6rpx 15rpx;
+		padding: 5rpx 12rpx;
 		border-radius: 8rpx;
 		
 		&.processing {

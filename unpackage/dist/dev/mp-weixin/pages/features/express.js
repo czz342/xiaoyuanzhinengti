@@ -352,7 +352,7 @@ var _default = {
         statusText: '待取件',
         statusClass: 'status-arrived',
         updateTime: '今天 12:30',
-        location: '第二教学楼东侧快递驿站',
+        location: '菜鸟驿站 (三食堂旁)',
         pickupCode: 'SF8842',
         distance: '650米',
         trackingInfo: [{
@@ -602,12 +602,25 @@ var _default = {
       });
     }
   },
-  onLoad: function onLoad() {
+  onLoad: function onLoad(options) {
+    var _this4 = this;
+    if (options.packageId) {
+      var pkgId = parseInt(options.packageId, 10);
+      var pkg = this.allPackages.find(function (p) {
+        return p.id === pkgId;
+      });
+      if (pkg) {
+        // 使用 $nextTick 确保页面渲染后再显示弹窗
+        this.$nextTick(function () {
+          _this4.showPackageDetail(pkg);
+        });
+      }
+    }
     // 页面加载时执行
     this.autoDetectExpressFromSMS();
   },
   onShow: function onShow() {
-    var _this4 = this;
+    var _this5 = this;
     // 模拟新快递通知
     if (Math.random() > 0.5) {
       setTimeout(function () {
@@ -617,7 +630,7 @@ var _default = {
           confirmText: '查看',
           success: function success(res) {
             if (res.confirm) {
-              _this4.showPackageDetail(_this4.allPackages[0]);
+              _this5.showPackageDetail(_this5.allPackages[0]);
             }
           }
         });

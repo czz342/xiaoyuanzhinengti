@@ -297,6 +297,32 @@ export default {
 			]
 		}
 	},
+	onLoad(options) {
+		if (options.courseName) {
+			const courseName = decodeURIComponent(options.courseName);
+			const course = this.courses.find(c => c.name === courseName);
+			if (course) {
+				// 确保是周视图
+				this.isWeeklyView = true;
+				
+				// 计算并设置到课程所在的日期
+				const today = new Date();
+				// getDay() 返回 0 (周日) 到 6 (周六)
+				// course.weekday 是 0 (周一) 到 4 (周五)
+				const currentDayOfWeek = (today.getDay() === 0) ? 6 : today.getDay() - 1; // 转换为 0 (周一) 到 6 (周日)
+				const dayDifference = course.weekday - currentDayOfWeek;
+				
+				const targetDate = new Date(today);
+				targetDate.setDate(today.getDate() + dayDifference);
+				this.currentDate = targetDate;
+				
+				// 延迟执行，确保UI更新
+				this.$nextTick(() => {
+					this.showCourseDetail(course);
+				});
+			}
+		}
+	},
 	computed: {
 		currentDateDisplay() {
 			const year = this.currentDate.getFullYear();
@@ -351,22 +377,23 @@ export default {
 			console.log('加载日期的课程：', date);
 			// 为演示，这里不做实际加载
 		},
-		calculateTop(time) {
-			const startMinutes = this.timeToMinutes(time);
-			// 课表从8:00开始, 8 * 60 = 480分钟
-			const offsetMinutes = startMinutes - 480;
-			// 每分钟的高度为2rpx (120rpx/60min)
-			return offsetMinutes * 2;
+		calculateTop(startTime) {
+			// 将时间转换为距离顶部的像素值
+			const [hours, minutes] = startTime.split(':').map(Number);
+			const timeInMinutes = hours * 60 + minutes;
+			const startOfDay = 8 * 60; // 8:00 AM
+			
+			return (timeInMinutes - startOfDay) * 2 + 10; // 2rpx per minute + 10rpx padding
 		},
 		calculateHeight(startTime, endTime) {
-			const startMinutes = this.timeToMinutes(startTime);
-			const endMinutes = this.timeToMinutes(endTime);
-			const duration = endMinutes - startMinutes;
-			return duration * 2;
-		},
-		timeToMinutes(time) {
-			const [hours, minutes] = time.split(':').map(Number);
-			return hours * 60 + minutes;
+			// 计算课程块的高度
+			const [startHours, startMinutes] = startTime.split(':').map(Number);
+			const [endHours, endMinutes] = endTime.split(':').map(Number);
+			
+			const startInMinutes = startHours * 60 + startMinutes;
+			const endInMinutes = endHours * 60 + endMinutes;
+			
+			return (endInMinutes - startInMinutes) * 2 - 20; // 2rpx per minute - 20rpx for gaps
 		},
 		showCourseDetail(course) {
 			this.currentCourse = course;
@@ -472,7 +499,6 @@ export default {
 	flex: 1;
 	display: flex;
 	position: relative;
-	margin-left: 120rpx;
 }
 
 .day-column {
@@ -480,16 +506,14 @@ export default {
 	position: relative;
 	border-left: 1rpx solid #f0f0f0;
 	min-height: 1700rpx;
-	/* Remove horizontal padding to align with header */
-	/* padding: 0 4rpx; */ 
+	padding: 0 4rpx;
 	box-sizing: border-box;
 }
 
 .day-column .course-card {
 	position: absolute;
-	/* Adjust left/right to align with the column edges */
-	left: 2rpx;
-	right: 2rpx;
+	left: 4rpx;
+	right: 4rpx;
 	border-radius: 8rpx;
 	padding: 8rpx;
 	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);

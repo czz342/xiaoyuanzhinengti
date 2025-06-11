@@ -331,6 +331,16 @@ var _default = {
       uni.navigateTo({
         url: '/pages/features/printing'
       });
+    },
+    navigateToLaundryHistory: function navigateToLaundryHistory() {
+      uni.navigateTo({
+        url: '/pages/features/laundry-history'
+      });
+    },
+    navigateToPrintingHistory: function navigateToPrintingHistory() {
+      uni.navigateTo({
+        url: '/pages/features/printing-history'
+      });
     }
   }
 };

@@ -223,6 +223,42 @@
   font-weight: 500;
   color: #2c3e50;
 }
+.bar-chart-container {
+  margin-top: 10rpx;
+}
+.bar-chart-container .bar-chart-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18rpx;
+  padding: 10rpx;
+  border-radius: 8rpx;
+  transition: background-color 0.2s;
+}
+.bar-chart-container .bar-chart-item .bar-label {
+  width: 110rpx;
+  font-size: 26rpx;
+  color: #555;
+  flex-shrink: 0;
+}
+.bar-chart-container .bar-chart-item .bar-wrapper {
+  flex-grow: 1;
+  height: 25rpx;
+  background-color: #f0f0f0;
+  border-radius: 25rpx;
+  margin: 0 15rpx;
+  overflow: hidden;
+}
+.bar-chart-container .bar-chart-item .bar-wrapper .bar {
+  height: 100%;
+  border-radius: 25rpx;
+  transition: width 0.5s ease-in-out;
+}
+.bar-chart-container .bar-chart-item .bar-text {
+  font-size: 24rpx;
+  color: #888;
+  min-width: 140rpx;
+  text-align: right;
+}
 .parcel-message .parcel-title {
   font-weight: bold;
   font-size: 32rpx;
@@ -310,21 +346,21 @@
 .task-panel .task-card {
   display: inline-flex;
   align-items: flex-start;
-  padding: 25rpx;
+  padding: 20rpx;
   background-color: #ffffff;
-  border-radius: 20rpx;
+  border-radius: 18rpx;
   margin-right: 20rpx;
   margin-left: 5rpx;
   margin-bottom: 10rpx;
-  width: 550rpx;
+  width: 480rpx;
   position: relative;
   box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.06);
   vertical-align: top;
 }
 .task-panel .task-icon {
-  width: 70rpx;
-  height: 70rpx;
-  margin-right: 20rpx;
+  width: 60rpx;
+  height: 60rpx;
+  margin-right: 18rpx;
   flex-shrink: 0;
 }
 .task-panel .task-icon image {
@@ -340,14 +376,14 @@
 }
 .task-panel .task-title {
   font-weight: 500;
-  font-size: 30rpx;
+  font-size: 28rpx;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: #202124;
 }
 .task-panel .task-desc {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #5f6368;
   white-space: nowrap;
   overflow: hidden;
@@ -373,11 +409,11 @@
 }
 .task-panel .task-status {
   position: absolute;
-  top: 25rpx;
-  right: 25rpx;
-  font-size: 22rpx;
+  top: 20rpx;
+  right: 20rpx;
+  font-size: 20rpx;
   font-weight: 500;
-  padding: 6rpx 15rpx;
+  padding: 5rpx 12rpx;
   border-radius: 8rpx;
 }
 .task-panel .task-status.processing {

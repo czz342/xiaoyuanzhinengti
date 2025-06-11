@@ -51,22 +51,19 @@
 	flex: 1;
 	display: flex;
 	position: relative;
-	margin-left: 120rpx;
 }
 .day-column {
 	flex: 1;
 	position: relative;
 	border-left: 1rpx solid #f0f0f0;
 	min-height: 1700rpx;
-	/* Remove horizontal padding to align with header */
-	/* padding: 0 4rpx; */ 
+	padding: 0 4rpx;
 	box-sizing: border-box;
 }
 .day-column .course-card {
 	position: absolute;
-	/* Adjust left/right to align with the column edges */
-	left: 2rpx;
-	right: 2rpx;
+	left: 4rpx;
+	right: 4rpx;
 	border-radius: 8rpx;
 	padding: 8rpx;
 	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);

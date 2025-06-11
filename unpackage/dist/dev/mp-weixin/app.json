@@ -16,6 +16,8 @@
     "pages/features/shared-devices",
     "pages/features/laundry",
     "pages/features/printing",
+    "pages/features/laundry-history",
+    "pages/features/printing-history",
     "pages/personal/index"
   ],
   "subPackages": [],
@@ -39,14 +41,14 @@
       },
       {
         "pagePath": "pages/services/index",
-        "iconPath": "static/images/services.png",
-        "selectedIconPath": "static/images/services-active.png",
+        "iconPath": "static/images/服务大厅.png",
+        "selectedIconPath": "static/images/服务大厅-active.png",
         "text": "服务大厅"
       },
       {
         "pagePath": "pages/personal/index",
-        "iconPath": "static/images/personal.png",
-        "selectedIconPath": "static/images/personal-active.png",
+        "iconPath": "static/images/个人中心.png",
+        "selectedIconPath": "static/images/个人中心-active.png",
         "text": "个人中心"
       }
     ]
