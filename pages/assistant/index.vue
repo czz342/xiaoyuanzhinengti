@@ -11,8 +11,8 @@
 						<text>{{msg.content}}</text>
 					</view>
 				</view>
-			</view>
-		</scroll-view>
+				</view>
+			</scroll-view>
 		
 		<!-- 动态任务追踪面板 -->
 		<view class="task-panel" v-if="ongoingTasks.length > 0">
@@ -72,7 +72,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://collectible-decent-brokers-garcia.trycloudflare.com", 
+			tunnelUrl: "https://nv-consequently-independence-studied.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -111,7 +111,41 @@ export default {
 					path: '/pages/features/express'
 				}
 			],
-			ongoingTasks: [],
+			ongoingTasks: [
+				{
+					id: 'task1',
+					icon: '/static/images/icon-repair.png',
+					title: '宿舍报修',
+					description: '水管漏水，请求处理',
+					progress: 75,
+					remainingTime: '2小时',
+					status: 'processing',
+					statusText: '处理中',
+					path: '/pages/tasks/detail?id=task1'
+				},
+				{
+					id: 'task2',
+					icon: '/static/images/icon-express.png',
+					title: '快递代取',
+					description: '京东快递，请尽快处理',
+					progress: 25,
+					remainingTime: '30分钟',
+					status: 'waiting',
+					statusText: '待领取',
+					path: '/pages/tasks/detail?id=task2'
+				},
+				{
+					id: 'task3',
+					icon: '/static/images/icon-library.png',
+					title: '图书续借',
+					description: '《深入理解计算机系统》',
+					progress: 90,
+					remainingTime: '1天',
+					status: 'processing',
+					statusText: '即将到期',
+					path: '/pages/tasks/detail?id=task3'
+				}
+			],
 			sessionId: null,
 			currentTaskId: null,
 			isAssistantTyping: false,
@@ -275,7 +309,7 @@ export default {
 				console.error('sendMessage 失败: sessionId 为空');
 				return;
 			}
-
+			
 			const userMessage = {
 				type: 'user',
 				content: this.inputMessage.trim(),
@@ -682,27 +716,27 @@ export default {
 .panel-title {
 	font-size: 28rpx;
 	font-weight: bold;
-	color: #333;
-	margin-bottom: 20rpx;
-}
+ color: #333;
+		margin-bottom: 20rpx;
+	}
 
-.task-scroll {
-	white-space: nowrap;
-}
+	.task-scroll {
+		white-space: nowrap;
+	}
 
-.task-card {
+	.task-card {
 	display: inline-block;
 	width: 450rpx;
-	background-color: #ffffff;
-	border-radius: 20rpx;
-	padding: 20rpx;
-	margin-right: 20rpx;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+ padding: 20rpx;
+		margin-right: 20rpx;
 	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
-	position: relative;
-}
+		position: relative;
+	}
 
-.task-icon {
-	width: 60rpx;
+	.task-icon {
+ width: 60rpx;
 	height: 60rpx;
 	position: absolute;
 	top: 20rpx;
@@ -710,51 +744,51 @@ export default {
 }
 
 .task-icon image {
-	width: 100%;
-	height: 100%;
-}
+			width: 100%;
+			height: 100%;
+	}
 
-.task-info {
-	margin-left: 80rpx;
-}
+	.task-info {
+ margin-left: 80rpx;
+	}
 
-.task-title {
+ .task-title {
 	font-size: 28rpx;
 	font-weight: bold;
 	color: #333;
-}
+	}
 
-.task-desc {
-	font-size: 24rpx;
-	color: #666;
-	margin: 10rpx 0;
-}
+ .task-desc {
+		font-size: 24rpx;
+ color: #666;
+ margin: 10rpx 0;
+	}
 
-.progress-bar {
+ .progress-bar {
 	height: 10rpx;
 	background-color: #f0f0f0;
 	border-radius: 5rpx;
-	overflow: hidden;
-	margin: 10rpx 0;
-}
+		overflow: hidden;
+ margin: 10rpx 0;
+	}
 
-.progress-fill {
-	height: 100%;
-	background-color: #007AFF;
-}
-
-.task-time {
+ .progress-fill {
+		height: 100%;
+ background-color: #007AFF;
+ }
+	
+ .task-time {
 	font-size: 24rpx;
-	color: #999;
-}
+		color: #999;
+	}
 
-.task-status {
-	position: absolute;
-	top: 20rpx;
+ .task-status {
+		position: absolute;
+ top: 20rpx;
 	right: 20rpx;
-	padding: 5rpx 10rpx;
+ padding: 5rpx 10rpx;
 	border-radius: 10rpx;
-	font-size: 22rpx;
+		font-size: 22rpx;
 }
 
 .task-status.processing {
@@ -778,15 +812,15 @@ export default {
 	padding: 20rpx;
 	border-top: 1rpx solid #e0e0e0;
 	display: flex;
-	align-items: center;
+		align-items: center;
 }
 
 .mic-btn, .attach-btn, .send-btn {
 	width: 60rpx;
 	height: 60rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 }
 
 .mic-btn image, .attach-btn image, .send-btn image {

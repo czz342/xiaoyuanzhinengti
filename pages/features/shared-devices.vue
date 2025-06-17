@@ -45,8 +45,8 @@
 						</view>
 					</view>
 					<view class="quick-actions">
-						<button class="action-btn">立即预约</button>
-						<button class="action-btn outline">查看订单</button>
+						<button class="action-btn" @tap="navigateToLaundry">立即预约</button>
+						<button class="action-btn outline" @tap="navigateToLaundryHistory">查看订单</button>
 					</view>
 				</view>
 			</view>
@@ -78,8 +78,8 @@
 						</view>
 					</view>
 					<view class="quick-actions">
-						<button class="action-btn">开始打印</button>
-						<button class="action-btn outline">打印记录</button>
+						<button class="action-btn" @tap="navigateToPrinting">开始打印</button>
+						<button class="action-btn outline" @tap="navigateToPrintingHistory">打印记录</button>
 					</view>
 				</view>
 			</view>
@@ -197,6 +197,16 @@ export default {
 		navigateToPrinting() {
 			uni.navigateTo({
 				url: '/pages/features/printing'
+			});
+		},
+		navigateToLaundryHistory() {
+			uni.navigateTo({
+				url: '/pages/features/laundry-history'
+			});
+		},
+		navigateToPrintingHistory() {
+			uni.navigateTo({
+				url: '/pages/features/printing-history'
 			});
 		}
 	}

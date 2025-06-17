@@ -565,6 +565,40 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ... existing styles ... */
 .assistant-page.data-v-411d5278 {
 	display: flex;
@@ -665,35 +699,35 @@
 .panel-title.data-v-411d5278 {
 	font-size: 28rpx;
 	font-weight: bold;
-	color: #333;
-	margin-bottom: 20rpx;
+ color: #333;
+		margin-bottom: 20rpx;
 }
 .task-scroll.data-v-411d5278 {
-	white-space: nowrap;
+		white-space: nowrap;
 }
 .task-card.data-v-411d5278 {
 	display: inline-block;
 	width: 450rpx;
-	background-color: #ffffff;
-	border-radius: 20rpx;
-	padding: 20rpx;
-	margin-right: 20rpx;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+ padding: 20rpx;
+		margin-right: 20rpx;
 	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
-	position: relative;
+		position: relative;
 }
 .task-icon.data-v-411d5278 {
-	width: 60rpx;
+ width: 60rpx;
 	height: 60rpx;
 	position: absolute;
 	top: 20rpx;
 	left: 20rpx;
 }
 .task-icon image.data-v-411d5278 {
-	width: 100%;
-	height: 100%;
+			width: 100%;
+			height: 100%;
 }
 .task-info.data-v-411d5278 {
-	margin-left: 80rpx;
+ margin-left: 80rpx;
 }
 .task-title.data-v-411d5278 {
 	font-size: 28rpx;
@@ -701,32 +735,32 @@
 	color: #333;
 }
 .task-desc.data-v-411d5278 {
-	font-size: 24rpx;
-	color: #666;
-	margin: 10rpx 0;
+		font-size: 24rpx;
+ color: #666;
+ margin: 10rpx 0;
 }
 .progress-bar.data-v-411d5278 {
 	height: 10rpx;
 	background-color: #f0f0f0;
 	border-radius: 5rpx;
-	overflow: hidden;
-	margin: 10rpx 0;
+		overflow: hidden;
+ margin: 10rpx 0;
 }
 .progress-fill.data-v-411d5278 {
-	height: 100%;
-	background-color: #007AFF;
+		height: 100%;
+ background-color: #007AFF;
 }
 .task-time.data-v-411d5278 {
 	font-size: 24rpx;
-	color: #999;
+		color: #999;
 }
 .task-status.data-v-411d5278 {
-	position: absolute;
-	top: 20rpx;
+		position: absolute;
+ top: 20rpx;
 	right: 20rpx;
-	padding: 5rpx 10rpx;
+ padding: 5rpx 10rpx;
 	border-radius: 10rpx;
-	font-size: 22rpx;
+		font-size: 22rpx;
 }
 .task-status.processing.data-v-411d5278 {
 	background-color: #e6f2ff;
@@ -746,14 +780,14 @@
 	padding: 20rpx;
 	border-top: 1rpx solid #e0e0e0;
 	display: flex;
-	align-items: center;
+		align-items: center;
 }
 .mic-btn.data-v-411d5278, .attach-btn.data-v-411d5278, .send-btn.data-v-411d5278 {
 	width: 60rpx;
 	height: 60rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 }
 .mic-btn image.data-v-411d5278, .attach-btn image.data-v-411d5278, .send-btn image.data-v-411d5278 {
 	width: 40rpx;

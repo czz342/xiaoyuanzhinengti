@@ -162,7 +162,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://collectible-decent-brokers-garcia.trycloudflare.com",
+      tunnelUrl: "https://nv-consequently-independence-studied.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -192,7 +192,37 @@ var _default = {
         text: '快递',
         path: '/pages/features/express'
       }],
-      ongoingTasks: [],
+      ongoingTasks: [{
+        id: 'task1',
+        icon: '/static/images/icon-repair.png',
+        title: '宿舍报修',
+        description: '水管漏水，请求处理',
+        progress: 75,
+        remainingTime: '2小时',
+        status: 'processing',
+        statusText: '处理中',
+        path: '/pages/tasks/detail?id=task1'
+      }, {
+        id: 'task2',
+        icon: '/static/images/icon-express.png',
+        title: '快递代取',
+        description: '京东快递，请尽快处理',
+        progress: 25,
+        remainingTime: '30分钟',
+        status: 'waiting',
+        statusText: '待领取',
+        path: '/pages/tasks/detail?id=task2'
+      }, {
+        id: 'task3',
+        icon: '/static/images/icon-library.png',
+        title: '图书续借',
+        description: '《深入理解计算机系统》',
+        progress: 90,
+        remainingTime: '1天',
+        status: 'processing',
+        statusText: '即将到期',
+        path: '/pages/tasks/detail?id=task3'
+      }],
       sessionId: null,
       currentTaskId: null,
       isAssistantTyping: false,
