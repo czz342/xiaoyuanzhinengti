@@ -251,7 +251,6 @@ class KingdeeAgentService {
         },
         data: {
           "client_id": CONFIG.CLIENT_ID,
-          "client_secret": CONFIG.CLIENT_SECRET,
           "token_type_hint": "access_token",
           "token": token,
           "accountId": CONFIG.ACCOUNT_ID,
@@ -259,11 +258,60 @@ class KingdeeAgentService {
           "timestamp": this.generateTimestamp()
         }
       });
-
-      return response && response.status && response.data === true;
+      console.log('Token withdraw response:', response);
+      return response && response.status;
     } catch (error) {
       console.error('Error withdrawing token:', error);
       return false;
+    }
+  }
+
+  /**
+   * 从金蝶API获取课程表数据
+   * @param {string} studentId 学生的ID
+   * @returns {Promise<Array<any>>} 课程数据列表
+   */
+  static async getSchedule(studentId) {
+    console.log(`[getSchedule] 开始为学生 ${studentId} 获取课程表...`);
+    try {
+      // request工具会自动处理token和基础URL
+      const response = await request({
+        url: '/kapi/v2/lb77/lb77_schedule/lb77_schedule1/checkcourse',
+        method: 'POST',
+        data: {
+          data: { // 根据最新的API文档，请求参数需要包裹在data对象内
+            lb77_studentid: studentId
+          },
+          pageSize: 100, // 添加分页参数
+          pageNo: 1      // 添加分页参数
+        }
+      });
+
+      console.log('[getSchedule] API响应已接收:', response);
+
+      // 根据最新的API测试结果，数据在 response.data.rows 中
+      if (response && response.data && Array.isArray(response.data.rows)) {
+        console.log(`[getSchedule] 成功获取到 ${response.data.rows.length} 条课程数据。`);
+        return response.data.rows;
+      } else {
+        console.warn('[getSchedule] API响应格式不符合预期，或未返回课程列表。返回空数组。', response);
+        // 如果Kingdee API在没有数据时返回的不是一个带空list的结构，这里需要调整
+        // 例如，如果直接返回 { status: true, data: [] }
+        if (response && Array.isArray(response.data)) {
+            return response.data
+        }
+        return [];
+      }
+    } catch (error) {
+      console.error(`[getSchedule] 获取课程表时发生错误:`, {
+        message: error.message,
+        statusCode: error.statusCode,
+        errorCode: error.errorCode,
+        data: error.data,
+        stack: error.stack
+      });
+      // 抛出错误，让调用方可以捕获并处理
+      throw error;
     }
   }
 
@@ -513,4 +561,4 @@ class KingdeeAgentService {
   }
 }
 
-export default KingdeeAgentService 
+export default KingdeeAgentService; 

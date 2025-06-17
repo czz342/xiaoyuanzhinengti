@@ -10462,7 +10462,6 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   },
                   data: {
                     "client_id": CONFIG.CLIENT_ID,
-                    "client_secret": CONFIG.CLIENT_SECRET,
                     "token_type_hint": "access_token",
                     "token": token,
                     "accountId": CONFIG.ACCOUNT_ID,
@@ -10472,126 +10471,108 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 });
               case 3:
                 response = _context4.sent;
-                return _context4.abrupt("return", response && response.status && response.data === true);
-              case 7:
-                _context4.prev = 7;
+                console.log('Token withdraw response:', response);
+                return _context4.abrupt("return", response && response.status);
+              case 8:
+                _context4.prev = 8;
                 _context4.t0 = _context4["catch"](0);
                 console.error('Error withdrawing token:', _context4.t0);
                 return _context4.abrupt("return", false);
-              case 11:
+              case 12:
               case "end":
                 return _context4.stop();
             }
           }
-        }, _callee4, this, [[0, 7]]);
+        }, _callee4, this, [[0, 8]]);
       }));
       function withdrawToken(_x2) {
         return _withdrawToken.apply(this, arguments);
       }
       return withdrawToken;
-    }() // 获取助手列表
+    }()
+    /**
+     * 从金蝶API获取课程表数据
+     * @param {string} studentId 学生的ID
+     * @returns {Promise<Array<any>>} 课程数据列表
+     */
   }, {
-    key: "getAssistants",
+    key: "getSchedule",
     value: function () {
-      var _getAssistants = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5() {
-        var attempt,
-          token,
-          requestId,
-          response,
-          errorMsg,
-          err,
-          isKingdeeTokenExpiredError,
-          messageIndicatesExpiry,
-          _args5 = arguments;
+      var _getSchedule = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5(studentId) {
+        var response;
         return _regenerator.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                attempt = _args5.length > 0 && _args5[0] !== undefined ? _args5[0] : 1;
+                console.log("[getSchedule] \u5F00\u59CB\u4E3A\u5B66\u751F ".concat(studentId, " \u83B7\u53D6\u8BFE\u7A0B\u8868..."));
                 _context5.prev = 1;
                 _context5.next = 4;
-                return this.ensureToken();
-              case 4:
-                token = _context5.sent;
-                if (token) {
-                  _context5.next = 8;
-                  break;
-                }
-                // ensureToken 应该已经抛出错误，但作为双重检查
-                console.error('[getAssistants] ensureToken返回了无效的token');
-                throw new Error('No valid token available for getAssistants');
-              case 8:
-                console.log("[getAssistants attempt ".concat(attempt, "] Fetching assistants list with token:"), token.substring(0, 10) + '...');
-                requestId = Date.now().toString(); // 生成唯一的requestId
-                _context5.next = 12;
                 return (0, _request.request)({
-                  url: "".concat(BASE_URL, "/assistants"),
+                  url: '/kapi/v2/lb77/lb77_schedule/lb77_schedule1/checkcourse',
                   method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'accesstoken': token,
-                    'Idempotency-Key': requestId
+                  data: {
+                    data: {
+                      // 根据最新的API文档，请求参数需要包裹在data对象内
+                      lb77_studentid: studentId
+                    },
+                    pageSize: 100,
+                    // 添加分页参数
+                    pageNo: 1 // 添加分页参数
                   }
                 });
-              case 12:
+              case 4:
                 response = _context5.sent;
-                console.log("[getAssistants attempt ".concat(attempt, "] Assistants response:"), response);
-                if (!(!response || response.status === false)) {
-                  _context5.next = 21;
+                console.log('[getSchedule] API响应已接收:', response);
+
+                // 根据最新的API测试结果，数据在 response.data.rows 中
+                if (!(response && response.data && Array.isArray(response.data.rows))) {
+                  _context5.next = 11;
                   break;
                 }
-                // 检查 response 是否存在
-                errorMsg = (response === null || response === void 0 ? void 0 : response.message) || '获取助手列表失败';
-                console.error("[getAssistants attempt ".concat(attempt, "] \u83B7\u53D6\u52A9\u624B\u5217\u8868\u5931\u8D25:"), errorMsg, response);
-                err = new Error(errorMsg);
-                err.data = response;
-                err.errorCode = response === null || response === void 0 ? void 0 : response.errorCode;
-                throw err;
-              case 21:
-                return _context5.abrupt("return", response);
-              case 24:
-                _context5.prev = 24;
+                console.log("[getSchedule] \u6210\u529F\u83B7\u53D6\u5230 ".concat(response.data.rows.length, " \u6761\u8BFE\u7A0B\u6570\u636E\u3002"));
+                return _context5.abrupt("return", response.data.rows);
+              case 11:
+                console.warn('[getSchedule] API响应格式不符合预期，或未返回课程列表。返回空数组。', response);
+                // 如果Kingdee API在没有数据时返回的不是一个带空list的结构，这里需要调整
+                // 例如，如果直接返回 { status: true, data: [] }
+                if (!(response && Array.isArray(response.data))) {
+                  _context5.next = 14;
+                  break;
+                }
+                return _context5.abrupt("return", response.data);
+              case 14:
+                return _context5.abrupt("return", []);
+              case 15:
+                _context5.next = 21;
+                break;
+              case 17:
+                _context5.prev = 17;
                 _context5.t0 = _context5["catch"](1);
-                isKingdeeTokenExpiredError = _context5.t0.data && _context5.t0.data.errorCode === '401' || _context5.t0.errorCode === '401';
-                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context5.t0.message || '');
-                if (!(isKingdeeTokenExpiredError && messageIndicatesExpiry && attempt === 1)) {
-                  _context5.next = 32;
-                  break;
-                }
-                console.warn('[getAssistants] Token expired or invalid. Clearing token and retrying ONCE.');
-                try {
-                  uni.removeStorageSync('accessToken');
-                  uni.removeStorageSync('tokenExpiresAt');
-                  console.log('[getAssistants] Stored token cleared for retry.');
-                } catch (e) {
-                  console.error('[getAssistants] Failed to remove token from storage during retry prep:', e);
-                }
-                return _context5.abrupt("return", this.getAssistants(2));
-              case 32:
-                console.error("[getAssistants] Error getting assistants (attempt ".concat(attempt, "):"), _context5.t0.message, _context5.t0);
-                if (!(_context5.t0 instanceof Error)) {
-                  _context5.next = 35;
-                  break;
-                }
+                console.error("[getSchedule] \u83B7\u53D6\u8BFE\u7A0B\u8868\u65F6\u53D1\u751F\u9519\u8BEF:", {
+                  message: _context5.t0.message,
+                  statusCode: _context5.t0.statusCode,
+                  errorCode: _context5.t0.errorCode,
+                  data: _context5.t0.data,
+                  stack: _context5.t0.stack
+                });
+                // 抛出错误，让调用方可以捕获并处理
                 throw _context5.t0;
-              case 35:
-                throw new Error("\u83B7\u53D6\u52A9\u624B\u5217\u8868\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context5.t0.message || '未知错误'));
-              case 36:
+              case 21:
               case "end":
                 return _context5.stop();
             }
           }
-        }, _callee5, this, [[1, 24]]);
+        }, _callee5, null, [[1, 17]]);
       }));
-      function getAssistants() {
-        return _getAssistants.apply(this, arguments);
+      function getSchedule(_x3) {
+        return _getSchedule.apply(this, arguments);
       }
-      return getAssistants;
-    }() // 创建新会话
+      return getSchedule;
+    }() // 获取助手列表
   }, {
-    key: "createSession",
+    key: "getAssistants",
     value: function () {
-      var _createSession = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6(assistantId, callbackUrl) {
+      var _getAssistants = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6() {
         var attempt,
           token,
           requestId,
@@ -10605,7 +10586,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
-                attempt = _args6.length > 2 && _args6[2] !== undefined ? _args6[2] : 1;
+                attempt = _args6.length > 0 && _args6[0] !== undefined ? _args6[0] : 1;
                 _context6.prev = 1;
                 _context6.next = 4;
                 return this.ensureToken();
@@ -10615,18 +10596,116 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   _context6.next = 8;
                   break;
                 }
+                // ensureToken 应该已经抛出错误，但作为双重检查
+                console.error('[getAssistants] ensureToken返回了无效的token');
+                throw new Error('No valid token available for getAssistants');
+              case 8:
+                console.log("[getAssistants attempt ".concat(attempt, "] Fetching assistants list with token:"), token.substring(0, 10) + '...');
+                requestId = Date.now().toString(); // 生成唯一的requestId
+                _context6.next = 12;
+                return (0, _request.request)({
+                  url: "".concat(BASE_URL, "/assistants"),
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'accesstoken': token,
+                    'Idempotency-Key': requestId
+                  }
+                });
+              case 12:
+                response = _context6.sent;
+                console.log("[getAssistants attempt ".concat(attempt, "] Assistants response:"), response);
+                if (!(!response || response.status === false)) {
+                  _context6.next = 21;
+                  break;
+                }
+                // 检查 response 是否存在
+                errorMsg = (response === null || response === void 0 ? void 0 : response.message) || '获取助手列表失败';
+                console.error("[getAssistants attempt ".concat(attempt, "] \u83B7\u53D6\u52A9\u624B\u5217\u8868\u5931\u8D25:"), errorMsg, response);
+                err = new Error(errorMsg);
+                err.data = response;
+                err.errorCode = response === null || response === void 0 ? void 0 : response.errorCode;
+                throw err;
+              case 21:
+                return _context6.abrupt("return", response);
+              case 24:
+                _context6.prev = 24;
+                _context6.t0 = _context6["catch"](1);
+                isKingdeeTokenExpiredError = _context6.t0.data && _context6.t0.data.errorCode === '401' || _context6.t0.errorCode === '401';
+                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context6.t0.message || '');
+                if (!(isKingdeeTokenExpiredError && messageIndicatesExpiry && attempt === 1)) {
+                  _context6.next = 32;
+                  break;
+                }
+                console.warn('[getAssistants] Token expired or invalid. Clearing token and retrying ONCE.');
+                try {
+                  uni.removeStorageSync('accessToken');
+                  uni.removeStorageSync('tokenExpiresAt');
+                  console.log('[getAssistants] Stored token cleared for retry.');
+                } catch (e) {
+                  console.error('[getAssistants] Failed to remove token from storage during retry prep:', e);
+                }
+                return _context6.abrupt("return", this.getAssistants(2));
+              case 32:
+                console.error("[getAssistants] Error getting assistants (attempt ".concat(attempt, "):"), _context6.t0.message, _context6.t0);
+                if (!(_context6.t0 instanceof Error)) {
+                  _context6.next = 35;
+                  break;
+                }
+                throw _context6.t0;
+              case 35:
+                throw new Error("\u83B7\u53D6\u52A9\u624B\u5217\u8868\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context6.t0.message || '未知错误'));
+              case 36:
+              case "end":
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this, [[1, 24]]);
+      }));
+      function getAssistants() {
+        return _getAssistants.apply(this, arguments);
+      }
+      return getAssistants;
+    }() // 创建新会话
+  }, {
+    key: "createSession",
+    value: function () {
+      var _createSession = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee7(assistantId, callbackUrl) {
+        var attempt,
+          token,
+          requestId,
+          response,
+          errorMsg,
+          err,
+          isKingdeeTokenExpiredError,
+          messageIndicatesExpiry,
+          _args7 = arguments;
+        return _regenerator.default.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                attempt = _args7.length > 2 && _args7[2] !== undefined ? _args7[2] : 1;
+                _context7.prev = 1;
+                _context7.next = 4;
+                return this.ensureToken();
+              case 4:
+                token = _context7.sent;
+                if (token) {
+                  _context7.next = 8;
+                  break;
+                }
                 console.error('[createSession] ensureToken返回了无效的token');
                 throw new Error('No valid token available for createSession');
               case 8:
                 if (assistantId) {
-                  _context6.next = 11;
+                  _context7.next = 11;
                   break;
                 }
                 console.error('[createSession] Assistant ID is required');
                 throw new Error('Assistant ID is required for createSession');
               case 11:
                 if (callbackUrl) {
-                  _context6.next = 14;
+                  _context7.next = 14;
                   break;
                 }
                 console.error('[createSession] Callback URL is required');
@@ -10634,7 +10713,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
               case 14:
                 console.log("[createSession attempt ".concat(attempt, "] Creating new session for assistant:"), assistantId, 'callbackUrl:', callbackUrl, 'with token:', token.substring(0, 10) + '...');
                 requestId = this.generateNonce(); // 使用UUID作为requestId
-                _context6.next = 18;
+                _context7.next = 18;
                 return (0, _request.request)({
                   url: "".concat(BASE_URL, "/newsession"),
                   method: 'POST',
@@ -10649,10 +10728,10 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   }
                 });
               case 18:
-                response = _context6.sent;
+                response = _context7.sent;
                 console.log("[createSession attempt ".concat(attempt, "] Session creation response:"), response);
                 if (!(!response || response.status === false)) {
-                  _context6.next = 27;
+                  _context7.next = 27;
                   break;
                 }
                 errorMsg = (response === null || response === void 0 ? void 0 : response.message) || '创建会话失败';
@@ -10662,14 +10741,14 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 err.errorCode = response === null || response === void 0 ? void 0 : response.errorCode;
                 throw err;
               case 27:
-                return _context6.abrupt("return", response);
+                return _context7.abrupt("return", response);
               case 30:
-                _context6.prev = 30;
-                _context6.t0 = _context6["catch"](1);
-                isKingdeeTokenExpiredError = _context6.t0.data && _context6.t0.data.errorCode === '401' || _context6.t0.errorCode === '401';
-                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context6.t0.message || '');
+                _context7.prev = 30;
+                _context7.t0 = _context7["catch"](1);
+                isKingdeeTokenExpiredError = _context7.t0.data && _context7.t0.data.errorCode === '401' || _context7.t0.errorCode === '401';
+                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context7.t0.message || '');
                 if (!(isKingdeeTokenExpiredError && messageIndicatesExpiry && attempt === 1)) {
-                  _context6.next = 38;
+                  _context7.next = 38;
                   break;
                 }
                 console.warn('[createSession] Token expired or invalid. Clearing token and retrying ONCE.');
@@ -10680,24 +10759,24 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 } catch (e) {
                   console.error('[createSession] Failed to remove token from storage during retry prep:', e);
                 }
-                return _context6.abrupt("return", this.createSession(assistantId, callbackUrl, 2));
+                return _context7.abrupt("return", this.createSession(assistantId, callbackUrl, 2));
               case 38:
-                console.error("[createSession] Error creating session (attempt ".concat(attempt, "):"), _context6.t0.message, _context6.t0);
-                if (!(_context6.t0 instanceof Error)) {
-                  _context6.next = 41;
+                console.error("[createSession] Error creating session (attempt ".concat(attempt, "):"), _context7.t0.message, _context7.t0);
+                if (!(_context7.t0 instanceof Error)) {
+                  _context7.next = 41;
                   break;
                 }
-                throw _context6.t0;
+                throw _context7.t0;
               case 41:
-                throw new Error("\u521B\u5EFA\u65B0\u4F1A\u8BDD\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context6.t0.message || '未知错误'));
+                throw new Error("\u521B\u5EFA\u65B0\u4F1A\u8BDD\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context7.t0.message || '未知错误'));
               case 42:
               case "end":
-                return _context6.stop();
+                return _context7.stop();
             }
           }
-        }, _callee6, this, [[1, 30]]);
+        }, _callee7, this, [[1, 30]]);
       }));
-      function createSession(_x3, _x4) {
+      function createSession(_x4, _x5) {
         return _createSession.apply(this, arguments);
       }
       return createSession;
@@ -10705,16 +10784,16 @@ var KingdeeAgentService = /*#__PURE__*/function () {
   }, {
     key: "sendChatMessage",
     value: function () {
-      var _sendChatMessage = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee7(_ref) {
+      var _sendChatMessage = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee8(_ref) {
         var sessionId, userInput, chatTraceId, requestBody, response, errorMsg;
-        return _regenerator.default.wrap(function _callee7$(_context7) {
+        return _regenerator.default.wrap(function _callee8$(_context8) {
           while (1) {
-            switch (_context7.prev = _context7.next) {
+            switch (_context8.prev = _context8.next) {
               case 0:
                 sessionId = _ref.sessionId, userInput = _ref.userInput;
                 console.log("Initiating sendChatMessage with sessionId: ".concat(sessionId));
-                _context7.prev = 2;
-                _context7.next = 5;
+                _context8.prev = 2;
+                _context8.next = 5;
                 return this.ensureToken();
               case 5:
                 // 根据最新的API文档 (2.3 对话) 构建请求体
@@ -10732,7 +10811,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 console.log("Sending chat message with new request body:", JSON.stringify(requestBody));
 
                 // 使用通用的request工具发送请求
-                _context7.next = 10;
+                _context8.next = 10;
                 return (0, _request.request)({
                   url: "".concat(BASE_URL, "/chat"),
                   method: 'POST',
@@ -10740,39 +10819,39 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   // token会由request拦截器自动添加
                 });
               case 10:
-                response = _context7.sent;
+                response = _context8.sent;
                 console.log("Raw Chat response object (from request util):", JSON.stringify(response));
 
                 // 检查 Kingdee API 返回的业务状态
                 if (!(response && response.status === true && response.data && response.data.traceId)) {
-                  _context7.next = 17;
+                  _context8.next = 17;
                   break;
                 }
                 console.log("Chat message sent successfully (Kingdee status:true, traceId present). Returning .data part:", response.data);
-                return _context7.abrupt("return", response.data);
+                return _context8.abrupt("return", response.data);
               case 17:
                 // 如果Kingdee API返回业务失败
                 errorMsg = "Kingdee chat API returned an error or unexpected format. Response: ".concat(JSON.stringify(response));
                 console.error(errorMsg);
                 throw new Error(response.message || '聊天接口返回失败');
               case 20:
-                _context7.next = 26;
+                _context8.next = 26;
                 break;
               case 22:
-                _context7.prev = 22;
-                _context7.t0 = _context7["catch"](2);
+                _context8.prev = 22;
+                _context8.t0 = _context8["catch"](2);
                 // 捕获请求或逻辑中的任何错误
-                console.error("Error in sendChatMessage service:", _context7.t0.message, _context7.t0);
+                console.error("Error in sendChatMessage service:", _context8.t0.message, _context8.t0);
                 // 重新抛出错误，以便上层可以捕获并处理
-                throw _context7.t0;
+                throw _context8.t0;
               case 26:
               case "end":
-                return _context7.stop();
+                return _context8.stop();
             }
           }
-        }, _callee7, this, [[2, 22]]);
+        }, _callee8, this, [[2, 22]]);
       }));
-      function sendChatMessage(_x5) {
+      function sendChatMessage(_x6) {
         return _sendChatMessage.apply(this, arguments);
       }
       return sendChatMessage;
@@ -10780,7 +10859,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
   }, {
     key: "stopChat",
     value: function () {
-      var _stopChat = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee8(sessionId, taskId) {
+      var _stopChat = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee9(sessionId, taskId) {
         var attempt,
           token,
           requestId,
@@ -10789,26 +10868,26 @@ var KingdeeAgentService = /*#__PURE__*/function () {
           err,
           isKingdeeTokenExpiredError,
           messageIndicatesExpiry,
-          _args8 = arguments;
-        return _regenerator.default.wrap(function _callee8$(_context8) {
+          _args9 = arguments;
+        return _regenerator.default.wrap(function _callee9$(_context9) {
           while (1) {
-            switch (_context8.prev = _context8.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
-                attempt = _args8.length > 2 && _args8[2] !== undefined ? _args8[2] : 1;
-                _context8.prev = 1;
-                _context8.next = 4;
+                attempt = _args9.length > 2 && _args9[2] !== undefined ? _args9[2] : 1;
+                _context9.prev = 1;
+                _context9.next = 4;
                 return this.ensureToken();
               case 4:
-                token = _context8.sent;
+                token = _context9.sent;
                 if (token) {
-                  _context8.next = 8;
+                  _context9.next = 8;
                   break;
                 }
                 console.error('[stopChat] ensureToken返回了无效的token');
                 throw new Error('No valid token available for stopChat');
               case 8:
                 if (!(!sessionId || !taskId)) {
-                  _context8.next = 11;
+                  _context9.next = 11;
                   break;
                 }
                 console.error('[stopChat] Session ID and Task ID are required');
@@ -10819,7 +10898,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   taskId: taskId
                 }, 'with token:', token.substring(0, 10) + '...');
                 requestId = Date.now().toString();
-                _context8.next = 15;
+                _context9.next = 15;
                 return (0, _request.request)({
                   url: "".concat(BASE_URL, "/chat/stop"),
                   method: 'POST',
@@ -10834,10 +10913,10 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   }
                 });
               case 15:
-                response = _context8.sent;
+                response = _context9.sent;
                 console.log("[stopChat attempt ".concat(attempt, "] Stop chat response:"), response);
                 if (!(!response || response.status === false)) {
-                  _context8.next = 24;
+                  _context9.next = 24;
                   break;
                 }
                 errorMsg = (response === null || response === void 0 ? void 0 : response.message) || '停止对话失败';
@@ -10847,14 +10926,14 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 err.errorCode = response === null || response === void 0 ? void 0 : response.errorCode;
                 throw err;
               case 24:
-                return _context8.abrupt("return", response);
+                return _context9.abrupt("return", response);
               case 27:
-                _context8.prev = 27;
-                _context8.t0 = _context8["catch"](1);
-                isKingdeeTokenExpiredError = _context8.t0.data && _context8.t0.data.errorCode === '401' || _context8.t0.errorCode === '401';
-                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context8.t0.message || '');
+                _context9.prev = 27;
+                _context9.t0 = _context9["catch"](1);
+                isKingdeeTokenExpiredError = _context9.t0.data && _context9.t0.data.errorCode === '401' || _context9.t0.errorCode === '401';
+                messageIndicatesExpiry = /token已过期|AccessToken认证不通过/i.test(_context9.t0.message || '');
                 if (!(isKingdeeTokenExpiredError && messageIndicatesExpiry && attempt === 1)) {
-                  _context8.next = 35;
+                  _context9.next = 35;
                   break;
                 }
                 console.warn('[stopChat] Token expired or invalid. Clearing token and retrying ONCE.');
@@ -10865,24 +10944,24 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                 } catch (e) {
                   console.error('[stopChat] Failed to remove token from storage during retry prep:', e);
                 }
-                return _context8.abrupt("return", this.stopChat(sessionId, taskId, 2));
+                return _context9.abrupt("return", this.stopChat(sessionId, taskId, 2));
               case 35:
-                console.error("[stopChat] Error stopping chat (attempt ".concat(attempt, "):"), _context8.t0.message, _context8.t0);
-                if (!(_context8.t0 instanceof Error)) {
-                  _context8.next = 38;
+                console.error("[stopChat] Error stopping chat (attempt ".concat(attempt, "):"), _context9.t0.message, _context9.t0);
+                if (!(_context9.t0 instanceof Error)) {
+                  _context9.next = 38;
                   break;
                 }
-                throw _context8.t0;
+                throw _context9.t0;
               case 38:
-                throw new Error("\u505C\u6B62\u5BF9\u8BDD\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context8.t0.message || '未知错误'));
+                throw new Error("\u505C\u6B62\u5BF9\u8BDD\u65F6\u53D1\u751F\u9519\u8BEF (attempt ".concat(attempt, "): ").concat(_context9.t0.message || '未知错误'));
               case 39:
               case "end":
-                return _context8.stop();
+                return _context9.stop();
             }
           }
-        }, _callee8, this, [[1, 27]]);
+        }, _callee9, this, [[1, 27]]);
       }));
-      function stopChat(_x6, _x7) {
+      function stopChat(_x7, _x8) {
         return _stopChat.apply(this, arguments);
       }
       return stopChat;

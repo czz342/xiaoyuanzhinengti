@@ -191,6 +191,23 @@
 </template>
 
 <script>
+import KingdeeAgentService from '../../services/kingdeeAgent.js';
+
+// 预定义颜色列表，用于课程卡片
+const courseColors = ['#DFEEFF', '#E6FFF2', '#FFF2E6', '#FFF0F0', '#F0F2FF', '#E6FAFF', '#FFFBE6'];
+
+// 将秒数转换为 HH:mm 格式的辅助函数
+function formatTimeFromSeconds(seconds) {
+    if (typeof seconds !== 'number' || isNaN(seconds)) {
+        return 'N/A';
+    }
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const formattedH = String(h).padStart(2, '0');
+    const formattedM = String(m).padStart(2, '0');
+    return `${formattedH}:${formattedM}`;
+}
+
 export default {
 	data() {
 		return {
@@ -216,85 +233,19 @@ export default {
 				{ id: 13, time: '20:00' },
 				{ id: 14, time: '21:00' }
 			],
-			courses: [
-				{
-					id: 1,
-					name: '高等数学（II）',
-					teacher: '张教授',
-					location: '理科楼 A306',
-					startTime: '08:00',
-					endTime: '09:40',
-					textbook: '《高等数学》（第七版）同济大学数学系',
-					color: '#DFEEFF',
-					weekday: 0 // 周一
-				},
-				{
-					id: 2,
-					name: '大学英语（4）',
-					teacher: '李教授',
-					location: '外语楼 B201',
-					startTime: '10:00',
-					endTime: '11:40',
-					textbook: '《大学英语》（第四册）外研社',
-					color: '#E6FFF2',
-					weekday: 1 // 周二
-				},
-				{
-					id: 3,
-					name: '数据结构',
-					teacher: '王教授',
-					location: '计算机楼 C305',
-					startTime: '14:00',
-					endTime: '15:40',
-					textbook: '《数据结构》（C语言版）严蔚敏',
-					color: '#FFF2E6',
-					weekday: 2 // 周三
-				},
-				{
-					id: 4,
-					name: '面向对象程序设计',
-					teacher: '刘教授',
-					location: '计算机楼 机房3',
-					startTime: '16:00',
-					endTime: '17:40',
-					textbook: '《Java程序设计》第5版 耿祥义',
-					color: '#FFECF5',
-					weekday: 4 // 周五
-				},
-				{
-					id: 5,
-					name: '线性代数',
-					teacher: '陈教授',
-					location: '理科楼 B201',
-					startTime: '14:00',
-					endTime: '15:40',
-					textbook: '《线性代数》第六版',
-					color: '#FFE6E6',
-					weekday: 0 // 周一
-				},
-				{
-					id: 6,
-					name: '计算机网络',
-					teacher: '赵教授',
-					location: '计算机楼 B305',
-					startTime: '08:00',
-					endTime: '09:40',
-					textbook: '《计算机网络》第七版',
-					color: '#E6FFE6',
-					weekday: 2 // 周三
-				},
-				{
-					id: 7,
-					name: '概率论',
-					teacher: '孙教授',
-					location: '理科楼 A205',
-					startTime: '10:00',
-					endTime: '11:40',
-					textbook: '《概率论与数理统计》第四版',
-					color: '#E6E6FF',
-					weekday: 4 // 周五
-				}
-			]
+			courses: []
+		}
+	},
+	onLoad(options) {
+		console.log("课程表页面 onLoad, options:", options);
+		this.fetchScheduleData();
+		
+		if (options && options.courseName) {
+			console.log("接收到要查询的课程名称:", options.courseName);
+			// 数据加载后，尝试查找并显示课程详情
+			// 注意：因为数据是异步加载的，直接在这里查找可能为时过早
+			// 我们将使用一个计时器或在数据加载完成后执行
+			this.findAndShowCourse(options.courseName);
 		}
 	},
 	computed: {
@@ -333,7 +284,65 @@ export default {
 			
 			this.loadCoursesForDate(this.currentDate);
 		},
+		async fetchScheduleData() {
+			try {
+				// TODO: studentId 应该从全局状态或缓存中获取
+				const studentId = '645730151'; 
+				uni.showLoading({ title: '正在加载课程表...' });
+				const apiCourses = await KingdeeAgentService.getSchedule(studentId);
+				this.courses = this.mapApiToCourses(apiCourses);
+			} catch (error) {
+				console.error('加载课程表失败:', error);
+				uni.showToast({
+					title: '加载失败，请稍后重试',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		
+		mapApiToCourses(apiCourses) {
+			if (!Array.isArray(apiCourses)) {
+				return [];
+			}
+			return apiCourses.map((apiCourse, index) => {
+				
+				return {
+					id: apiCourse.id || apiCourse.masterid,
+					name: apiCourse.name, // 使用正确的 'name' 字段
+					teacher: apiCourse.lb77_teacher,
+					location: apiCourse.lb77_location,
+					weekday: parseInt(apiCourse.lb77_weekday, 10) - 1, // API周一为'1', 前端为0
+					startTime: formatTimeFromSeconds(apiCourse.lb77_starttime), // 使用新函数转换时间
+					endTime: formatTimeFromSeconds(apiCourse.lb77_endtime),   // 使用新函数转换时间
+					// 您的API没有返回教材信息，这里留空
+					textbook: '', 
+					// 从预定义列表中循环选择颜色
+					color: courseColors[index % courseColors.length],
+					// 保存原始周信息，以备将来使用
+					startWeek: apiCourse.lb77_startweek,
+					endWeek: apiCourse.lb77_endweek
+				};
+			});
+		},
+		
+		// 之前用于从助手的聊天中跳转过来的函数
+		async findAndShowCourse(courseName) {
+			// 等待数据加载完成
+			await this.fetchScheduleData();
+			
+			const course = this.courses.find(c => c.name === courseName);
+			if (course) {
+				console.log("已找到课程，准备显示详情:", course);
+				this.showCourseDetail(course);
+			} else {
+				console.warn("未在课程列表中找到名为 '", courseName, "' 的课程。");
+			}
+		},
+		
 		getCoursesForDay(dayIndex) {
+			// 过滤当前周的课程
 			return this.courses.filter(course => course.weekday === dayIndex);
 		},
 		showDatePicker() {
