@@ -23,6 +23,19 @@
 			</view>
 		</view>
 		
+		<!-- 设备筛选器 -->
+		<view class="equipment-filter">
+			<view 
+				class="filter-tag"
+				v-for="(equipment, index) in allEquipments" 
+				:key="index"
+				:class="{'active': selectedEquipments.includes(equipment)}"
+				@tap="toggleEquipment(equipment)"
+			>
+				<text>{{equipment}}</text>
+			</view>
+		</view>
+		
 		<!-- 3D楼层平面图 -->
 		<view class="floor-map-container">
 			<view class="map-legend">
@@ -40,8 +53,17 @@
 				</view>
 			</view>
 			
-			<!-- 3D楼层图，实际应用中这里应该是WebGL渲染的3D视图 -->
-			<view class="floor-map">
+			<!-- 可交互地图区域 -->
+			<movable-area class="movable-area" scale-area>
+				<movable-view 
+					class="movable-view" 
+					direction="all" 
+					@change="onMapChange"
+					:scale-value="mapScaleValue"
+					scale="true" 
+					scale-min="0.5" 
+					scale-max="3"
+				>
 				<image src="/static/images/floor-map.png" mode="aspectFit" class="map-image"></image>
 				
 				<!-- 教室标记点 -->
@@ -55,7 +77,8 @@
 				>
 					<text class="room-code">{{room.code}}</text>
 				</view>
-			</view>
+				</movable-view>
+			</movable-area>
 			
 			<view class="map-controls">
 				<view class="control-btn zoom-in" @tap="zoomIn">
@@ -64,8 +87,8 @@
 				<view class="control-btn zoom-out" @tap="zoomOut">
 					<image src="/static/images/zoom-out.png" mode="aspectFit"></image>
 				</view>
-				<view class="control-btn rotate" @tap="rotate">
-					<image src="/static/images/rotate.png" mode="aspectFit"></image>
+				<view class="control-btn rotate" @tap="resetMap">
+					<image src="/static/images/refresh.png" mode="aspectFit"></image>
 				</view>
 			</view>
 		</view>
@@ -158,100 +181,38 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
 			// 建筑物和楼层数据
-			buildings: ['理科楼', '工科楼', '文科楼', '图书馆'],
+			buildings: [], // 将由API动态填充
 			currentBuildingIndex: 0,
-			floors: ['1F', '2F', '3F', '4F', '5F'],
+			floors: [], // 将由API动态填充
 			currentFloorIndex: 0,
 			
 			// 地图缩放和旋转控制
-			mapScale: 1,
-			mapRotation: 0,
+			mapScaleValue: 1,
+			mapX: 0,
+			mapY: 0,
 			
 			// 选中的教室
 			selectedRoom: null,
 			
 			// 日期选择
-			currentDate: '2023-05-15',
-			startDate: '2023-05-15',
-			endDate: '2023-06-15',
+			currentDate: '', // 初始化为空
+			startDate: '',   // 初始化为空
+			endDate: '',     // 初始化为空
 			
 			// 时间段选择
 			selectedTimeSlots: [],
 			
-			// 模拟的楼层教室数据
-			roomsData: {
-				'理科楼': {
-					'1F': [
-						{
-							id: 101,
-							code: 'A101',
-							name: '理科楼 A101',
-							capacity: 60,
-							status: 'available',
-							hasProjector: true,
-							hasComputer: true,
-							hasAirConditioner: true,
-							position: { x: 150, y: 180 },
-							availableTimeSlots: [0, 1, 2, 3, 4, 7, 8, 9]
-						},
-						{
-							id: 102,
-							code: 'A102',
-							name: '理科楼 A102',
-							capacity: 120,
-							status: 'occupied',
-							hasProjector: true,
-							hasComputer: true,
-							hasAirConditioner: true,
-							position: { x: 300, y: 180 },
-							availableTimeSlots: [4, 5, 6, 7, 8, 9]
-						},
-						{
-							id: 103,
-							code: 'A103',
-							name: '理科楼 A103',
-							capacity: 40,
-							status: 'maintenance',
-							hasProjector: false,
-							hasComputer: false,
-							hasAirConditioner: true,
-							position: { x: 450, y: 180 },
-							availableTimeSlots: []
-						},
-						{
-							id: 104,
-							code: 'A104',
-							name: '理科楼 A104',
-							capacity: 80,
-							status: 'available',
-							hasProjector: true,
-							hasComputer: true,
-							hasAirConditioner: true,
-							position: { x: 150, y: 300 },
-							availableTimeSlots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-						},
-						{
-							id: 105,
-							code: 'A105',
-							name: '理科楼 A105',
-							capacity: 60,
-							status: 'available',
-							hasProjector: true,
-							hasComputer: false,
-							hasAirConditioner: true,
-							position: { x: 300, y: 300 },
-							availableTimeSlots: [0, 1, 2, 5, 6, 7, 8, 9]
-						}
-					],
-					'2F': [
-						// 2楼教室数据
-					]
-				}
-			},
+			// 模拟的楼层教室数据 - 将由API填充
+			roomsData: {},
+
+			// 当天所有教室的预定记录
+			dailyBookings: [],
 			
 			// 时间段数据
 			timeSlots: [
@@ -265,8 +226,27 @@ export default {
 				{ id: 7, time: '16:00-17:00' },
 				{ id: 8, time: '18:00-19:00' },
 				{ id: 9, time: '19:00-20:00' }
-			]
+			],
+
+			// 设备筛选器相关数据
+			allEquipments: ['投影仪', '电脑', '空调', '智慧黑板'],
+			selectedEquipments: []
 		}
+	},
+	onLoad() {
+		this.fetchClassrooms();
+		
+		// 初始化日期选择器的范围
+		const today = new Date();
+		const oneMonthLater = new Date(today);
+		oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+		this.currentDate = this.formatDate(today);
+		this.startDate = this.formatDate(today);
+		this.endDate = this.formatDate(oneMonthLater);
+
+		// 获取当天的预定数据
+		this.fetchBookingsForDate(this.currentDate);
 	},
 	computed: {
 		currentFloorRooms() {
@@ -274,22 +254,118 @@ export default {
 			const floor = this.floors[this.currentFloorIndex];
 			
 			if (this.roomsData[building] && this.roomsData[building][floor]) {
-				return this.roomsData[building][floor];
+				let rooms = this.roomsData[building][floor];
+				
+				// 如果有选中的设备，则进行筛选
+				if (this.selectedEquipments.length > 0) {
+					rooms = rooms.filter(room => {
+						// 检查该教室是否包含所有选中的设备
+						return this.selectedEquipments.every(equipment => {
+							// 我们需要一种方式来检查room是否含有该equipment
+							// 假设 room.equipment 是一个像 "投影仪,电脑" 这样的字符串
+							return room.equipment && room.equipment.includes(equipment);
+						});
+					});
+				}
+				
+				return rooms;
 			}
 			return [];
 		}
 	},
 	methods: {
+		async fetchClassrooms() {
+			uni.showLoading({ title: '加载教室中...' });
+			try {
+				const response = await KingdeeAgentService.getClassroomList();
+				if (response && response.data && Array.isArray(response.data.rows)) {
+					this.processClassroomData(response.data.rows);
+				} else {
+					console.error("获取到的教室数据格式不正确", response);
+					uni.showToast({ title: '教室数据加载失败', icon: 'none' });
+				}
+			} catch (error) {
+				console.error('获取教室列表失败:', error);
+				uni.showToast({ title: '网络错误，请稍后重试', icon: 'none' });
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		
+		processClassroomData(apiRows) {
+			const roomsData = {};
+			const buildings = new Set();
+			
+			apiRows.forEach(row => {
+				const buildingName = row.lb77_building_name;
+				if (buildingName) {
+					buildings.add(buildingName);
+					if (!roomsData[buildingName]) {
+						roomsData[buildingName] = {};
+					}
+
+					const floorName = row.lb77_floor;
+					if (floorName) {
+						if (!roomsData[buildingName][floorName]) {
+							roomsData[buildingName][floorName] = [];
+						}
+						
+						const equipment = row.lb77_equipment || '';
+						roomsData[buildingName][floorName].push({
+							id: row.masterid,
+							code: row.number,
+							name: row.name,
+							capacity: row.lb77_capacity,
+							status: row.lb77_status || '可用',
+							hasProjector: equipment.includes('投影仪'),
+							hasComputer: equipment.includes('电脑'),
+							hasAirConditioner: equipment.includes('空调'),
+							equipment: equipment, // 直接保存设备字符串，用于筛选
+							position: {
+								x: row.lb77_position_x || 0,
+								y: row.lb77_position_y || 0
+							},
+							// 暂定所有时间段可用
+							availableTimeSlots: Array.from({ length: 12 }, (_, i) => i) 
+						});
+					}
+				}
+			});
+
+			this.buildings = Array.from(buildings);
+			this.roomsData = roomsData;
+			
+			// 初始化楼层数据
+			this.updateFloorsForCurrentBuilding();
+		},
+
+		updateFloorsForCurrentBuilding() {
+			const currentBuildingName = this.buildings[this.currentBuildingIndex];
+			if (currentBuildingName && this.roomsData[currentBuildingName]) {
+				const floorKeys = Object.keys(this.roomsData[currentBuildingName]);
+				floorKeys.sort((a, b) => parseInt(a) - parseInt(b));
+				this.floors = floorKeys;
+			} else {
+				this.floors = [];
+			}
+			this.currentFloorIndex = 0; // 重置楼层选择
+		},
+
 		onBuildingChange(e) {
 			this.currentBuildingIndex = e.detail.value;
-			this.currentFloorIndex = 0; // 重置为1楼
-			this.selectedRoom = null;
-			this.selectedTimeSlots = [];
+			this.updateFloorsForCurrentBuilding();
+			this.selectedRoom = null; // 切换教学楼后清空选择
+		},
+		
+		formatDate(date) {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
 		},
 		selectFloor(index) {
 			this.currentFloorIndex = index;
-			this.selectedRoom = null;
-			this.selectedTimeSlots = [];
+			this.selectedRoom = null; // 切换楼层后清空选择
 		},
 		selectRoom(room) {
 			if (room.status === 'maintenance') {
@@ -308,21 +384,19 @@ export default {
 			this.selectedTimeSlots = [];
 		},
 		zoomIn() {
-			if (this.mapScale < 2) {
-				this.mapScale += 0.1;
-			}
+			this.mapScaleValue = Math.min(this.mapScaleValue + 0.2, 3);
 		},
 		zoomOut() {
-			if (this.mapScale > 0.5) {
-				this.mapScale -= 0.1;
-			}
+			this.mapScaleValue = Math.max(this.mapScaleValue - 0.2, 0.5);
 		},
-		rotate() {
-			this.mapRotation = (this.mapRotation + 90) % 360;
+		resetMap() {
+			this.mapScaleValue = 1;
+			// 重置位置可能需要更复杂的逻辑，暂时只重置缩放
 		},
 		onDateChange(e) {
 			this.currentDate = e.detail.value;
 			this.selectedTimeSlots = []; // 切换日期时重置时间段选择
+			this.fetchBookingsForDate(this.currentDate); // 切换日期后，重新获取预定数据
 		},
 		toggleTimeSlot(index, slot) {
 			if (!this.isSlotAvailable(slot)) return;
@@ -366,7 +440,26 @@ export default {
 		},
 		isSlotAvailable(slot) {
 			if (!this.selectedRoom) return false;
-			return this.selectedRoom.availableTimeSlots.includes(slot.id);
+			
+			// 1. 获取当前时间段的开始小时 (e.g., "08:00-09:00" -> 8)
+			const slotStartHour = parseInt(slot.time.split('-')[0].split(':')[0]);
+
+			// 2. 遍历当天的所有预定记录
+			for (const booking of this.dailyBookings) {
+				// 3. 检查这条预定记录是否属于当前选中的教室
+				if (booking.lb77_classroom_id_number === this.selectedRoom.code) {
+					// 4. 将预定记录的开始/结束时间从秒转换为小时
+					const bookingStartHour = booking.lb77_start_time / 3600;
+					const bookingEndHour = booking.lb77_end_time / 3600;
+					
+					// 5. 判断当前时间段的开始小时，是否落在 [预定开始小时, 预定结束小时) 这个区间内
+					if (slotStartHour >= bookingStartHour && slotStartHour < bookingEndHour) {
+						return false; // 时间段重叠，不可用
+					}
+				}
+			}
+			
+			return true; // 没有发现冲突，可用
 		},
 		getSelectedTimeRange() {
 			if (this.selectedTimeSlots.length === 0) return '';
@@ -381,7 +474,18 @@ export default {
 			
 			return `${startTime}-${endTime}`;
 		},
-		submitBooking() {
+		
+		generateRandomString(length) {
+			const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+			let result = '';
+			const charactersLength = characters.length;
+			for (let i = 0; i < length; i++) {
+				result += characters.charAt(Math.floor(Math.random() * charactersLength));
+			}
+			return result;
+		},
+
+		async submitBooking() {
 			if (this.selectedTimeSlots.length === 0) {
 				uni.showToast({
 					title: '请选择时间段',
@@ -390,26 +494,99 @@ export default {
 				return;
 			}
 			
-			// 模拟提交预约
 			uni.showLoading({
 				title: '正在提交预约...'
 			});
 			
-			setTimeout(() => {
+			const timeRange = this.getSelectedTimeRange();
+			const [startTimeStr, endTimeStr] = timeRange.split('-');
+
+			// 根据API报错信息和数据存储结果，时间参数必须为Integer类型，且单位为秒
+			const startTimeInHours = parseInt(startTimeStr.split(':')[0]);
+			const endTimeInHours = parseInt(endTimeStr.split(':')[0]);
+
+			const startTime = startTimeInHours * 3600; // 将小时转换为秒
+			const endTime = endTimeInHours * 3600;   // 将小时转换为秒
+			
+			const bookingData = {
+				number: this.generateRandomString(5), // 随机生成一个5位数的单据编号
+				name: `预约-${this.selectedRoom.name}-${this.currentDate}`,
+				lb77_booking_date: this.currentDate,
+				lb77_start_time: startTime, // 发送换算后的秒数, e.g., 28800
+				lb77_end_time: endTime,     // 发送换算后的秒数, e.g., 32400
+				lb77_status: 'confirmed', // 状态直接设置为 confirmed
+				lb77_classroom_id_number: this.selectedRoom.code // 关联教室的编号
+			};
+
+			try {
+				const response = await KingdeeAgentService.saveClassroomBooking(bookingData);
 				uni.hideLoading();
+
+				if (response && response.data && response.data.successCount > 0) {
 				uni.showModal({
 					title: '预约成功',
-					content: `您已成功预约${this.selectedRoom.name}，日期：${this.currentDate}，时间：${this.getSelectedTimeRange()}`,
+						content: `您已成功预约${this.selectedRoom.name}，日期：${this.currentDate}，时间：${timeRange}`,
 					showCancel: false,
 					success: (res) => {
 						if (res.confirm) {
+								// 刷新当天的预定数据，以立即反映出刚刚完成的预定
+								this.fetchBookingsForDate(this.currentDate); 
+								
 							// 重置选择
 							this.selectedRoom = null;
 							this.selectedTimeSlots = [];
 						}
 					}
 				});
-			}, 1500);
+				} else {
+					// 尝试从金蝶返回的复杂结构中提取更详细的错误信息
+					const errorResult = response?.data?.result?.[0];
+					const errorMessage = errorResult?.errors?.[0]?.msg || '未知错误，请联系管理员';
+					uni.showToast({
+						title: `预约失败: ${errorMessage}`,
+						icon: 'none',
+						duration: 3000
+					});
+				}
+			} catch (error) {
+				uni.hideLoading();
+				console.error('提交预约请求失败:', error);
+				uni.showToast({
+					title: '网络错误，提交失败',
+					icon: 'none'
+				});
+			}
+		},
+		onMapChange(e) {
+			// 记录地图的位移和缩放，如果需要的话
+			this.mapX = e.detail.x;
+			this.mapY = e.detail.y;
+		},
+		async fetchBookingsForDate(date) {
+			this.dailyBookings = []; // 查询前先清空
+			try {
+				// 这里不显示loading，因为是后台更新，避免频繁闪烁
+				const response = await KingdeeAgentService.getClassroomBookings(date);
+				if (response && response.data && Array.isArray(response.data.rows)) {
+					this.dailyBookings = response.data.rows;
+					console.log(`获取到 ${date} 的 ${this.dailyBookings.length} 条预定记录。`);
+				}
+			} catch (error) {
+				console.error(`获取日期 ${date} 的预定记录失败:`, error);
+				// 即使失败也要保证页面流程继续
+			}
+		},
+		toggleEquipment(equipment) {
+			const index = this.selectedEquipments.indexOf(equipment);
+			if (index > -1) {
+				// 如果已选中，则取消选中
+				this.selectedEquipments.splice(index, 1);
+			} else {
+				// 如果未选中，则添加选中
+				this.selectedEquipments.push(equipment);
+			}
+			// 筛选后清空已选中的教室，避免UI显示异常
+			this.selectedRoom = null;
 		}
 	}
 }
@@ -458,34 +635,50 @@ export default {
 
 .floor-tabs {
 	display: flex;
-	border-bottom: 1rpx solid #f0f0f0;
+	justify-content: space-around;
+	background-color: #fff;
 }
 
 .floor-tab {
-	flex: 1;
-	height: 80rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	padding: 15rpx 30rpx;
 	font-size: 28rpx;
 	color: #666;
-	position: relative;
+	border-bottom: 4rpx solid transparent;
+	transition: all 0.3s;
 }
 
 .floor-tab.active {
-	color: #007AFF;
+	color: #2979ff;
 	font-weight: bold;
+	border-bottom-color: #2979ff;
 }
 
-.floor-tab.active::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 25%;
-	width: 50%;
-	height: 6rpx;
-	background-color: #007AFF;
-	border-radius: 3rpx;
+/* 设备筛选器样式 */
+.equipment-filter {
+	display: flex;
+	flex-wrap: wrap;
+	padding: 10rpx 20rpx;
+	background-color: #f8f8f8;
+	border-top: 1rpx solid #eee;
+	border-bottom: 1rpx solid #eee;
+}
+
+.filter-tag {
+	padding: 8rpx 20rpx;
+	margin: 10rpx;
+	background-color: #fff;
+	border: 1rpx solid #ddd;
+	border-radius: 30rpx;
+	font-size: 24rpx;
+	color: #555;
+	transition: all 0.3s ease;
+}
+
+.filter-tag.active {
+	background-color: #eaf2ff;
+	color: #2979ff;
+	border-color: #a3c7ff;
+	font-weight: bold;
 }
 
 /* 3D楼层平面图样式 */
@@ -537,10 +730,22 @@ export default {
 	overflow: hidden;
 }
 
+.movable-area {
+	width: 100%;
+	height: 100%;
+}
+
+.movable-view {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
 .map-image {
 	width: 100%;
 	height: 100%;
-	transform-origin: center;
 }
 
 .room-marker {

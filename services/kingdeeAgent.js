@@ -1,10 +1,10 @@
 console.warn("####### services/kingdeeAgent.js - NEW VERSION LOADED - " + new Date().toISOString() + " #######");
-import { request } from '@/utils/request'
+import { request, apiConfig } from '@/utils/request'
 
 // 金蝶Agent平台API基础URL
 const BASE_URL = '/kapi/v2/gai'  // 用于AI助手相关的API
 const AUTH_BASE_URL = '/kapi/oauth2'  // 用于认证相关的API
-const FULL_BASE_URL = 'http://127.0.0.1:8080/ierp'  // 完整的基础URL
+// const FULL_BASE_URL = 'http://192.168.1.2:8080/ierp'  // 完整的基础URL - 已废弃，从request.js导入
 
 // 配置信息
 const CONFIG = {
@@ -88,7 +88,7 @@ class KingdeeAgentService {
       const loggableRequestData = { ...requestData, client_secret: '******' };
       console.log('[getToken] 请求数据已准备:', JSON.stringify(loggableRequestData));
       
-      const url = `${FULL_BASE_URL}${AUTH_BASE_URL}/getToken`;
+      const url = `${apiConfig.baseUrl}${AUTH_BASE_URL}/getToken`;
       console.log('[getToken] 请求URL:', url);
 
       console.log('[getToken] 返回新的Promise...');
@@ -558,6 +558,51 @@ class KingdeeAgentService {
       if (error instanceof Error) throw error;
       throw new Error(`停止对话时发生错误 (attempt ${attempt}): ${error.message || '未知错误'}`);
     }
+  }
+
+  /**
+   * @description 获取所有教室列表
+   */
+  static async getClassroomList() {
+    return request({
+      url: '/kapi/v2/lb77/lb77_classroom/lb77_tbl_classrooms/getClassroomList',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: 100 // 确保一次性获取所有教室
+      }
+    });
+  }
+
+  /**
+   * 保存教室预定记录
+   * @param {object} bookingData - 预定数据
+   */
+  static async saveClassroomBooking(bookingData) {
+    return request({
+      url: `/kapi/v2/lb77/lb77_classroom/lb77_tbl_reservations/saveClassroomBooking`,
+      method: 'POST',
+      data: {
+        data: [bookingData]
+      },
+    });
+  }
+
+  /**
+   * 根据日期查询教室预约记录
+   * @param {string} date - 查询日期，格式 "YYYY-MM-DD"
+   */
+  static async getClassroomBookings(date) {
+    return request({
+      url: `/kapi/v2/lb77/lb77_classroom/lb77_tbl_reservations/getClassroomBookings`,
+      method: 'POST',
+      data: {
+        data: {
+          lb77_booking_date: date
+        },
+        pageSize: 500 // 查询当天的全部记录，设置一个较大的值
+      }
+    });
   }
 }
 

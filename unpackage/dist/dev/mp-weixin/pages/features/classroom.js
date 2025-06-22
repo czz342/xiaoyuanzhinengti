@@ -102,31 +102,40 @@ var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  var l0 = _vm.selectedRoom
+  var l0 = _vm.__map(_vm.allEquipments, function (equipment, index) {
+    var $orig = _vm.__get_orig(equipment)
+    var g0 = _vm.selectedEquipments.includes(equipment)
+    return {
+      $orig: $orig,
+      g0: g0,
+    }
+  })
+  var l1 = _vm.selectedRoom
     ? _vm.__map(_vm.timeSlots, function (slot, index) {
         var $orig = _vm.__get_orig(slot)
-        var g0 = _vm.selectedTimeSlots.includes(index)
+        var g1 = _vm.selectedTimeSlots.includes(index)
         var m0 = _vm.isSlotAvailable(slot)
         var m1 = _vm.isSlotAvailable(slot)
         return {
           $orig: $orig,
-          g0: g0,
+          g1: g1,
           m0: m0,
           m1: m1,
         }
       })
     : null
-  var g1 = _vm.selectedRoom ? _vm.selectedTimeSlots.length : null
-  var m2 = _vm.selectedRoom && g1 > 0 ? _vm.getSelectedTimeRange() : null
   var g2 = _vm.selectedRoom ? _vm.selectedTimeSlots.length : null
+  var m2 = _vm.selectedRoom && g2 > 0 ? _vm.getSelectedTimeRange() : null
+  var g3 = _vm.selectedRoom ? _vm.selectedTimeSlots.length : null
   _vm.$mp.data = Object.assign(
     {},
     {
       $root: {
         l0: l0,
-        g1: g1,
-        m2: m2,
+        l1: l1,
         g2: g2,
+        m2: m2,
+        g3: g3,
       },
     }
   )
@@ -170,264 +179,44 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
+var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _toConsumableArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/toConsumableArray */ 18));
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
+var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 var _default = {
   data: function data() {
     return {
       // 建筑物和楼层数据
-      buildings: ['理科楼', '工科楼', '文科楼', '图书馆'],
+      buildings: [],
+      // 将由API动态填充
       currentBuildingIndex: 0,
-      floors: ['1F', '2F', '3F', '4F', '5F'],
+      floors: [],
+      // 将由API动态填充
       currentFloorIndex: 0,
       // 地图缩放和旋转控制
-      mapScale: 1,
-      mapRotation: 0,
+      mapScaleValue: 1,
+      mapX: 0,
+      mapY: 0,
       // 选中的教室
       selectedRoom: null,
       // 日期选择
-      currentDate: '2023-05-15',
-      startDate: '2023-05-15',
-      endDate: '2023-06-15',
+      currentDate: '',
+      // 初始化为空
+      startDate: '',
+      // 初始化为空
+      endDate: '',
+      // 初始化为空
+
       // 时间段选择
       selectedTimeSlots: [],
-      // 模拟的楼层教室数据
-      roomsData: {
-        '理科楼': {
-          '1F': [{
-            id: 101,
-            code: 'A101',
-            name: '理科楼 A101',
-            capacity: 60,
-            status: 'available',
-            hasProjector: true,
-            hasComputer: true,
-            hasAirConditioner: true,
-            position: {
-              x: 150,
-              y: 180
-            },
-            availableTimeSlots: [0, 1, 2, 3, 4, 7, 8, 9]
-          }, {
-            id: 102,
-            code: 'A102',
-            name: '理科楼 A102',
-            capacity: 120,
-            status: 'occupied',
-            hasProjector: true,
-            hasComputer: true,
-            hasAirConditioner: true,
-            position: {
-              x: 300,
-              y: 180
-            },
-            availableTimeSlots: [4, 5, 6, 7, 8, 9]
-          }, {
-            id: 103,
-            code: 'A103',
-            name: '理科楼 A103',
-            capacity: 40,
-            status: 'maintenance',
-            hasProjector: false,
-            hasComputer: false,
-            hasAirConditioner: true,
-            position: {
-              x: 450,
-              y: 180
-            },
-            availableTimeSlots: []
-          }, {
-            id: 104,
-            code: 'A104',
-            name: '理科楼 A104',
-            capacity: 80,
-            status: 'available',
-            hasProjector: true,
-            hasComputer: true,
-            hasAirConditioner: true,
-            position: {
-              x: 150,
-              y: 300
-            },
-            availableTimeSlots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-          }, {
-            id: 105,
-            code: 'A105',
-            name: '理科楼 A105',
-            capacity: 60,
-            status: 'available',
-            hasProjector: true,
-            hasComputer: false,
-            hasAirConditioner: true,
-            position: {
-              x: 300,
-              y: 300
-            },
-            availableTimeSlots: [0, 1, 2, 5, 6, 7, 8, 9]
-          }],
-          '2F': [
-            // 2楼教室数据
-          ]
-        }
-      },
+      // 模拟的楼层教室数据 - 将由API填充
+      roomsData: {},
+      // 当天所有教室的预定记录
+      dailyBookings: [],
       // 时间段数据
       timeSlots: [{
         id: 0,
@@ -459,30 +248,172 @@ var _default = {
       }, {
         id: 9,
         time: '19:00-20:00'
-      }]
+      }],
+      // 设备筛选器相关数据
+      allEquipments: ['投影仪', '电脑', '空调', '智慧黑板'],
+      selectedEquipments: []
     };
+  },
+  onLoad: function onLoad() {
+    this.fetchClassrooms();
+
+    // 初始化日期选择器的范围
+    var today = new Date();
+    var oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    this.currentDate = this.formatDate(today);
+    this.startDate = this.formatDate(today);
+    this.endDate = this.formatDate(oneMonthLater);
+
+    // 获取当天的预定数据
+    this.fetchBookingsForDate(this.currentDate);
   },
   computed: {
     currentFloorRooms: function currentFloorRooms() {
+      var _this = this;
       var building = this.buildings[this.currentBuildingIndex];
       var floor = this.floors[this.currentFloorIndex];
       if (this.roomsData[building] && this.roomsData[building][floor]) {
-        return this.roomsData[building][floor];
+        var rooms = this.roomsData[building][floor];
+
+        // 如果有选中的设备，则进行筛选
+        if (this.selectedEquipments.length > 0) {
+          rooms = rooms.filter(function (room) {
+            // 检查该教室是否包含所有选中的设备
+            return _this.selectedEquipments.every(function (equipment) {
+              // 我们需要一种方式来检查room是否含有该equipment
+              // 假设 room.equipment 是一个像 "投影仪,电脑" 这样的字符串
+              return room.equipment && room.equipment.includes(equipment);
+            });
+          });
+        }
+        return rooms;
       }
       return [];
     }
   },
   methods: {
+    fetchClassrooms: function fetchClassrooms() {
+      var _this2 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+        var response;
+        return _regenerator.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                uni.showLoading({
+                  title: '加载教室中...'
+                });
+                _context.prev = 1;
+                _context.next = 4;
+                return _kingdeeAgent.default.getClassroomList();
+              case 4:
+                response = _context.sent;
+                if (response && response.data && Array.isArray(response.data.rows)) {
+                  _this2.processClassroomData(response.data.rows);
+                } else {
+                  console.error("获取到的教室数据格式不正确", response);
+                  uni.showToast({
+                    title: '教室数据加载失败',
+                    icon: 'none'
+                  });
+                }
+                _context.next = 12;
+                break;
+              case 8:
+                _context.prev = 8;
+                _context.t0 = _context["catch"](1);
+                console.error('获取教室列表失败:', _context.t0);
+                uni.showToast({
+                  title: '网络错误，请稍后重试',
+                  icon: 'none'
+                });
+              case 12:
+                _context.prev = 12;
+                uni.hideLoading();
+                return _context.finish(12);
+              case 15:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, null, [[1, 8, 12, 15]]);
+      }))();
+    },
+    processClassroomData: function processClassroomData(apiRows) {
+      var roomsData = {};
+      var buildings = new Set();
+      apiRows.forEach(function (row) {
+        var buildingName = row.lb77_building_name;
+        if (buildingName) {
+          buildings.add(buildingName);
+          if (!roomsData[buildingName]) {
+            roomsData[buildingName] = {};
+          }
+          var floorName = row.lb77_floor;
+          if (floorName) {
+            if (!roomsData[buildingName][floorName]) {
+              roomsData[buildingName][floorName] = [];
+            }
+            var equipment = row.lb77_equipment || '';
+            roomsData[buildingName][floorName].push({
+              id: row.masterid,
+              code: row.number,
+              name: row.name,
+              capacity: row.lb77_capacity,
+              status: row.lb77_status || '可用',
+              hasProjector: equipment.includes('投影仪'),
+              hasComputer: equipment.includes('电脑'),
+              hasAirConditioner: equipment.includes('空调'),
+              equipment: equipment,
+              // 直接保存设备字符串，用于筛选
+              position: {
+                x: row.lb77_position_x || 0,
+                y: row.lb77_position_y || 0
+              },
+              // 暂定所有时间段可用
+              availableTimeSlots: Array.from({
+                length: 12
+              }, function (_, i) {
+                return i;
+              })
+            });
+          }
+        }
+      });
+      this.buildings = Array.from(buildings);
+      this.roomsData = roomsData;
+
+      // 初始化楼层数据
+      this.updateFloorsForCurrentBuilding();
+    },
+    updateFloorsForCurrentBuilding: function updateFloorsForCurrentBuilding() {
+      var currentBuildingName = this.buildings[this.currentBuildingIndex];
+      if (currentBuildingName && this.roomsData[currentBuildingName]) {
+        var floorKeys = Object.keys(this.roomsData[currentBuildingName]);
+        floorKeys.sort(function (a, b) {
+          return parseInt(a) - parseInt(b);
+        });
+        this.floors = floorKeys;
+      } else {
+        this.floors = [];
+      }
+      this.currentFloorIndex = 0; // 重置楼层选择
+    },
     onBuildingChange: function onBuildingChange(e) {
       this.currentBuildingIndex = e.detail.value;
-      this.currentFloorIndex = 0; // 重置为1楼
-      this.selectedRoom = null;
-      this.selectedTimeSlots = [];
+      this.updateFloorsForCurrentBuilding();
+      this.selectedRoom = null; // 切换教学楼后清空选择
+    },
+    formatDate: function formatDate(date) {
+      var year = date.getFullYear();
+      var month = String(date.getMonth() + 1).padStart(2, '0');
+      var day = String(date.getDate()).padStart(2, '0');
+      return "".concat(year, "-").concat(month, "-").concat(day);
     },
     selectFloor: function selectFloor(index) {
       this.currentFloorIndex = index;
-      this.selectedRoom = null;
-      this.selectedTimeSlots = [];
+      this.selectedRoom = null; // 切换楼层后清空选择
     },
     selectRoom: function selectRoom(room) {
       if (room.status === 'maintenance') {
@@ -500,21 +431,19 @@ var _default = {
       this.selectedTimeSlots = [];
     },
     zoomIn: function zoomIn() {
-      if (this.mapScale < 2) {
-        this.mapScale += 0.1;
-      }
+      this.mapScaleValue = Math.min(this.mapScaleValue + 0.2, 3);
     },
     zoomOut: function zoomOut() {
-      if (this.mapScale > 0.5) {
-        this.mapScale -= 0.1;
-      }
+      this.mapScaleValue = Math.max(this.mapScaleValue - 0.2, 0.5);
     },
-    rotate: function rotate() {
-      this.mapRotation = (this.mapRotation + 90) % 360;
+    resetMap: function resetMap() {
+      this.mapScaleValue = 1;
+      // 重置位置可能需要更复杂的逻辑，暂时只重置缩放
     },
     onDateChange: function onDateChange(e) {
       this.currentDate = e.detail.value;
       this.selectedTimeSlots = []; // 切换日期时重置时间段选择
+      this.fetchBookingsForDate(this.currentDate); // 切换日期后，重新获取预定数据
     },
     toggleTimeSlot: function toggleTimeSlot(index, slot) {
       if (!this.isSlotAvailable(slot)) return;
@@ -561,7 +490,34 @@ var _default = {
     },
     isSlotAvailable: function isSlotAvailable(slot) {
       if (!this.selectedRoom) return false;
-      return this.selectedRoom.availableTimeSlots.includes(slot.id);
+
+      // 1. 获取当前时间段的开始小时 (e.g., "08:00-09:00" -> 8)
+      var slotStartHour = parseInt(slot.time.split('-')[0].split(':')[0]);
+
+      // 2. 遍历当天的所有预定记录
+      var _iterator = _createForOfIteratorHelper(this.dailyBookings),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var booking = _step.value;
+          // 3. 检查这条预定记录是否属于当前选中的教室
+          if (booking.lb77_classroom_id_number === this.selectedRoom.code) {
+            // 4. 将预定记录的开始/结束时间从秒转换为小时
+            var bookingStartHour = booking.lb77_start_time / 3600;
+            var bookingEndHour = booking.lb77_end_time / 3600;
+
+            // 5. 判断当前时间段的开始小时，是否落在 [预定开始小时, 预定结束小时) 这个区间内
+            if (slotStartHour >= bookingStartHour && slotStartHour < bookingEndHour) {
+              return false; // 时间段重叠，不可用
+            }
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      return true; // 没有发现冲突，可用
     },
     getSelectedTimeRange: function getSelectedTimeRange() {
       if (this.selectedTimeSlots.length === 0) return '';
@@ -576,35 +532,155 @@ var _default = {
       var endTime = endSlot.time.split('-')[1];
       return "".concat(startTime, "-").concat(endTime);
     },
-    submitBooking: function submitBooking() {
-      var _this = this;
-      if (this.selectedTimeSlots.length === 0) {
-        uni.showToast({
-          title: '请选择时间段',
-          icon: 'none'
-        });
-        return;
+    generateRandomString: function generateRandomString(length) {
+      var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      var result = '';
+      var charactersLength = characters.length;
+      for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
       }
+      return result;
+    },
+    submitBooking: function submitBooking() {
+      var _this3 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+        var timeRange, _timeRange$split, _timeRange$split2, startTimeStr, endTimeStr, startTimeInHours, endTimeInHours, startTime, endTime, bookingData, response, _response$data, _response$data$result, _errorResult$errors, _errorResult$errors$, errorResult, errorMessage;
+        return _regenerator.default.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (!(_this3.selectedTimeSlots.length === 0)) {
+                  _context2.next = 3;
+                  break;
+                }
+                uni.showToast({
+                  title: '请选择时间段',
+                  icon: 'none'
+                });
+                return _context2.abrupt("return");
+              case 3:
+                uni.showLoading({
+                  title: '正在提交预约...'
+                });
+                timeRange = _this3.getSelectedTimeRange();
+                _timeRange$split = timeRange.split('-'), _timeRange$split2 = (0, _slicedToArray2.default)(_timeRange$split, 2), startTimeStr = _timeRange$split2[0], endTimeStr = _timeRange$split2[1]; // 根据API报错信息和数据存储结果，时间参数必须为Integer类型，且单位为秒
+                startTimeInHours = parseInt(startTimeStr.split(':')[0]);
+                endTimeInHours = parseInt(endTimeStr.split(':')[0]);
+                startTime = startTimeInHours * 3600; // 将小时转换为秒
+                endTime = endTimeInHours * 3600; // 将小时转换为秒
+                bookingData = {
+                  number: _this3.generateRandomString(5),
+                  // 随机生成一个5位数的单据编号
+                  name: "\u9884\u7EA6-".concat(_this3.selectedRoom.name, "-").concat(_this3.currentDate),
+                  lb77_booking_date: _this3.currentDate,
+                  lb77_start_time: startTime,
+                  // 发送换算后的秒数, e.g., 28800
+                  lb77_end_time: endTime,
+                  // 发送换算后的秒数, e.g., 32400
+                  lb77_status: 'confirmed',
+                  // 状态直接设置为 confirmed
+                  lb77_classroom_id_number: _this3.selectedRoom.code // 关联教室的编号
+                };
+                _context2.prev = 11;
+                _context2.next = 14;
+                return _kingdeeAgent.default.saveClassroomBooking(bookingData);
+              case 14:
+                response = _context2.sent;
+                uni.hideLoading();
+                if (response && response.data && response.data.successCount > 0) {
+                  uni.showModal({
+                    title: '预约成功',
+                    content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6".concat(_this3.selectedRoom.name, "\uFF0C\u65E5\u671F\uFF1A").concat(_this3.currentDate, "\uFF0C\u65F6\u95F4\uFF1A").concat(timeRange),
+                    showCancel: false,
+                    success: function success(res) {
+                      if (res.confirm) {
+                        // 刷新当天的预定数据，以立即反映出刚刚完成的预定
+                        _this3.fetchBookingsForDate(_this3.currentDate);
 
-      // 模拟提交预约
-      uni.showLoading({
-        title: '正在提交预约...'
-      });
-      setTimeout(function () {
-        uni.hideLoading();
-        uni.showModal({
-          title: '预约成功',
-          content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6".concat(_this.selectedRoom.name, "\uFF0C\u65E5\u671F\uFF1A").concat(_this.currentDate, "\uFF0C\u65F6\u95F4\uFF1A").concat(_this.getSelectedTimeRange()),
-          showCancel: false,
-          success: function success(res) {
-            if (res.confirm) {
-              // 重置选择
-              _this.selectedRoom = null;
-              _this.selectedTimeSlots = [];
+                        // 重置选择
+                        _this3.selectedRoom = null;
+                        _this3.selectedTimeSlots = [];
+                      }
+                    }
+                  });
+                } else {
+                  // 尝试从金蝶返回的复杂结构中提取更详细的错误信息
+                  errorResult = response === null || response === void 0 ? void 0 : (_response$data = response.data) === null || _response$data === void 0 ? void 0 : (_response$data$result = _response$data.result) === null || _response$data$result === void 0 ? void 0 : _response$data$result[0];
+                  errorMessage = (errorResult === null || errorResult === void 0 ? void 0 : (_errorResult$errors = errorResult.errors) === null || _errorResult$errors === void 0 ? void 0 : (_errorResult$errors$ = _errorResult$errors[0]) === null || _errorResult$errors$ === void 0 ? void 0 : _errorResult$errors$.msg) || '未知错误，请联系管理员';
+                  uni.showToast({
+                    title: "\u9884\u7EA6\u5931\u8D25: ".concat(errorMessage),
+                    icon: 'none',
+                    duration: 3000
+                  });
+                }
+                _context2.next = 24;
+                break;
+              case 19:
+                _context2.prev = 19;
+                _context2.t0 = _context2["catch"](11);
+                uni.hideLoading();
+                console.error('提交预约请求失败:', _context2.t0);
+                uni.showToast({
+                  title: '网络错误，提交失败',
+                  icon: 'none'
+                });
+              case 24:
+              case "end":
+                return _context2.stop();
             }
           }
-        });
-      }, 1500);
+        }, _callee2, null, [[11, 19]]);
+      }))();
+    },
+    onMapChange: function onMapChange(e) {
+      // 记录地图的位移和缩放，如果需要的话
+      this.mapX = e.detail.x;
+      this.mapY = e.detail.y;
+    },
+    fetchBookingsForDate: function fetchBookingsForDate(date) {
+      var _this4 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
+        var response;
+        return _regenerator.default.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                _this4.dailyBookings = []; // 查询前先清空
+                _context3.prev = 1;
+                _context3.next = 4;
+                return _kingdeeAgent.default.getClassroomBookings(date);
+              case 4:
+                response = _context3.sent;
+                if (response && response.data && Array.isArray(response.data.rows)) {
+                  _this4.dailyBookings = response.data.rows;
+                  console.log("\u83B7\u53D6\u5230 ".concat(date, " \u7684 ").concat(_this4.dailyBookings.length, " \u6761\u9884\u5B9A\u8BB0\u5F55\u3002"));
+                }
+                _context3.next = 11;
+                break;
+              case 8:
+                _context3.prev = 8;
+                _context3.t0 = _context3["catch"](1);
+                console.error("\u83B7\u53D6\u65E5\u671F ".concat(date, " \u7684\u9884\u5B9A\u8BB0\u5F55\u5931\u8D25:"), _context3.t0);
+                // 即使失败也要保证页面流程继续
+              case 11:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, null, [[1, 8]]);
+      }))();
+    },
+    toggleEquipment: function toggleEquipment(equipment) {
+      var index = this.selectedEquipments.indexOf(equipment);
+      if (index > -1) {
+        // 如果已选中，则取消选中
+        this.selectedEquipments.splice(index, 1);
+      } else {
+        // 如果未选中，则添加选中
+        this.selectedEquipments.push(equipment);
+      }
+      // 筛选后清空已选中的教室，避免UI显示异常
+      this.selectedRoom = null;
     }
   }
 };

@@ -72,7 +72,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://nv-consequently-independence-studied.trycloudflare.com", 
+			tunnelUrl: "https://ambien-temple-below-viewing.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -192,8 +192,8 @@ export default {
 				this.assistants = assistantsResponse.data;
 				if (this.assistants && this.assistants.length > 0) {
 					// 目标助手的ID和名称
-					const targetAssistantId = "2224845143255547904";
-					const targetAssistantName = "校园智能体";
+					const targetAssistantId = "2243055074412593152";
+					const targetAssistantName = "预约助手";
 
 					// 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
 					let foundAssistant = this.assistants.find(assistant => assistant.id === targetAssistantId);
@@ -433,6 +433,9 @@ export default {
 				case 'task':
 					this.handleTaskAction(action);
 					break;
+				case 'error':
+					this.handleErrorAction(action);
+					break;
 				default:
 					console.warn("未知的Action类型:", action.type);
 			}
@@ -446,6 +449,12 @@ export default {
 				this.isAssistantTyping = false;
 				this.removeBotMessage("typing_indicator");
 			}
+		},
+
+		handleErrorAction(action) {
+			console.error("收到来自AI助手的错误:", action.data);
+			const errorMessage = action.data?.desc || "助手返回了一个未知错误";
+			this.addSystemMessage(`抱歉，出错了: ${errorMessage}`);
 		},
 
 		handleChatAction(action) {
@@ -752,19 +761,19 @@ export default {
  margin-left: 80rpx;
 	}
 
- .task-title {
+	.task-title {
 	font-size: 28rpx;
 	font-weight: bold;
 	color: #333;
 	}
 
- .task-desc {
+	.task-desc {
 		font-size: 24rpx;
  color: #666;
  margin: 10rpx 0;
 	}
 
- .progress-bar {
+	.progress-bar {
 	height: 10rpx;
 	background-color: #f0f0f0;
 	border-radius: 5rpx;
@@ -772,17 +781,17 @@ export default {
  margin: 10rpx 0;
 	}
 
- .progress-fill {
+	.progress-fill {
 		height: 100%;
  background-color: #007AFF;
- }
+	}
 	
- .task-time {
+	.task-time {
 	font-size: 24rpx;
 		color: #999;
 	}
 
- .task-status {
+	.task-status {
 		position: absolute;
  top: 20rpx;
 	right: 20rpx;

@@ -1,6 +1,6 @@
 // 配置信息
 const config = {
-  baseUrl: 'http://127.0.0.1:8080/ierp', // 金蝶基础域名
+  baseUrl: 'http://192.168.1.3:8080/ierp', // 金蝶基础域名
   timeout: 10000 // 超时时间，单位：毫秒
 }
 

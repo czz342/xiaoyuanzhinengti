@@ -162,7 +162,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://nv-consequently-independence-studied.trycloudflare.com",
+      tunnelUrl: "https://ambien-temple-below-viewing.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -301,8 +301,8 @@ var _default = {
                   break;
                 }
                 // 目标助手的ID和名称
-                targetAssistantId = "2224845143255547904";
-                targetAssistantName = "校园智能体"; // 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
+                targetAssistantId = "2243055074412593152";
+                targetAssistantName = "预约助手"; // 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
                 foundAssistant = _this2.assistants.find(function (assistant) {
                   return assistant.id === targetAssistantId;
                 });
@@ -602,6 +602,9 @@ var _default = {
         case 'task':
           this.handleTaskAction(action);
           break;
+        case 'error':
+          this.handleErrorAction(action);
+          break;
         default:
           console.warn("未知的Action类型:", action.type);
       }
@@ -615,6 +618,12 @@ var _default = {
         this.isAssistantTyping = false;
         this.removeBotMessage("typing_indicator");
       }
+    },
+    handleErrorAction: function handleErrorAction(action) {
+      var _action$data;
+      console.error("收到来自AI助手的错误:", action.data);
+      var errorMessage = ((_action$data = action.data) === null || _action$data === void 0 ? void 0 : _action$data.desc) || "助手返回了一个未知错误";
+      this.addSystemMessage("\u62B1\u6B49\uFF0C\u51FA\u9519\u4E86: ".concat(errorMessage));
     },
     handleChatAction: function handleChatAction(action) {
       this.isAssistantTyping = false;

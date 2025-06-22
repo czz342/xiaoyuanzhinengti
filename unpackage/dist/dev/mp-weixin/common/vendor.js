@@ -10135,7 +10135,7 @@ console.warn("####### services/kingdeeAgent.js - NEW VERSION LOADED - " + new Da
 // 金蝶Agent平台API基础URL
 var BASE_URL = '/kapi/v2/gai'; // 用于AI助手相关的API
 var AUTH_BASE_URL = '/kapi/oauth2'; // 用于认证相关的API
-var FULL_BASE_URL = 'http://127.0.0.1:8080/ierp'; // 完整的基础URL
+// const FULL_BASE_URL = 'http://192.168.1.2:8080/ierp'  // 完整的基础URL - 已废弃，从request.js导入
 
 // 配置信息
 var CONFIG = {
@@ -10259,7 +10259,7 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                   client_secret: '******'
                 });
                 console.log('[getToken] 请求数据已准备:', JSON.stringify(loggableRequestData));
-                url = "".concat(FULL_BASE_URL).concat(AUTH_BASE_URL, "/getToken");
+                url = "".concat(_request.apiConfig.baseUrl).concat(AUTH_BASE_URL, "/getToken");
                 console.log('[getToken] 请求URL:', url);
                 console.log('[getToken] 返回新的Promise...');
                 return _context2.abrupt("return", new Promise(function (resolve, reject) {
@@ -10966,6 +10966,102 @@ var KingdeeAgentService = /*#__PURE__*/function () {
       }
       return stopChat;
     }()
+    /**
+     * @description 获取所有教室列表
+     */
+  }, {
+    key: "getClassroomList",
+    value: function () {
+      var _getClassroomList = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee10() {
+        return _regenerator.default.wrap(function _callee10$(_context10) {
+          while (1) {
+            switch (_context10.prev = _context10.next) {
+              case 0:
+                return _context10.abrupt("return", (0, _request.request)({
+                  url: '/kapi/v2/lb77/lb77_classroom/lb77_tbl_classrooms/getClassroomList',
+                  method: 'POST',
+                  data: {
+                    data: {},
+                    pageSize: 100 // 确保一次性获取所有教室
+                  }
+                }));
+              case 1:
+              case "end":
+                return _context10.stop();
+            }
+          }
+        }, _callee10);
+      }));
+      function getClassroomList() {
+        return _getClassroomList.apply(this, arguments);
+      }
+      return getClassroomList;
+    }()
+    /**
+     * 保存教室预定记录
+     * @param {object} bookingData - 预定数据
+     */
+  }, {
+    key: "saveClassroomBooking",
+    value: function () {
+      var _saveClassroomBooking = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee11(bookingData) {
+        return _regenerator.default.wrap(function _callee11$(_context11) {
+          while (1) {
+            switch (_context11.prev = _context11.next) {
+              case 0:
+                return _context11.abrupt("return", (0, _request.request)({
+                  url: "/kapi/v2/lb77/lb77_classroom/lb77_tbl_reservations/saveClassroomBooking",
+                  method: 'POST',
+                  data: {
+                    data: [bookingData]
+                  }
+                }));
+              case 1:
+              case "end":
+                return _context11.stop();
+            }
+          }
+        }, _callee11);
+      }));
+      function saveClassroomBooking(_x9) {
+        return _saveClassroomBooking.apply(this, arguments);
+      }
+      return saveClassroomBooking;
+    }()
+    /**
+     * 根据日期查询教室预约记录
+     * @param {string} date - 查询日期，格式 "YYYY-MM-DD"
+     */
+  }, {
+    key: "getClassroomBookings",
+    value: function () {
+      var _getClassroomBookings = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee12(date) {
+        return _regenerator.default.wrap(function _callee12$(_context12) {
+          while (1) {
+            switch (_context12.prev = _context12.next) {
+              case 0:
+                return _context12.abrupt("return", (0, _request.request)({
+                  url: "/kapi/v2/lb77/lb77_classroom/lb77_tbl_reservations/getClassroomBookings",
+                  method: 'POST',
+                  data: {
+                    data: {
+                      lb77_booking_date: date
+                    },
+                    pageSize: 500 // 查询当天的全部记录，设置一个较大的值
+                  }
+                }));
+              case 1:
+              case "end":
+                return _context12.stop();
+            }
+          }
+        }, _callee12);
+      }));
+      function getClassroomBookings(_x10) {
+        return _getClassroomBookings.apply(this, arguments);
+      }
+      return getClassroomBookings;
+    }()
   }]);
   return KingdeeAgentService;
 }();
@@ -10995,7 +11091,7 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 // 配置信息
 var config = {
-  baseUrl: 'http://127.0.0.1:8080/ierp',
+  baseUrl: 'http://192.168.1.3:8080/ierp',
   // 金蝶基础域名
   timeout: 10000 // 超时时间，单位：毫秒
 };
