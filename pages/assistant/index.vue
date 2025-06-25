@@ -3,16 +3,42 @@
 		<!-- 聊天窗口 -->
 		<scroll-view scroll-y="true" class="chat-container" :scroll-top="scrollTop" :scroll-with-animation="true" @scrolltoupper="loadMoreMessages">
 			<view class="chat-list">
-				<view v-for="(msg, index) in chatMessages" :key="index" class="chat-item" :class="{ 'user-message': msg.type === 'user', 'system-message': msg.type === 'system' }">
-					<view class="avatar">
-						<image :src="msg.type === 'user' ? userAvatar : botAvatar" mode="aspectFill"></image>
+				<view v-for="(msg, index) in chatMessages" :key="msg.id || index">
+					<!-- Existing User/System Message Blocks -->
+					<view v-if="msg.type === 'user' || msg.type === 'system'" class="chat-item" :class="{ 'user-message': msg.type === 'user', 'system-message': msg.type === 'system' }">
+						<view class="avatar">
+							<image :src="msg.type === 'user' ? userAvatar : botAvatar" mode="aspectFill"></image>
+						</view>
+						<view class="message-bubble">
+							<text v-if="!msg.error">{{msg.content}}</text>
+							<text v-else style="color: #ff6666;">{{msg.content}}</text>
+						</view>
 					</view>
-					<view class="message-bubble">
-						<text>{{msg.content}}</text>
+					
+					<!-- New Thinking Process Block -->
+					<view v-else-if="msg.type === 'thinking_process'" class="thinking-process-container">
+						<view class="thinking-header">
+							<view class="spinner" v-if="msg.status === 'in_progress'"></view>
+							<image v-else src="/static/images/ac.png" class="status-icon-completed"></image>
+							<text class="thinking-title">{{ msg.title }}</text>
+						</view>
+						<view class="steps-list">
+							<view v-for="step in msg.steps" :key="step.id" class="step-item">
+								<view class="step-header" @tap="toggleStep(msg, step)">
+									<image src="/static/images/ac.png" class="status-icon-step"></image>
+									<text class="step-title">{{ step.title }}</text>
+									<image src="/static/images/arrow-right.png" class="arrow-icon" :class="{ 'expanded': step.isExpanded }"></image>
+								</view>
+								<view v-if="step.isExpanded" class="step-content">
+									<pre v-if="step.isJson">{{ step.displayContent }}</pre>
+									<text v-else>{{ step.displayContent }}</text>
+								</view>
+							</view>
+						</view>
 					</view>
 				</view>
-				</view>
-			</scroll-view>
+			</view>
+		</scroll-view>
 		
 		<!-- 动态任务追踪面板 -->
 		<view class="task-panel" v-if="ongoingTasks.length > 0">
@@ -72,7 +98,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://ambien-temple-below-viewing.trycloudflare.com", 
+			tunnelUrl: "https://florida-sbjct-largely-me.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -151,9 +177,14 @@ export default {
 			isAssistantTyping: false,
 			assistants: [],
 			selectedAssistant: null,
+			activeSkill: {
+				id: null,
+				type: null
+			},
 			websocketTask: null,
 			websocketConnected: false,
-			reconnectInterval: null
+			reconnectInterval: null,
+			heartbeatInterval: null // 新增：心跳定时器
 		}
 	},
 	async onLoad() {
@@ -192,8 +223,8 @@ export default {
 				this.assistants = assistantsResponse.data;
 				if (this.assistants && this.assistants.length > 0) {
 					// 目标助手的ID和名称
-					const targetAssistantId = "2243055074412593152";
-					const targetAssistantName = "预约助手";
+					const targetAssistantId = "2224845143255547904";
+					const targetAssistantName = "校园助手";
 
 					// 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
 					let foundAssistant = this.assistants.find(assistant => assistant.id === targetAssistantId);
@@ -253,9 +284,20 @@ export default {
 					    sessionResponse.status && // 检查 status 是否为真值 (true, "true", 1 等都会通过)
 					    sessionResponse.data && 
 					    typeof sessionResponse.data.sessionId === 'string' && // 确保 sessionId 是字符串
-					    sessionResponse.data.sessionId.length > 0) { // 确保 sessionId 不是空字符串
+					    sessionResponse.data.sessionId.length > 0) {
 						this.sessionId = sessionResponse.data.sessionId;
 						console.log('新会话创建成功，Session ID:', this.sessionId);
+						
+						// 新增：从响应中提取并保存第一个技能的信息
+						if (sessionResponse.data.skills && sessionResponse.data.skills.length > 0) {
+							const firstSkill = sessionResponse.data.skills[0];
+							this.activeSkill.id = firstSkill.id;
+							this.activeSkill.type = firstSkill.type;
+							console.log('已激活技能:', JSON.parse(JSON.stringify(this.activeSkill)));
+						} else {
+							console.warn('newsession响应中未找到可用技能(skills)，后续调用可能受影响。');
+						}
+
 						uni.setNavigationBarTitle({ title: `与 ${this.selectedAssistant.name} 对话中` });
 					} else {
 						console.error('创建会话失败或未返回有效的sessionId (检查后):', sessionResponse);
@@ -311,6 +353,7 @@ export default {
 			}
 			
 			const userMessage = {
+				id: `user-${Date.now()}`, // 为用户消息添加唯一ID
 				type: 'user',
 				content: this.inputMessage.trim(),
 				timestamp: Date.now()
@@ -323,16 +366,31 @@ export default {
 
 			try {
 				console.log(`准备发送消息: "${messageToSend}" 到 sessionId: ${this.sessionId}`);
-				uni.showLoading({ title: '正在发送...' });
+				// uni.showLoading({ title: '正在发送...' });
 				
 				const response = await KingdeeAgentService.sendChatMessage({
 					sessionId: this.sessionId,
-					userInput: messageToSend
+					userInput: messageToSend,
+					skillInfo: this.activeSkill
 				});
 
-				uni.hideLoading();
+				// uni.hideLoading();
 				console.log('消息发送成功，API响应:', response);
 				
+				// 提前创建思考面板
+				if (response && response.runId) {
+					const thinkingBlock = {
+						id: response.runId,
+						type: 'thinking_process',
+						status: 'in_progress',
+						title: '校园助手正在执行中...',
+						steps: [],
+						timestamp: Date.now()
+					};
+					this.chatMessages.push(thinkingBlock);
+					this.scrollToBottom();
+				}
+
 				// 记录返回的taskId，可能用于后续操作，如停止任务
 				if (response && response.taskId) {
 					this.currentTaskId = response.taskId;
@@ -340,7 +398,7 @@ export default {
 				}
 
 			} catch (error) {
-				uni.hideLoading();
+				// uni.hideLoading();
 				console.error('发送消息失败:', error);
 				this.addSystemMessage(`消息发送失败: ${error.message || '网络错误'}`);
 				// 可选：将发送失败的消息状态更新
@@ -436,6 +494,9 @@ export default {
 				case 'error':
 					this.handleErrorAction(action);
 					break;
+				case 'runStepChat': // 新增: 处理思考步骤
+					this.handleRunStepAction(action);
+					break;
 				default:
 					console.warn("未知的Action类型:", action.type);
 			}
@@ -459,17 +520,85 @@ export default {
 
 		handleChatAction(action) {
 			this.isAssistantTyping = false;
-			this.removeBotMessage("typing_indicator"); // 移除"正在输入"
+			this.removeBotMessage("typing_indicator");
+
+			// 如果这个chat消息关联着一个思考过程，那么就将该过程标记为完成
+			if (action.data && action.data.runId) {
+				const thinkingBlockIndex = this.chatMessages.findIndex(m => m.id === action.data.runId && m.type === 'thinking_process');
+				if (thinkingBlockIndex > -1) {
+					// 使用 $set 保证响应式更新
+					this.$set(this.chatMessages[thinkingBlockIndex], 'status', 'completed');
+					this.$set(this.chatMessages[thinkingBlockIndex], 'title', '执行完成');
+				}
+			}
 			
 			// 根据用户提供的正确日志结构，从 action.data.message 获取文本
 			// 并使用 action.data.taskId 作为唯一标识符来合并流式消息
 			if (action.data && action.data.message) {
-				this.addOrUpdateBotMessage(action.data.message, action.data.taskId);
+				// 使用一个唯一的ID来聚合最终的聊天消息，以避免与使用相同runId/taskId的"思考过程"面板冲突
+				const finalMessageId = `final-message-${action.data.runId || action.data.taskId}`;
+				this.addOrUpdateBotMessage(action.data.message, finalMessageId);
 			} else {
 				console.error("收到的chat action格式不正确，缺少 data.message:", action);
 			}
 		},
 		
+		handleRunStepAction(action) {
+			const { runId, runStepId, stepTypeName, message, stepStatus } = action.data;
+
+			if (!runId || !runStepId) return;
+
+			// 寻找或创建主思考面板
+			let thinkingBlock = this.chatMessages.find(m => m.id === runId && m.type === 'thinking_process');
+			if (!thinkingBlock) {
+				// 如果面板因为某种原因没有被提前创建，这里作为后备方案创建它
+				thinkingBlock = {
+					id: runId,
+					type: 'thinking_process',
+					status: 'in_progress',
+					title: '校园助手正在执行中...',
+					steps: [],
+					timestamp: Date.now()
+				};
+				this.chatMessages.push(thinkingBlock);
+			}
+			
+			// 寻找或创建步骤
+			let step = thinkingBlock.steps.find(s => s.id === runStepId);
+			if (!step) {
+				step = {
+					id: runStepId,
+					title: stepTypeName,
+					displayContent: '',
+					isJson: false,
+					isExpanded: false
+				};
+				
+				// 处理步骤内容
+				let content = message;
+				try {
+					const parsed = JSON.parse(content);
+					// 如果解析成功，美化JSON并标记
+					step.displayContent = JSON.stringify(parsed, null, 2);
+					step.isJson = true;
+				} catch (e) {
+					// 如果不是JSON字符串，直接使用
+					step.displayContent = content;
+					step.isJson = false;
+				}
+				
+				thinkingBlock.steps.push(step);
+				this.$forceUpdate(); // 强制刷新UI以显示新步骤
+				this.scrollToBottom();
+			}
+		},
+
+		toggleStep(message, step) {
+			step.isExpanded = !step.isExpanded;
+			// 强制UI更新
+			this.$forceUpdate();
+		},
+
 		handleTaskAction(action) {
 			const taskData = action.task;
 			const existingTaskIndex = this.ongoingTasks.findIndex(t => t.id === taskData.taskId);
@@ -557,10 +686,20 @@ export default {
 					this.reconnectInterval = null;
 				}
 				this.addSystemMessage("智能助手连接成功！");
+
+				// 新增：开启心跳
+				this.startHeartbeat();
 			});
 
 			this.websocketTask.onMessage((res) => {
 				console.log('收到WebSocket消息:', res.data);
+
+				// 新增：处理心跳回声，避免JSON解析错误
+				if (typeof res.data === 'string' && res.data.startsWith('Echo:')) {
+					console.log('❤️ 心跳响应 (Pong) 已收到。');
+					return; // 是心跳回声，直接忽略，不进行解析
+				}
+
 				try {
 					const payload = JSON.parse(res.data);
 					// 调用我们已经写好的Webhook处理逻辑
@@ -579,6 +718,10 @@ export default {
 			this.websocketTask.onClose((res) => {
 				console.log('🔌 WebSocket 连接已关闭', res);
 				this.websocketConnected = false;
+				
+				// 新增：停止心跳
+				this.stopHeartbeat();
+
 				if (this.reconnectInterval) return; // 防止重复设置
 				
 				this.addSystemMessage("与助手连接已断开，尝试重新连接...");
@@ -588,6 +731,36 @@ export default {
 					this.connectWebSocket();
 				}, 5000); // 每5秒重连一次
 			});
+		},
+		
+		// --- 新增：心跳相关方法 ---
+		startHeartbeat() {
+			// 先清除旧的，以防万一
+			this.stopHeartbeat(); 
+			
+			console.log('❤️ 启动WebSocket心跳...');
+			this.heartbeatInterval = setInterval(() => {
+				if (this.websocketConnected) {
+					const pingMessage = JSON.stringify({ type: 'ping' });
+					this.websocketTask.send({
+						data: pingMessage,
+						success: () => {
+							console.log('❤️ 心跳发送: ping');
+						},
+						fail: (err) => {
+							console.error('💔 心跳发送失败:', err);
+						}
+					});
+				}
+			}, 30000); // 每30秒发送一次
+		},
+
+		stopHeartbeat() {
+			if (this.heartbeatInterval) {
+				console.log('💔 停止WebSocket心跳...');
+				clearInterval(this.heartbeatInterval);
+				this.heartbeatInterval = null;
+			}
 		}
 	},
 	onUnload() {
@@ -603,6 +776,8 @@ export default {
 			clearInterval(this.reconnectInterval);
 			this.reconnectInterval = null;
 		}
+		// 新增：清除心跳定时器
+		this.stopHeartbeat();
 	}
 }
 </script>
@@ -700,18 +875,120 @@ export default {
 	border-radius: 20rpx;
 	margin: 0 20rpx;
 	word-break: break-all;
+	background-color: #ffffff;
+	box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
 }
 
 .system-message .message-bubble {
-	background-color: #007AFF;
-	color: #ffffff;
+	background-color: #E6F2FF;
+	color: #333;
 	border-top-left-radius: 0;
 }
 
 .user-message .message-bubble {
-	background-color: #E0E0E0;
+	background-color: #ffffff;
 	color: #333333;
 	border-top-right-radius: 0;
+}
+
+/* New Styles for Thinking Process */
+.thinking-process-container {
+	margin: 20rpx 0;
+	padding: 20rpx;
+	background-color: #ffffff;
+	border-radius: 20rpx;
+	box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.08);
+}
+
+.thinking-header {
+	display: flex;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+
+.spinner {
+	width: 32rpx;
+	height: 32rpx;
+	border: 4rpx solid #007AFF;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-right: 20rpx;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.status-icon-completed {
+	width: 40rpx;
+	height: 40rpx;
+	margin-right: 16rpx;
+}
+
+.thinking-title {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.steps-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10rpx;
+}
+
+.step-item {
+	background-color: #f8f8f8;
+	border-radius: 15rpx;
+	overflow: hidden;
+}
+
+.step-header {
+	display: flex;
+	align-items: center;
+	padding: 20rpx;
+	cursor: pointer;
+}
+
+.status-icon-step {
+	width: 32rpx;
+	height: 32rpx;
+	margin-right: 16rpx;
+}
+
+.step-title {
+	flex: 1;
+	font-size: 26rpx;
+	color: #555;
+}
+
+.arrow-icon {
+	width: 30rpx;
+	height: 30rpx;
+	transition: transform 0.2s ease-in-out;
+}
+
+.arrow-icon.expanded {
+	transform: rotate(90deg);
+}
+
+.step-content {
+	padding: 0 20rpx 20rpx 68rpx;
+	background-color: #f8f8f8;
+	font-size: 24rpx;
+	color: #666;
+	word-break: break-all;
+}
+
+.step-content pre {
+	white-space: pre-wrap;
+	font-family: 'Courier New', Courier, monospace;
+	background-color: #efefef;
+	padding: 15rpx;
+	border-radius: 10rpx;
 }
 
 /* 任务面板 */
@@ -757,23 +1034,23 @@ export default {
 			height: 100%;
 	}
 
-	.task-info {
+ .task-info {
  margin-left: 80rpx;
 	}
 
-	.task-title {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
+ .task-title {
+ font-size: 28rpx;
+ font-weight: bold;
+ color: #333;
 	}
 
-	.task-desc {
+ .task-desc {
 		font-size: 24rpx;
  color: #666;
  margin: 10rpx 0;
 	}
 
-	.progress-bar {
+ .progress-bar {
 	height: 10rpx;
 	background-color: #f0f0f0;
 	border-radius: 5rpx;
@@ -781,17 +1058,17 @@ export default {
  margin: 10rpx 0;
 	}
 
-	.progress-fill {
+ .progress-fill {
 		height: 100%;
  background-color: #007AFF;
 	}
 	
-	.task-time {
+ .task-time {
 	font-size: 24rpx;
 		color: #999;
 	}
 
-	.task-status {
+ .task-status {
 		position: absolute;
  top: 20rpx;
 	right: 20rpx;

@@ -608,6 +608,181 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ... existing styles ... */
 .assistant-page.data-v-411d5278 {
 	display: flex;
@@ -687,16 +862,114 @@
 	border-radius: 20rpx;
 	margin: 0 20rpx;
 	word-break: break-all;
+	background-color: #ffffff;
+	box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
 }
 .system-message .message-bubble.data-v-411d5278 {
-	background-color: #007AFF;
-	color: #ffffff;
+	background-color: #E6F2FF;
+	color: #333;
 	border-top-left-radius: 0;
 }
 .user-message .message-bubble.data-v-411d5278 {
-	background-color: #E0E0E0;
+	background-color: #ffffff;
 	color: #333333;
 	border-top-right-radius: 0;
+}
+/* New Styles for Thinking Process */
+.thinking-process-container.data-v-411d5278 {
+	margin: 20rpx 0;
+	padding: 20rpx;
+	background-color: #ffffff;
+	border-radius: 20rpx;
+	box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.08);
+}
+.thinking-header.data-v-411d5278 {
+	display: flex;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+.spinner.data-v-411d5278 {
+	width: 32rpx;
+	height: 32rpx;
+	border: 4rpx solid #007AFF;
+	border-top-color: transparent;
+	border-radius: 50%;
+	-webkit-animation: spin-data-v-411d5278 1s linear infinite;
+	        animation: spin-data-v-411d5278 1s linear infinite;
+	margin-right: 20rpx;
+}
+@-webkit-keyframes spin-data-v-411d5278 {
+to {
+		-webkit-transform: rotate(360deg);
+		        transform: rotate(360deg);
+}
+}
+@keyframes spin-data-v-411d5278 {
+to {
+		-webkit-transform: rotate(360deg);
+		        transform: rotate(360deg);
+}
+}
+.status-icon-completed.data-v-411d5278 {
+	width: 40rpx;
+	height: 40rpx;
+	margin-right: 16rpx;
+}
+.thinking-title.data-v-411d5278 {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+}
+.steps-list.data-v-411d5278 {
+	display: flex;
+	flex-direction: column;
+	gap: 10rpx;
+}
+.step-item.data-v-411d5278 {
+	background-color: #f8f8f8;
+	border-radius: 15rpx;
+	overflow: hidden;
+}
+.step-header.data-v-411d5278 {
+	display: flex;
+	align-items: center;
+	padding: 20rpx;
+	cursor: pointer;
+}
+.status-icon-step.data-v-411d5278 {
+	width: 32rpx;
+	height: 32rpx;
+	margin-right: 16rpx;
+}
+.step-title.data-v-411d5278 {
+	flex: 1;
+	font-size: 26rpx;
+	color: #555;
+}
+.arrow-icon.data-v-411d5278 {
+	width: 30rpx;
+	height: 30rpx;
+	transition: -webkit-transform 0.2s ease-in-out;
+	transition: transform 0.2s ease-in-out;
+	transition: transform 0.2s ease-in-out, -webkit-transform 0.2s ease-in-out;
+}
+.arrow-icon.expanded.data-v-411d5278 {
+	-webkit-transform: rotate(90deg);
+	        transform: rotate(90deg);
+}
+.step-content.data-v-411d5278 {
+	padding: 0 20rpx 20rpx 68rpx;
+	background-color: #f8f8f8;
+	font-size: 24rpx;
+	color: #666;
+	word-break: break-all;
+}
+.step-content ._pre.data-v-411d5278 {
+	white-space: pre-wrap;
+	font-family: 'Courier New', Courier, monospace;
+	background-color: #efefef;
+	padding: 15rpx;
+	border-radius: 10rpx;
 }
 /* 任务面板 */
 .task-panel.data-v-411d5278 {
@@ -739,9 +1012,9 @@
  margin-left: 80rpx;
 }
 .task-title.data-v-411d5278 {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
+ font-size: 28rpx;
+ font-weight: bold;
+ color: #333;
 }
 .task-desc.data-v-411d5278 {
 		font-size: 24rpx;

@@ -10785,12 +10785,12 @@ var KingdeeAgentService = /*#__PURE__*/function () {
     key: "sendChatMessage",
     value: function () {
       var _sendChatMessage = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee8(_ref) {
-        var sessionId, userInput, chatTraceId, requestBody, response, errorMsg;
+        var sessionId, userInput, skillInfo, chatTraceId, requestBody, response, errorMsg;
         return _regenerator.default.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
-                sessionId = _ref.sessionId, userInput = _ref.userInput;
+                sessionId = _ref.sessionId, userInput = _ref.userInput, skillInfo = _ref.skillInfo;
                 console.log("Initiating sendChatMessage with sessionId: ".concat(sessionId));
                 _context8.prev = 2;
                 _context8.next = 5;
@@ -10806,50 +10806,57 @@ var KingdeeAgentService = /*#__PURE__*/function () {
                     query: userInput // 修正：用户输入应在 message.query 中
                   }
                   // 根据新文档，此接口不需要 assistantId, callbackUrl, stream等参数
-                };
+                }; // 新增：如果传入了有效的技能信息，则添加到message对象中
 
+                if (skillInfo && skillInfo.id && skillInfo.type) {
+                  requestBody.message.skillId = skillInfo.id;
+                  requestBody.message.skillType = skillInfo.type;
+                  console.log("Request will be sent with specific skill:", skillInfo);
+                } else {
+                  console.warn("No valid skillInfo provided, sending a generic chat message.");
+                }
                 console.log("Sending chat message with new request body:", JSON.stringify(requestBody));
 
                 // 使用通用的request工具发送请求
-                _context8.next = 10;
+                _context8.next = 11;
                 return (0, _request.request)({
                   url: "".concat(BASE_URL, "/chat"),
                   method: 'POST',
                   data: requestBody
                   // token会由request拦截器自动添加
                 });
-              case 10:
+              case 11:
                 response = _context8.sent;
                 console.log("Raw Chat response object (from request util):", JSON.stringify(response));
 
                 // 检查 Kingdee API 返回的业务状态
                 if (!(response && response.status === true && response.data && response.data.traceId)) {
-                  _context8.next = 17;
+                  _context8.next = 18;
                   break;
                 }
                 console.log("Chat message sent successfully (Kingdee status:true, traceId present). Returning .data part:", response.data);
                 return _context8.abrupt("return", response.data);
-              case 17:
+              case 18:
                 // 如果Kingdee API返回业务失败
                 errorMsg = "Kingdee chat API returned an error or unexpected format. Response: ".concat(JSON.stringify(response));
                 console.error(errorMsg);
                 throw new Error(response.message || '聊天接口返回失败');
-              case 20:
-                _context8.next = 26;
+              case 21:
+                _context8.next = 27;
                 break;
-              case 22:
-                _context8.prev = 22;
+              case 23:
+                _context8.prev = 23;
                 _context8.t0 = _context8["catch"](2);
                 // 捕获请求或逻辑中的任何错误
                 console.error("Error in sendChatMessage service:", _context8.t0.message, _context8.t0);
                 // 重新抛出错误，以便上层可以捕获并处理
                 throw _context8.t0;
-              case 26:
+              case 27:
               case "end":
                 return _context8.stop();
             }
           }
-        }, _callee8, this, [[2, 22]]);
+        }, _callee8, this, [[2, 23]]);
       }));
       function sendChatMessage(_x6) {
         return _sendChatMessage.apply(this, arguments);

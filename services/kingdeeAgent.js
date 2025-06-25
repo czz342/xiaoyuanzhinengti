@@ -443,7 +443,8 @@ class KingdeeAgentService {
   // 发送聊天消息
   static async sendChatMessage({
     sessionId,
-    userInput
+    userInput,
+    skillInfo // 新增：接收技能信息
     /* assistantId is not needed for this call per new docs */
   }) {
     console.log(`Initiating sendChatMessage with sessionId: ${sessionId}`);
@@ -462,6 +463,15 @@ class KingdeeAgentService {
         }
         // 根据新文档，此接口不需要 assistantId, callbackUrl, stream等参数
       };
+
+      // 新增：如果传入了有效的技能信息，则添加到message对象中
+      if (skillInfo && skillInfo.id && skillInfo.type) {
+        requestBody.message.skillId = skillInfo.id;
+        requestBody.message.skillType = skillInfo.type;
+        console.log(`Request will be sent with specific skill:`, skillInfo);
+      } else {
+        console.warn(`No valid skillInfo provided, sending a generic chat message.`);
+      }
 
       console.log(`Sending chat message with new request body:`, JSON.stringify(requestBody));
 

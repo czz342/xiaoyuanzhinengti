@@ -162,7 +162,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://ambien-temple-below-viewing.trycloudflare.com",
+      tunnelUrl: "https://florida-sbjct-largely-me.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -228,9 +228,14 @@ var _default = {
       isAssistantTyping: false,
       assistants: [],
       selectedAssistant: null,
+      activeSkill: {
+        id: null,
+        type: null
+      },
       websocketTask: null,
       websocketConnected: false,
-      reconnectInterval: null
+      reconnectInterval: null,
+      heartbeatInterval: null // 新增：心跳定时器
     };
   },
   onLoad: function onLoad() {
@@ -270,7 +275,7 @@ var _default = {
     initializeAssistant: function initializeAssistant() {
       var _this2 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var assistantsResponse, targetAssistantId, targetAssistantName, foundAssistant, assistantIdToUse, callbackUrlToUse, sessionResponse, errMsg;
+        var assistantsResponse, targetAssistantId, targetAssistantName, foundAssistant, assistantIdToUse, callbackUrlToUse, sessionResponse, firstSkill, errMsg;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -297,12 +302,12 @@ var _default = {
               case 11:
                 _this2.assistants = assistantsResponse.data;
                 if (!(_this2.assistants && _this2.assistants.length > 0)) {
-                  _context2.next = 45;
+                  _context2.next = 46;
                   break;
                 }
                 // 目标助手的ID和名称
-                targetAssistantId = "2243055074412593152";
-                targetAssistantName = "预约助手"; // 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
+                targetAssistantId = "2224845143255547904";
+                targetAssistantName = "校园助手"; // 尝试通过ID查找助手，如果找不到，再尝试通过名称查找
                 foundAssistant = _this2.assistants.find(function (assistant) {
                   return assistant.id === targetAssistantId;
                 });
@@ -368,18 +373,27 @@ var _default = {
                 sessionResponse.data && typeof sessionResponse.data.sessionId === 'string' &&
                 // 确保 sessionId 是字符串
                 sessionResponse.data.sessionId.length > 0)) {
-                  _context2.next = 39;
+                  _context2.next = 40;
                   break;
                 }
-                // 确保 sessionId 不是空字符串
                 _this2.sessionId = sessionResponse.data.sessionId;
                 console.log('新会话创建成功，Session ID:', _this2.sessionId);
+
+                // 新增：从响应中提取并保存第一个技能的信息
+                if (sessionResponse.data.skills && sessionResponse.data.skills.length > 0) {
+                  firstSkill = sessionResponse.data.skills[0];
+                  _this2.activeSkill.id = firstSkill.id;
+                  _this2.activeSkill.type = firstSkill.type;
+                  console.log('已激活技能:', JSON.parse(JSON.stringify(_this2.activeSkill)));
+                } else {
+                  console.warn('newsession响应中未找到可用技能(skills)，后续调用可能受影响。');
+                }
                 uni.setNavigationBarTitle({
                   title: "\u4E0E ".concat(_this2.selectedAssistant.name, " \u5BF9\u8BDD\u4E2D")
                 });
-                _context2.next = 43;
+                _context2.next = 44;
                 break;
-              case 39:
+              case 40:
                 console.error('创建会话失败或未返回有效的sessionId (检查后):', sessionResponse);
                 // 抛出更具体的错误信息，如果可能的话
                 errMsg = '创建会话失败或未返回有效的sessionId';
@@ -391,22 +405,22 @@ var _default = {
                   errMsg = "\u521B\u5EFA\u4F1A\u8BDDAPI\u54CD\u5E94\u72B6\u6001\u975E\u6210\u529F (status: ".concat(sessionResponse.status, ")");
                 }
                 throw new Error((sessionResponse === null || sessionResponse === void 0 ? void 0 : sessionResponse.message) || errMsg);
-              case 43:
-                _context2.next = 47;
+              case 44:
+                _context2.next = 48;
                 break;
-              case 45:
+              case 46:
                 console.warn('未获取到助手列表，或列表为空');
                 _this2.chatMessages.unshift({
                   type: 'system',
                   content: '抱歉，助手列表为空，无法初始化会话。'
                 });
-              case 47:
+              case 48:
                 uni.hideLoading();
                 console.log('初始化完成');
-                _context2.next = 57;
+                _context2.next = 58;
                 break;
-              case 51:
-                _context2.prev = 51;
+              case 52:
+                _context2.prev = 52;
                 _context2.t0 = _context2["catch"](1);
                 uni.hideLoading();
                 console.error('初始化AI助手失败:', {
@@ -421,19 +435,19 @@ var _default = {
                   content: '抱歉，AI助手连接失败，请稍后重试。'
                 }];
                 throw _context2.t0;
-              case 57:
+              case 58:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[1, 51]]);
+        }, _callee2, null, [[1, 52]]);
       }))();
     },
     // 发送消息
     sendMessage: function sendMessage() {
       var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
-        var userMessage, messageToSend, response, lastMessageIndex;
+        var userMessage, messageToSend, response, thinkingBlock, lastMessageIndex;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
@@ -460,6 +474,8 @@ var _default = {
                 return _context3.abrupt("return");
               case 7:
                 userMessage = {
+                  id: "user-".concat(Date.now()),
+                  // 为用户消息添加唯一ID
                   type: 'user',
                   content: _this3.inputMessage.trim(),
                   timestamp: Date.now()
@@ -470,30 +486,43 @@ var _default = {
                 _this3.inputMessage = ''; // 立刻清空输入框
                 _context3.prev = 12;
                 console.log("\u51C6\u5907\u53D1\u9001\u6D88\u606F: \"".concat(messageToSend, "\" \u5230 sessionId: ").concat(_this3.sessionId));
-                uni.showLoading({
-                  title: '正在发送...'
-                });
-                _context3.next = 17;
+                // uni.showLoading({ title: '正在发送...' });
+                _context3.next = 16;
                 return _kingdeeAgent.default.sendChatMessage({
                   sessionId: _this3.sessionId,
-                  userInput: messageToSend
+                  userInput: messageToSend,
+                  skillInfo: _this3.activeSkill
                 });
-              case 17:
+              case 16:
                 response = _context3.sent;
-                uni.hideLoading();
+                // uni.hideLoading();
                 console.log('消息发送成功，API响应:', response);
+
+                // 提前创建思考面板
+                if (response && response.runId) {
+                  thinkingBlock = {
+                    id: response.runId,
+                    type: 'thinking_process',
+                    status: 'in_progress',
+                    title: '校园助手正在执行中...',
+                    steps: [],
+                    timestamp: Date.now()
+                  };
+                  _this3.chatMessages.push(thinkingBlock);
+                  _this3.scrollToBottom();
+                }
 
                 // 记录返回的taskId，可能用于后续操作，如停止任务
                 if (response && response.taskId) {
                   _this3.currentTaskId = response.taskId;
                   console.log('记录当前任务ID:', _this3.currentTaskId);
                 }
-                _context3.next = 30;
+                _context3.next = 28;
                 break;
-              case 23:
-                _context3.prev = 23;
+              case 22:
+                _context3.prev = 22;
                 _context3.t0 = _context3["catch"](12);
-                uni.hideLoading();
+                // uni.hideLoading();
                 console.error('发送消息失败:', _context3.t0);
                 _this3.addSystemMessage("\u6D88\u606F\u53D1\u9001\u5931\u8D25: ".concat(_context3.t0.message || '网络错误'));
                 // 可选：将发送失败的消息状态更新
@@ -504,12 +533,12 @@ var _default = {
                     content: userMessage.content + ' (发送失败)'
                   }));
                 }
-              case 30:
+              case 28:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[12, 23]]);
+        }, _callee3, null, [[12, 22]]);
       }))();
     },
     addSystemMessage: function addSystemMessage(content) {
@@ -605,6 +634,10 @@ var _default = {
         case 'error':
           this.handleErrorAction(action);
           break;
+        case 'runStepChat':
+          // 新增: 处理思考步骤
+          this.handleRunStepAction(action);
+          break;
         default:
           console.warn("未知的Action类型:", action.type);
       }
@@ -627,15 +660,90 @@ var _default = {
     },
     handleChatAction: function handleChatAction(action) {
       this.isAssistantTyping = false;
-      this.removeBotMessage("typing_indicator"); // 移除"正在输入"
+      this.removeBotMessage("typing_indicator");
+
+      // 如果这个chat消息关联着一个思考过程，那么就将该过程标记为完成
+      if (action.data && action.data.runId) {
+        var thinkingBlockIndex = this.chatMessages.findIndex(function (m) {
+          return m.id === action.data.runId && m.type === 'thinking_process';
+        });
+        if (thinkingBlockIndex > -1) {
+          // 使用 $set 保证响应式更新
+          this.$set(this.chatMessages[thinkingBlockIndex], 'status', 'completed');
+          this.$set(this.chatMessages[thinkingBlockIndex], 'title', '执行完成');
+        }
+      }
 
       // 根据用户提供的正确日志结构，从 action.data.message 获取文本
       // 并使用 action.data.taskId 作为唯一标识符来合并流式消息
       if (action.data && action.data.message) {
-        this.addOrUpdateBotMessage(action.data.message, action.data.taskId);
+        // 使用一个唯一的ID来聚合最终的聊天消息，以避免与使用相同runId/taskId的"思考过程"面板冲突
+        var finalMessageId = "final-message-".concat(action.data.runId || action.data.taskId);
+        this.addOrUpdateBotMessage(action.data.message, finalMessageId);
       } else {
         console.error("收到的chat action格式不正确，缺少 data.message:", action);
       }
+    },
+    handleRunStepAction: function handleRunStepAction(action) {
+      var _action$data2 = action.data,
+        runId = _action$data2.runId,
+        runStepId = _action$data2.runStepId,
+        stepTypeName = _action$data2.stepTypeName,
+        message = _action$data2.message,
+        stepStatus = _action$data2.stepStatus;
+      if (!runId || !runStepId) return;
+
+      // 寻找或创建主思考面板
+      var thinkingBlock = this.chatMessages.find(function (m) {
+        return m.id === runId && m.type === 'thinking_process';
+      });
+      if (!thinkingBlock) {
+        // 如果面板因为某种原因没有被提前创建，这里作为后备方案创建它
+        thinkingBlock = {
+          id: runId,
+          type: 'thinking_process',
+          status: 'in_progress',
+          title: '校园助手正在执行中...',
+          steps: [],
+          timestamp: Date.now()
+        };
+        this.chatMessages.push(thinkingBlock);
+      }
+
+      // 寻找或创建步骤
+      var step = thinkingBlock.steps.find(function (s) {
+        return s.id === runStepId;
+      });
+      if (!step) {
+        step = {
+          id: runStepId,
+          title: stepTypeName,
+          displayContent: '',
+          isJson: false,
+          isExpanded: false
+        };
+
+        // 处理步骤内容
+        var content = message;
+        try {
+          var parsed = JSON.parse(content);
+          // 如果解析成功，美化JSON并标记
+          step.displayContent = JSON.stringify(parsed, null, 2);
+          step.isJson = true;
+        } catch (e) {
+          // 如果不是JSON字符串，直接使用
+          step.displayContent = content;
+          step.isJson = false;
+        }
+        thinkingBlock.steps.push(step);
+        this.$forceUpdate(); // 强制刷新UI以显示新步骤
+        this.scrollToBottom();
+      }
+    },
+    toggleStep: function toggleStep(message, step) {
+      step.isExpanded = !step.isExpanded;
+      // 强制UI更新
+      this.$forceUpdate();
     },
     handleTaskAction: function handleTaskAction(action) {
       var taskData = action.task;
@@ -724,9 +832,19 @@ var _default = {
           _this6.reconnectInterval = null;
         }
         _this6.addSystemMessage("智能助手连接成功！");
+
+        // 新增：开启心跳
+        _this6.startHeartbeat();
       });
       this.websocketTask.onMessage(function (res) {
         console.log('收到WebSocket消息:', res.data);
+
+        // 新增：处理心跳回声，避免JSON解析错误
+        if (typeof res.data === 'string' && res.data.startsWith('Echo:')) {
+          console.log('❤️ 心跳响应 (Pong) 已收到。');
+          return; // 是心跳回声，直接忽略，不进行解析
+        }
+
         try {
           var payload = JSON.parse(res.data);
           // 调用我们已经写好的Webhook处理逻辑
@@ -743,6 +861,9 @@ var _default = {
       this.websocketTask.onClose(function (res) {
         console.log('🔌 WebSocket 连接已关闭', res);
         _this6.websocketConnected = false;
+
+        // 新增：停止心跳
+        _this6.stopHeartbeat();
         if (_this6.reconnectInterval) return; // 防止重复设置
 
         _this6.addSystemMessage("与助手连接已断开，尝试重新连接...");
@@ -751,6 +872,36 @@ var _default = {
           _this6.connectWebSocket();
         }, 5000); // 每5秒重连一次
       });
+    },
+    // --- 新增：心跳相关方法 ---
+    startHeartbeat: function startHeartbeat() {
+      var _this7 = this;
+      // 先清除旧的，以防万一
+      this.stopHeartbeat();
+      console.log('❤️ 启动WebSocket心跳...');
+      this.heartbeatInterval = setInterval(function () {
+        if (_this7.websocketConnected) {
+          var pingMessage = JSON.stringify({
+            type: 'ping'
+          });
+          _this7.websocketTask.send({
+            data: pingMessage,
+            success: function success() {
+              console.log('❤️ 心跳发送: ping');
+            },
+            fail: function fail(err) {
+              console.error('💔 心跳发送失败:', err);
+            }
+          });
+        }
+      }, 30000); // 每30秒发送一次
+    },
+    stopHeartbeat: function stopHeartbeat() {
+      if (this.heartbeatInterval) {
+        console.log('💔 停止WebSocket心跳...');
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = null;
+      }
     }
   },
   onUnload: function onUnload() {
@@ -766,6 +917,8 @@ var _default = {
       clearInterval(this.reconnectInterval);
       this.reconnectInterval = null;
     }
+    // 新增：清除心跳定时器
+    this.stopHeartbeat();
   }
 };
 exports.default = _default;
