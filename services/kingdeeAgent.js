@@ -614,6 +614,115 @@ class KingdeeAgentService {
       }
     });
   }
+
+  /**
+   * @description 根据学号和日期获取个人教室预约记录
+   * @param {string} studentId - 学号
+   * @param {string} date - 查询日期, "YYYY-MM-DD"
+   */
+  static async getPersonalClassroomBookings(studentId, date) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_classroom/lb77_tbl_reservations/getPersonalClassroomBookings',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_booking_date: date,
+          lb77_studentid_number: studentId
+        },
+        pageSize: 50, // 获取足够多的记录
+        pageNo: 1
+      }
+    });
+  }
+
+  /**
+   * @description 获取所有自习室列表
+   */
+  static async getStudyRoomList() {
+    return request({
+      url: '/kapi/v2/lb77/lb77_studyrooms/lb77_studyrooms/getStudyRoomList',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: 200 // 获取足够多的自习室
+      }
+    });
+  }
+
+  /**
+   * 保存自习室座位预约
+   * @param {Object} bookingData - 预约数据
+   * @returns {Promise<Object>}
+   */
+  static saveSeatBooking(bookingData) {
+    const requestPayload = {
+      data: [bookingData]
+    };
+    // 注意：这里的URL与查询类不同，需要特殊指定
+    const url = `/kapi/v2/lb77/lb77_studyrooms/lb77_studyroomreservation/saveSeatBooking`;
+    return request({
+      url: url,
+      method: 'POST',
+      data: requestPayload
+    });
+  }
+
+  /**
+   * @description 根据自习室ID获取其所有座位列表
+   * @param {string} studyRoomId - 自习室ID
+   */
+  static async getSeatListByRoom(studyRoomId) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_studyrooms/lb77_studyroom_seats/getSeatListByRoom',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_studyroom_id_number: studyRoomId
+        },
+        pageSize: 500 // 假设一个自习室座位不超过500
+      }
+    });
+  }
+
+  /**
+   * @description 根据自习室ID和日期查询座位预约记录
+   * @param {string} studyRoomId - 自习室ID
+   * @param {string} date - 查询日期 "YYYY-MM-DD"
+   */
+  static async getSeatBookingsByDate(studyRoomId, date) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_studyrooms/lb77_studyroomreservation/getSeatBookingsByDate',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_seat_id_lb77_studyroom_id_number: studyRoomId,
+          lb77_booking_date: date
+        },
+        pageSize: 500 // 假设一个自习室一天预约记录不超过500
+      }
+    });
+  }
+
+  // 新增：根据学生ID和日期获取其个人的自习室预约记录
+  static async getPersonalStudyRoomBookings(studentId, date) {
+    const apiName = 'getPersonalSeatBookings';
+    const requestData = {
+      data: {
+        lb77_student_id_number: studentId,
+        lb77_booking_date: date,
+      },
+      pageSize: 100, // 获取足够多的记录，以防分页问题
+      pageNo: 1
+    };
+    
+    const response = await request({
+      url: `/kapi/v2/lb77/lb77_studyrooms/lb77_studyroomreservation/${apiName}`,
+      method: 'POST',
+      data: requestData
+    });
+
+    return response;
+  }
 }
 
 export default KingdeeAgentService; 

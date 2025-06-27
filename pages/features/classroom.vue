@@ -177,6 +177,12 @@
 			
 			<button class="submit-btn" :disabled="selectedTimeSlots.length === 0" @tap="submitBooking">提交预约</button>
 		</view>
+		
+		<!-- 我的预约 FAB -->
+		<view class="fab" @tap="goToMyReservations">
+			<image class="fab-icon" src="/static/images/预约凭证.png"></image>
+			<text class="fab-text">我的预约</text>
+		</view>
 	</view>
 </template>
 
@@ -587,6 +593,11 @@ export default {
 			}
 			// 筛选后清空已选中的教室，避免UI显示异常
 			this.selectedRoom = null;
+		},
+		goToMyReservations() {
+			uni.navigateTo({
+				url: '/pages/features/my-classroom-reservations'
+			});
 		}
 	}
 }
@@ -1030,8 +1041,41 @@ export default {
 	border-radius: 45rpx;
 }
 
-.submit-btn[disabled] {
-	background-color: #cccccc;
-	color: #FFFFFF;
+.submit-btn:disabled {
+	background-color: #C8C7CC;
+	cursor: not-allowed;
+}
+
+/* 我的预约 FAB */
+.fab {
+	position: fixed;
+	bottom: 160rpx;
+	right: 40rpx;
+	background-color: #007AFF;
+	color: white;
+	border-radius: 50px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20rpx 30rpx;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	z-index: 1000;
+	transition: background-color 0.3s;
+}
+
+.fab:active {
+	background-color: #0056b3;
+}
+
+.fab-icon {
+	width: 40rpx;
+	height: 40rpx;
+	margin-right: 10rpx;
+}
+
+.fab-text {
+	font-size: 28rpx;
+	font-weight: 500;
+	color: white;
 }
 </style> 

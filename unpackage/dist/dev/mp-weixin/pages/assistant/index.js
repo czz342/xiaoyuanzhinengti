@@ -102,11 +102,32 @@ var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
+  var l1 = _vm.__map(_vm.chatMessages, function (msg, index) {
+    var $orig = _vm.__get_orig(msg)
+    var l0 =
+      !(msg.type === "user" || msg.type === "system") &&
+      msg.type === "thinking_process" &&
+      msg.isThinkingVisible
+        ? _vm.__map(msg.steps, function (step, stepIndex) {
+            var $orig = _vm.__get_orig(step)
+            var m0 = _vm.getStepIcon(step.type)
+            return {
+              $orig: $orig,
+              m0: m0,
+            }
+          })
+        : null
+    return {
+      $orig: $orig,
+      l0: l0,
+    }
+  })
   var g0 = _vm.ongoingTasks.length
   _vm.$mp.data = Object.assign(
     {},
     {
       $root: {
+        l1: l1,
         g0: g0,
       },
     }
@@ -162,7 +183,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://florida-sbjct-largely-me.trycloudflare.com",
+      tunnelUrl: "https://solving-titans-roads-seekers.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -690,7 +711,8 @@ var _default = {
         runStepId = _action$data2.runStepId,
         stepTypeName = _action$data2.stepTypeName,
         message = _action$data2.message,
-        stepStatus = _action$data2.stepStatus;
+        stepStatus = _action$data2.stepStatus,
+        type = _action$data2.type;
       if (!runId || !runStepId) return;
 
       // 寻找或创建主思考面板
@@ -698,16 +720,20 @@ var _default = {
         return m.id === runId && m.type === 'thinking_process';
       });
       if (!thinkingBlock) {
-        // 如果面板因为某种原因没有被提前创建，这里作为后备方案创建它
         thinkingBlock = {
           id: runId,
           type: 'thinking_process',
           status: 'in_progress',
           title: '校园助手正在执行中...',
           steps: [],
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          isThinkingVisible: true // 默认展开
         };
+
         this.chatMessages.push(thinkingBlock);
+      } else {
+        // 如果已存在，确保它是可见的
+        this.$set(thinkingBlock, 'isThinkingVisible', true);
       }
 
       // 寻找或创建步骤
@@ -717,33 +743,74 @@ var _default = {
       if (!step) {
         step = {
           id: runStepId,
-          title: stepTypeName,
+          type: type,
+          // 保存步骤类型，如 'tool' 或 'llm'
+          title: stepTypeName || this.getStepTitle(action.data),
+          // 使用一个辅助函数获取标题
           displayContent: '',
           isJson: false,
-          isExpanded: false
+          isExpanded: false // 默认不展开步骤详情
         };
 
-        // 处理步骤内容
         var content = message;
         try {
           var parsed = JSON.parse(content);
-          // 如果解析成功，美化JSON并标记
           step.displayContent = JSON.stringify(parsed, null, 2);
           step.isJson = true;
         } catch (e) {
-          // 如果不是JSON字符串，直接使用
           step.displayContent = content;
           step.isJson = false;
         }
         thinkingBlock.steps.push(step);
-        this.$forceUpdate(); // 强制刷新UI以显示新步骤
-        this.scrollToBottom();
+      }
+      // 无论如何都强制UI更新，以防万一
+      this.$forceUpdate();
+      this.scrollToBottom();
+    },
+    toggleThinkingVisibility: function toggleThinkingVisibility(messageIndex) {
+      var msg = this.chatMessages[messageIndex];
+      if (msg) {
+        this.$set(msg, 'isThinkingVisible', !msg.isThinkingVisible);
       }
     },
-    toggleStep: function toggleStep(message, step) {
-      step.isExpanded = !step.isExpanded;
-      // 强制UI更新
-      this.$forceUpdate();
+    toggleStep: function toggleStep(messageIndex, stepIndex) {
+      var msg = this.chatMessages[messageIndex];
+      if (msg && msg.steps && msg.steps[stepIndex]) {
+        var step = msg.steps[stepIndex];
+        this.$set(step, 'isExpanded', !step.isExpanded);
+      }
+    },
+    getStepTitle: function getStepTitle(runStep) {
+      // 根据runStep的类型和内容生成更友好的标题
+      // (这是一个示例，您可以根据实际的stepTypeName和message内容进行扩展)
+      if (runStep.stepTypeName && runStep.stepTypeName.includes('llm-chat')) {
+        return '正在思考...';
+      }
+      if (runStep.stepTypeName && runStep.stepTypeName.includes('tool-input')) {
+        try {
+          var toolCall = JSON.parse(runStep.message);
+          return "\u51C6\u5907\u8C03\u7528\u5DE5\u5177: ".concat(toolCall.tool_name || '未知工具');
+        } catch (e) {
+          return '准备调用工具';
+        }
+      }
+      if (runStep.stepTypeName && runStep.stepTypeName.includes('tool-output')) {
+        return '获取到工具返回结果';
+      }
+      return runStep.stepTypeName || '未知步骤';
+    },
+    getStepIcon: function getStepIcon(type) {
+      switch (type) {
+        case 'llm':
+          return '/static/images/assistant.png';
+        // 假设这是LLM思考的图标
+        case 'tool':
+          return '/static/images/settings.png';
+        // 假设这是工具调用的图标
+        default:
+          return '/static/images/ac.png';
+        // 默认图标
+      }
     },
     handleTaskAction: function handleTaskAction(action) {
       var taskData = action.task;

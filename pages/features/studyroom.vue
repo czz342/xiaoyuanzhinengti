@@ -12,7 +12,10 @@
     <view class="overview-section">
       <view class="overview-header">
         <text>自习室概览</text>
-        <view class="filter-container">
+        <view class="header-actions">
+          <picker @change="onTimeFilterChange" :value="selectedTimeFilterIndex" :range="timeFilterOptions.map(t => t.label)">
+            <view class="filter-text">{{timeFilterOptions[selectedTimeFilterIndex].label}}</view>
+          </picker>
           <picker @change="filterChange" :value="filterIndex" :range="filterOptions">
             <view class="filter-text">{{filterOptions[filterIndex]}}</view>
           </picker>
@@ -31,6 +34,9 @@
           <text class="stat-number">{{peakHours}}</text>
           <text class="stat-label">高峰时段</text>
         </view>
+      </view>
+      <view class="realtime-note">
+        <text>注：数据每5分钟自动更新一次</text>
       </view>
     </view>
     
@@ -72,10 +78,9 @@
         </view>
         <view class="seat-map">
           <view class="seat-layout">
-            <!-- 使用单一循环渲染所有座位 -->
-            <view class="seat-grid">
+            <view v-for="(row, rowIndex) in seats" :key="rowIndex" class="seat-row">
               <view 
-                v-for="seat in seats" 
+                v-for="seat in row" 
                 :key="seat.id" 
                 :class="['seat', seat.status]"
                 @tap="selectSeat(seat)"
@@ -118,7 +123,7 @@
           <text class="close-btn" @tap="closeVoucher">×</text>
         </view>
         <view class="voucher-qr">
-          <image src="/static/images/qr-code.png" mode="aspectFit"></image>
+          <image src="/static/images/qrcode.png" mode="aspectFit"></image>
         </view>
         <view class="voucher-info">
           <text class="voucher-room">{{voucher.room}}</text>
@@ -170,37 +175,50 @@
         </view>
       </view>
     </view>
+
+    <!-- 我的预约 FAB -->
+    <view class="fab" @tap="goToMyReservations">
+        <image class="fab-icon" src="/static/images/预约凭证.png"></image>
+        <text class="fab-text">我的预约</text>
+    </view>
   </view>
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
   data() {
     return {
       isExamPeriod: true, // 是否为考试周
       filterOptions: ['全部自习室', '图书馆', '教学楼', '空位优先'],
       filterIndex: 0,
-      rooms: [
-        { id: 1, name: '中央图书馆', location: '3层', total: 120, available: 45, level: 'low', type: '图书馆' },
-        { id: 2, name: '理科楼自习室', location: 'A区', total: 80, available: 12, level: 'medium', type: '教学楼' },
-        { id: 3, name: '工科楼自习室', location: 'B区', total: 60, available: 0, level: 'high', type: '教学楼' },
-        { id: 4, name: '文科楼自习室', location: 'C区', total: 50, available: 25, level: 'low', type: '教学楼' },
-        { id: 5, name: '图书馆西区', location: '2层', total: 90, available: 8, level: 'medium', type: '图书馆' }
+      timeFilterOptions: [
+        { label: '实时', type: 'now' },
+        { label: '早上', type: 'slot', start: '08:00', end: '12:00' },
+        { label: '下午', type: 'slot', start: '12:00', end: '18:00' },
+        { label: '晚上', type: 'slot', start: '18:00', end: '22:00' }
       ],
+      selectedTimeFilterIndex: 0,
+      baseRooms: [], // 从API获取的原始自习室列表
+      rooms: [], // 经过处理后用于展示的列表
+      allDailyBookings: [], // 存储所有自习室当天的所有预定记录
       showSeatSelector: false,
-      selectedRoom: {},
-      // 使用扁平化的座位数组
+      selectedRoom: null, // 将 'null' 作为初始值
       seats: [],
-      selectedSeatId: null,
+      allSeatsInSelectedRoom: [], // 新增：用于存储从API获取的原始座位列表
+      dailyBookings: [], // 存储一个自习室当天的所有预定记录
+      selectedSeat: null, // 将 'null' 作为初始值
       timeRange: [
-        ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
-        ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00']
+        ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'],
+        ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00']
       ],
-      timeIndex: [0, 4], // 默认8:00-13:00
+      timeIndex: [0, 1], // 默认8:00-09:00
       showVoucher: false,
       voucher: {},
       showRealtimePanel: false,
-      lastUpdateTime: '16:45'
+      lastUpdateTime: '', // 初始化为空
+      currentDate: ''
     }
   },
   computed: {
@@ -211,135 +229,482 @@ export default {
       return this.rooms.length;
     },
     peakHours() {
-      return '18:00-21:00';
+      if (!this.allDailyBookings) {
+          return '计算中...';
+      }
+      if (this.allDailyBookings.length === 0) {
+          return '任意时段';
+      }
+
+      // 定义时间槽，从 8:00 到 21:00，共14个一小时的槽
+      const totalSlots = 14;
+      const slotCounts = new Array(totalSlots).fill(0);
+      const baseHour = 8;
+
+      // 遍历所有预定记录
+      this.allDailyBookings.forEach(booking => {
+          const bookingStartSec = booking.lb77_start_time;
+          const bookingEndSec = booking.lb77_end_time;
+
+          // 检查这个预定与哪个时间槽重叠
+          for (let i = 0; i < totalSlots; i++) {
+              const slotStartSec = (baseHour + i) * 3600;
+              const slotEndSec = (baseHour + i + 1) * 3600;
+
+              // 重叠条件: (StartA < EndB) and (EndA > StartB)
+              if (bookingStartSec < slotEndSec && bookingEndSec > slotStartSec) {
+                  slotCounts[i]++;
+              }
+          }
+      });
+
+      const maxBookings = Math.max(...slotCounts);
+
+      if (maxBookings === 0) {
+          return '任意时段';
+      }
+
+      // 找出所有高峰时段的索引
+      const peakIndices = [];
+      slotCounts.forEach((count, index) => {
+          if (count === maxBookings) {
+              peakIndices.push(index);
+          }
+      });
+
+      // 寻找最长的连续高峰时段 (如果长度相同，则取当天最晚的那个)
+      let longestStreak = 0;
+      let currentStreak = 0;
+      let longestStreakEndIndex = -1;
+
+      for (let i = 0; i < peakIndices.length; i++) {
+          if (i > 0 && peakIndices[i] === peakIndices[i-1] + 1) {
+              currentStreak++;
+          } else {
+              currentStreak = 1;
+          }
+          if (currentStreak >= longestStreak) {
+              longestStreak = currentStreak;
+              longestStreakEndIndex = peakIndices[i];
+          }
+      }
+      
+      const startStreakIndex = longestStreakEndIndex - longestStreak + 1;
+      
+      const startHour = baseHour + startStreakIndex;
+      const endHour = baseHour + longestStreakEndIndex + 1;
+
+      const formatHour = (h) => `${String(h).padStart(2, '0')}:00`;
+
+      return `${formatHour(startHour)}-${formatHour(endHour)}`;
     },
     filteredRooms() {
-      if (this.filterIndex === 0) return this.rooms;
-      if (this.filterIndex === 1) return this.rooms.filter(room => room.type === '图书馆');
-      if (this.filterIndex === 2) return this.rooms.filter(room => room.type === '教学楼');
-      if (this.filterIndex === 3) return [...this.rooms].sort((a, b) => b.available - a.available);
-      return this.rooms;
+      let roomsToSort = [...this.rooms];
+      const filter = this.filterOptions[this.filterIndex];
+      
+      const libraryRooms = ['中央图书馆', '文科楼自习室'];
+      const teachingBuildingRooms = ['理科楼自习室', '综合楼自习室', '图书馆西区'];
+
+      if (filter === '图书馆') {
+        return roomsToSort.filter(room => room.name && libraryRooms.includes(room.name));
+      }
+      if (filter === '教学楼') {
+        return roomsToSort.filter(room => room.name && teachingBuildingRooms.includes(room.name));
+      }
+      if (filter === '空位优先') {
+        return roomsToSort.sort((a, b) => b.available - a.available);
+      }
+      return roomsToSort; // '全部自习室'
     }
   },
+  onLoad() {
+    // 初始化日期和时间
+    const now = new Date();
+    this.currentDate = this.formatDate(now);
+    this.lastUpdateTime = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    // 加载自习室数据，初次加载显示loading
+    this.fetchAndProcessRooms(true);
+  },
   methods: {
-    // 人流量文字描述
     crowdText(level) {
-      switch(level) {
-        case 'low': return '宽松';
-        case 'medium': return '适中';
-        case 'high': return '拥挤';
-        default: return '';
-      }
+      const map = {
+        'low': '空闲',
+        'medium': '适中',
+        'high': '拥挤',
+        'full': '无座'
+      };
+      return map[level] || '未知';
     },
-    // 人流量对应颜色
+    
     crowdColor(level) {
-      switch(level) {
-        case 'low': return '#4CAF50';
-        case 'medium': return '#FF9800';
-        case 'high': return '#F44336';
-        default: return '#999';
+      const map = {
+        'low': '#67c23a',    // 绿色
+        'medium': '#e6a23c', // 黄色
+        'high': '#f56c6c',   // 红色
+        'full': '#909399'    // 灰色
+      };
+      return map[level] || '#909399';
+    },
+
+    onTimeFilterChange(e) {
+      this.selectedTimeFilterIndex = e.detail.value;
+      this.processRoomsWithBookings(); // 当时间筛选变化时，重新计算
+    },
+
+    timeToSeconds(timeStr) {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(':');
+      if (parts.length < 2) return 0; // 避免 split 失败
+      return parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60;
+    },
+
+    formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+
+    processRoomsWithBookings() {
+      const filterOption = this.timeFilterOptions[this.selectedTimeFilterIndex];
+      
+      let targetStartSec;
+      let targetEndSec;
+
+      if (filterOption.type === 'now') {
+        const now = new Date();
+        targetStartSec = this.timeToSeconds(now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }));
+        targetEndSec = targetStartSec + 1; // Check for this instant
+      } else if (filterOption.type === 'slot') {
+        targetStartSec = this.timeToSeconds(filterOption.start);
+        targetEndSec = this.timeToSeconds(filterOption.end);
       }
-    },
-    // 筛选变化
-    filterChange(e) {
-      this.filterIndex = e.detail.value;
-    },
-    // 预约自习室
-    bookRoom(room) {
-      if (room.available <= 0) return;
-      
-      // 初始化座位数据
-      this.selectedRoom = room;
-      this.generateSeats();
-      this.showSeatSelector = true;
-      this.selectedSeatId = null;
-    },
-    // 生成座位数据 (使用扁平化数组)
-    generateSeats() {
-      this.seats = [];
-      const totalSeats = 40;  // 总共5行8列 = 40个座位
-      const occupiedCount = totalSeats - this.selectedRoom.available;
-      
-      // 创建所有座位
-      for (let row = 1; row <= 5; row++) {
-        for (let col = 1; col <= 8; col++) {
-          this.seats.push({
-            id: `${row}-${col}`,
-            label: `${row}-${col}`,
-            status: 'available',
-            row: row,
-            col: col
-          });
+
+      if (targetStartSec === undefined) return;
+
+      const bookingsByRoomId = {};
+      this.allDailyBookings.forEach(booking => {
+        const roomId = booking.lb77_seat_id_lb77_studyroom_id_number;
+        if (!bookingsByRoomId[roomId]) {
+          bookingsByRoomId[roomId] = [];
         }
-      }
-      
-      // 随机设置已占用的座位
-      const shuffled = [...this.seats].sort(() => 0.5 - Math.random());
-      const occupied = shuffled.slice(0, occupiedCount);
-      
-      occupied.forEach(seat => {
-        const index = this.seats.findIndex(s => s.id === seat.id);
-        if (index !== -1) {
-          this.seats[index].status = 'occupied';
-        }
+        bookingsByRoomId[roomId].push(booking);
       });
+      
+      this.rooms = this.baseRooms.map(room => {
+        const roomBookings = bookingsByRoomId[room.number] || [];
+        const occupiedSeats = new Set();
+
+        roomBookings.forEach(booking => {
+          // Check for time overlap: (StartA < EndB) and (EndA > StartB)
+          if (booking.lb77_start_time < targetEndSec && booking.lb77_end_time > targetStartSec) {
+            occupiedSeats.add(booking.lb77_seat_id_number);
+          }
+        });
+
+        const availableCount = room.lb77_total_seats - occupiedSeats.size;
+        const occupancy = room.lb77_total_seats > 0 ? (occupiedSeats.size / room.lb77_total_seats) : 1;
+        
+        let level = 'full';
+        if (occupancy < 1) level = 'high';
+        if (occupancy <= 0.7) level = 'medium';
+        if (occupancy <= 0.4) level = 'low';
+
+
+        return {
+          ...room,
+          id: room.number,
+          name: room.name,
+          location: room.lb77_location,
+          total: room.lb77_total_seats,
+          available: availableCount,
+          level: availableCount === 0 ? 'full' : level
+        };
+      });
+      this.lastUpdateTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    },
+
+    async fetchAndProcessRooms(showLoading = true) {
+      if (showLoading) {
+        uni.showLoading({ title: '加载实时数据...' });
+      }
+      try {
+        // 1. 获取自习室基础列表
+        const roomRes = await KingdeeAgentService.getStudyRoomList();
+        if (!roomRes || !roomRes.data || !roomRes.data.rows) {
+          throw new Error('获取自习室列表失败');
+        }
+        this.baseRooms = roomRes.data.rows;
+
+        // 2. 并行获取所有自习室当天的预约记录
+        const bookingPromises = this.baseRooms.map(room =>
+          KingdeeAgentService.getSeatBookingsByDate(room.number, this.currentDate)
+        );
+        const bookingResults = await Promise.all(bookingPromises);
+        
+        // 3. 将所有预约记录扁平化存储
+        this.allDailyBookings = bookingResults.flatMap(res => (res && res.data && res.data.rows) ? res.data.rows : []);
+
+        // 4. 根据默认筛选器（"当前"）更新一次视图
+        this.processRoomsWithBookings();
+
+      } catch (error) {
+        console.error("获取自习室数据失败:", error);
+        uni.showToast({ title: '数据加载失败', icon: 'none' });
+      } finally {
+        if (showLoading) {
+          uni.hideLoading();
+        }
+      }
+    },
+    
+    updateRoomAvailability() {
+      // 此方法已废弃，逻辑合并到 processRoomsWithBookings
+    },
+
+    updateSeatStatuses() {
+        if (!this.selectedRoom) return;
+
+        // 1. 获取选定的时间范围（秒）
+        const startTimeStr = this.timeRange[0][this.timeIndex[0]];
+        const endTimeStr = this.timeRange[1][this.timeIndex[1]];
+        const selectedStartSec = this.timeToSeconds(startTimeStr);
+        const selectedEndSec = this.timeToSeconds(endTimeStr);
+
+        // 2. 为每个座位创建一个预订时间的查找表，以提高效率
+        const bookingsBySeat = {};
+        this.dailyBookings.forEach(booking => {
+            if (!bookingsBySeat[booking.lb77_seat_id_number]) {
+                bookingsBySeat[booking.lb77_seat_id_number] = [];
+            }
+            bookingsBySeat[booking.lb77_seat_id_number].push({
+                start: booking.lb77_start_time,
+                end: booking.lb77_end_time
+            });
+        });
+
+        // 3. 映射所有座位，计算其状态和属性
+        const allSeatsWithStatus = this.allSeatsInSelectedRoom.map(seat => {
+            let isOccupied = false;
+            const seatBookings = bookingsBySeat[seat.number];
+            if (seatBookings) {
+                for (const booking of seatBookings) {
+                    // 检查时间重叠: (StartA < EndB) and (EndA > StartB)
+                    if (booking.start < selectedEndSec && booking.end > selectedStartSec) {
+                        isOccupied = true;
+                        break;
+                    }
+                }
+            }
+            
+            const parts = seat.name.split('-');
+            const row = parseInt(parts[parts.length - 2], 10);
+            
+            let status = isOccupied ? 'occupied' : 'available';
+            // 如果是当前选中的座位且未被占用，则保持'selected'状态
+            if (this.selectedSeat && this.selectedSeat.id === seat.number && !isOccupied) {
+                status = 'selected';
+            }
+
+            return {
+                id: seat.number,
+                label: parts.slice(-2).join('-'),
+                status: status,
+                row: isNaN(row) ? -1 : row
+            };
+        });
+        
+        // 4. 检查当前选中的座位是否在新的时间段内变得不可用
+        if (this.selectedSeat) {
+            const currentSelectedSeatInfo = allSeatsWithStatus.find(s => s.id === this.selectedSeat.id);
+            if (currentSelectedSeatInfo && currentSelectedSeatInfo.status === 'occupied') {
+                uni.showToast({
+                    title: '您选择的座位在该时段已被预约，请重新选择',
+                    icon: 'none'
+                });
+                this.selectedSeat = null; // 取消选择
+                // 再次遍历以更新该座位的状态为'occupied'
+                allSeatsWithStatus.forEach(s => {
+                    if (s.id === currentSelectedSeatInfo.id) {
+                        s.status = 'occupied';
+                    }
+                });
+            }
+        }
+        
+        // 5. 按行号对所有座位进行分组
+        const grouped = allSeatsWithStatus.reduce((acc, seat) => {
+          if (seat.row === -1) return acc; // 忽略无效的行号
+          if (!acc[seat.row]) {
+            acc[seat.row] = [];
+          }
+          acc[seat.row].push(seat);
+          return acc;
+        }, {});
+
+        // 6. 将分组后的对象转换为模板所需的二维数组
+        this.seats = Object.values(grouped);
+    },
+
+    fetchStudyRooms() {
+      // 此方法已废弃，逻辑合并到 fetchAndProcessRooms
+    },
+
+    async bookRoom(room) {
+      if (room.available <= 0) return;
+      this.selectedRoom = room;
+
+      uni.showLoading({ title: '加载座位...' });
+      try {
+        // 1. 获取该自习室的所有座位
+        const seatRes = await KingdeeAgentService.getSeatListByRoom(room.id);
+        if (!seatRes || !seatRes.data || !seatRes.data.rows) {
+          throw new Error("获取座位列表失败");
+        }
+        
+        // 2. 对座位进行排序（按行、列）
+        const sortedSeats = seatRes.data.rows.sort((a, b) => {
+          const partsA = a.name.split('-');
+          const partsB = b.name.split('-');
+          
+          if (partsA.length < 2 || partsB.length < 2) return 0;
+
+          const rowA = parseInt(partsA[partsA.length - 2], 10);
+          const colA = parseInt(partsA[partsA.length - 1], 10);
+          const rowB = parseInt(partsB[partsB.length - 2], 10);
+          const colB = parseInt(partsB[partsB.length - 1], 10);
+          
+          if (isNaN(rowA) || isNaN(colA) || isNaN(rowB) || isNaN(colB)) return 0;
+
+          if (rowA !== rowB) {
+            return rowA - rowB;
+          }
+          return colA - colB;
+        });
+        
+        this.allSeatsInSelectedRoom = sortedSeats;
+
+        // 3. 获取当天的预定记录
+        const bookingRes = await KingdeeAgentService.getSeatBookingsByDate(room.id, this.currentDate);
+        this.dailyBookings = (bookingRes && bookingRes.data && bookingRes.data.rows) ? bookingRes.data.rows : [];
+        
+        // 4. 根据默认时间更新座位状态
+        this.updateSeatStatuses();
+        
+        this.showSeatSelector = true;
+      } catch (error) {
+        console.error("加载座位信息失败:", error);
+        uni.showToast({ title: '加载座位失败', icon: 'none' });
+      } finally {
+        uni.hideLoading();
+        }
+    },
+    // 关闭座位选择器
+    closeSeatSelector() {
+      this.showSeatSelector = false;
+      this.selectedRoom = null;
+      this.seats = [];
+      this.dailyBookings = [];
+      this.selectedSeat = null;
+      this.allSeatsInSelectedRoom = [];
     },
     // 选择座位
     selectSeat(seat) {
-      if (seat.status === 'occupied') return;
+      if (seat.status === 'occupied') {
+        uni.showToast({ title: '该座位已被预约', icon: 'none' });
+        return;
+      }
       
-      // 取消之前选择的座位
-      if (this.selectedSeatId) {
-        const prevIndex = this.seats.findIndex(s => s.id === this.selectedSeatId);
-        if (prevIndex !== -1) {
-          this.seats[prevIndex].status = 'available';
+      const isCurrentlySelected = seat.status === 'selected';
+
+      // 如果有其他座位被选中，则先取消那个座位的选中状态
+      if (this.selectedSeat && this.selectedSeat.id !== seat.id) {
+          const flatSeats = this.seats.flat();
+          const prevSeat = flatSeats.find(s => s.id === this.selectedSeat.id);
+          if (prevSeat) {
+              prevSeat.status = 'available';
         }
       }
       
-      // 选择当前座位
-      if (this.selectedSeatId === seat.id) {
-        this.selectedSeatId = null;
+      // 切换当前点击座位的状态
+      if (isCurrentlySelected) {
+        seat.status = 'available';
+        this.selectedSeat = null;
       } else {
         seat.status = 'selected';
-        this.selectedSeatId = seat.id;
+        this.selectedSeat = seat;
       }
-    },
-    // 关闭座位选择
-    closeSeatSelector() {
-      this.showSeatSelector = false;
-      this.selectedSeatId = null;
     },
     // 时间选择变化
     timeChange(e) {
       this.timeIndex = e.detail.value;
+      // 重新计算并更新座位状态
+      this.updateSeatStatuses();
     },
     // 确认预约
-    confirmBooking() {
-      if (!this.selectedSeatId) {
-        uni.showToast({
-          title: '请先选择座位',
-          icon: 'none'
-        });
+    async confirmBooking() {
+      if (!this.selectedSeat || !this.selectedRoom) {
+        uni.showToast({ title: '数据错误，请重试', icon: 'none' });
         return;
       }
       
-      // 生成当前日期
-      const now = new Date();
-      const today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-      
-      // 生成预约凭证
-      this.voucher = {
-        room: this.selectedRoom.name,
-        seat: this.selectedSeatId,
-        date: today,
-        time: `${this.timeRange[0][this.timeIndex[0]]} - ${this.timeRange[1][this.timeIndex[1]]}`,
-        expire: `${today} ${this.timeRange[1][this.timeIndex[1]]}`
-      };
-      
-      this.showSeatSelector = false;
+      // uni.showLoading({ title: '正在提交预约...' }); // 移除加载弹窗
+
+      // 提前将需要的变量存储起来，防止后续被清空
+      const roomName = this.selectedRoom.name;
+      const seatLabel = this.selectedSeat.label;
+      const seatId = this.selectedSeat.id;
+      const startTime = this.timeRange[0][this.timeIndex[0]];
+      const endTime = this.timeRange[1][this.timeIndex[1]];
+
+      try {
+        const bookingData = {
+          number: `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: `预约单-${roomName}-${seatLabel}`,
+          lb77_booking_date: this.currentDate,
+          lb77_start_time: this.timeToSeconds(startTime),
+          lb77_end_time: this.timeToSeconds(endTime),
+          lb77_status: "已预约",
+          lb77_seat_id_number: seatId,
+          lb77_student_id_number: "645730151" //  暂时硬编码学生ID
+        };
+
+        const res = await KingdeeAgentService.saveSeatBooking(bookingData);
+
+        if (res && res.data && res.data.successCount > 0) {
+          // uni.hideLoading(); // 移除加载弹窗
+          uni.showToast({ title: '预约成功！', icon: 'success' });
+
+          this.closeSeatSelector();
+          
+          this.voucher = {
+            room: roomName,
+            seat: seatLabel,
+            date: this.currentDate,
+            time: `${startTime} - ${endTime}`,
+            expire: endTime
+          };
       this.showVoucher = true;
+          
+          // 重新加载所有房间的预订，静默刷新，不显示loading
+          this.fetchAndProcessRooms(false); 
+          
+        } else {
+          throw new Error((res && res.message) || '预约失败，请稍后再试');
+        }
+
+      } catch (error) {
+        // uni.hideLoading(); // 移除加载弹窗
+        console.error("确认预约失败:", error);
+        uni.showToast({
+          title: error.message || '提交预约时发生错误',
+          icon: 'none',
+          duration: 3000
+        });
+      }
     },
-    // 关闭预约凭证
+    // 关闭凭证
     closeVoucher() {
       this.showVoucher = false;
     },
@@ -388,8 +753,7 @@ export default {
         });
         
         // 更新时间
-        const now = new Date();
-        this.lastUpdateTime = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+        this.lastUpdateTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         
         uni.hideLoading();
         uni.showToast({
@@ -397,6 +761,14 @@ export default {
           icon: 'success'
         });
       }, 1000);
+    },
+    filterChange(e) {
+      this.filterIndex = e.detail.value;
+    },
+    goToMyReservations() {
+      uni.navigateTo({
+        url: '/pages/features/my-studyroom-reservations'
+      });
     }
   },
   onReady() {
@@ -453,7 +825,12 @@ export default {
   font-size: 28rpx;
   color: #666;
 }
-.filter-container {
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx; /* 增加按钮和筛选器之间的间距 */
+}
+.filter-container { /* 现在由 header-actions 替代 */
   font-size: 24rpx;
   color: #007AFF;
 }
@@ -637,16 +1014,24 @@ export default {
   overflow-x: auto;
 }
 .seat-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 改为 flex-start, 让所有行左对齐 */
   min-width: 650rpx;
   margin-bottom: 20rpx;
 }
-/* 更新的座位网格样式 */
-.seat-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+/* 新增：座位行样式 */
+.seat-row {
+  display: flex;
+  flex-wrap: nowrap; /* 确保一行内的座位不换行 */
+  justify-content: center;
   gap: 16rpx;
-  padding: 16rpx;
+  margin-bottom: 16rpx;
 }
+.seat-row:last-child {
+  margin-bottom: 0;
+}
+/* 移除 seat-grid 并调整 seat */
 .seat {
   width: 70rpx;
   height: 70rpx;
@@ -670,7 +1055,7 @@ export default {
 .seat-legend {
   display: flex;
   justify-content: center;
-  margin-top: 10rpx;
+  margin-top: 20rpx; /* 增加与座位图的间距 */
 }
 .legend-item {
   display: flex;
@@ -890,5 +1275,34 @@ export default {
   color: #999;
   text-align: center;
   border-top: 1rpx solid #eee;
+}
+
+/* 我的预约 FAB */
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border-radius: 50rpx;
+  padding: 16rpx 32rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0, 122, 255, 0.3);
+  z-index: 100;
+  transition: transform 0.2s ease;
+}
+.fab:active {
+  transform: scale(0.95);
+}
+.fab-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 12rpx;
+}
+.fab-text {
+  font-size: 28rpx;
+  font-weight: 500;
 }
 </style>

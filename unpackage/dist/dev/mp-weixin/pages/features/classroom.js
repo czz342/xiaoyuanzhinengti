@@ -681,6 +681,11 @@ var _default = {
       }
       // 筛选后清空已选中的教室，避免UI显示异常
       this.selectedRoom = null;
+    },
+    goToMyReservations: function goToMyReservations() {
+      uni.navigateTo({
+        url: '/pages/features/my-classroom-reservations'
+      });
     }
   }
 };

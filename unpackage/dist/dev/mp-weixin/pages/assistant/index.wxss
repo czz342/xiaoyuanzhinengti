@@ -783,6 +783,49 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ... existing styles ... */
 .assistant-page.data-v-411d5278 {
 	display: flex;
@@ -936,10 +979,11 @@ to {
 	padding: 20rpx;
 	cursor: pointer;
 }
-.status-icon-step.data-v-411d5278 {
+.step-icon.data-v-411d5278 {
 	width: 32rpx;
 	height: 32rpx;
 	margin-right: 16rpx;
+	flex-shrink: 0;
 }
 .step-title.data-v-411d5278 {
 	flex: 1;
@@ -1012,9 +1056,9 @@ to {
  margin-left: 80rpx;
 }
 .task-title.data-v-411d5278 {
- font-size: 28rpx;
- font-weight: bold;
- color: #333;
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
 }
 .task-desc.data-v-411d5278 {
 		font-size: 24rpx;

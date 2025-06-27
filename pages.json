@@ -25,6 +25,12 @@
 			}
 		},
 		{
+			"path": "pages/features/my-classroom-reservations",
+			"style": {
+				"navigationBarTitleText": "我的预约"
+			}
+		},
+		{
 			"path": "pages/features/library",
 			"style": {
 				"navigationBarTitleText": "图书借阅"
@@ -46,6 +52,12 @@
 			"path": "pages/features/studyroom",
 			"style": {
 				"navigationBarTitleText": "自习室预约"
+			}
+		},
+		{
+			"path": "pages/features/my-studyroom-reservations",
+			"style": {
+				"navigationBarTitleText": "我的预约"
 			}
 		},
 		{
@@ -146,6 +158,12 @@
 				"text": "个人中心"
 			}
 		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^uni-(.*)": "@/uni_modules/uni-$1/components/uni-$1/uni-$1.vue"
+		}
 	},
 	"uniIdRouter": {}
 }

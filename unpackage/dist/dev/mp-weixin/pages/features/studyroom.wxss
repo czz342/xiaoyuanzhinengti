@@ -45,7 +45,12 @@
   font-size: 28rpx;
   color: #666;
 }
-.filter-container.data-v-ee71dbea {
+.header-actions.data-v-ee71dbea {
+  display: flex;
+  align-items: center;
+  gap: 20rpx; /* 增加按钮和筛选器之间的间距 */
+}
+.filter-container.data-v-ee71dbea { /* 现在由 header-actions 替代 */
   font-size: 24rpx;
   color: #007AFF;
 }
@@ -230,16 +235,24 @@
   overflow-x: auto;
 }
 .seat-layout.data-v-ee71dbea {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 改为 flex-start, 让所有行左对齐 */
   min-width: 650rpx;
   margin-bottom: 20rpx;
 }
-/* 更新的座位网格样式 */
-.seat-grid.data-v-ee71dbea {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+/* 新增：座位行样式 */
+.seat-row.data-v-ee71dbea {
+  display: flex;
+  flex-wrap: nowrap; /* 确保一行内的座位不换行 */
+  justify-content: center;
   gap: 16rpx;
-  padding: 16rpx;
+  margin-bottom: 16rpx;
 }
+.seat-row.data-v-ee71dbea:last-child {
+  margin-bottom: 0;
+}
+/* 移除 seat-grid 并调整 seat */
 .seat.data-v-ee71dbea {
   width: 70rpx;
   height: 70rpx;
@@ -263,7 +276,7 @@
 .seat-legend.data-v-ee71dbea {
   display: flex;
   justify-content: center;
-  margin-top: 10rpx;
+  margin-top: 20rpx; /* 增加与座位图的间距 */
 }
 .legend-item.data-v-ee71dbea {
   display: flex;
@@ -481,5 +494,36 @@
   color: #999;
   text-align: center;
   border-top: 1rpx solid #eee;
+}
+/* 我的预约 FAB */
+.fab.data-v-ee71dbea {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border-radius: 50rpx;
+  padding: 16rpx 32rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0, 122, 255, 0.3);
+  z-index: 100;
+  transition: -webkit-transform 0.2s ease;
+  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, -webkit-transform 0.2s ease;
+}
+.fab.data-v-ee71dbea:active {
+  -webkit-transform: scale(0.95);
+          transform: scale(0.95);
+}
+.fab-icon.data-v-ee71dbea {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 12rpx;
+}
+.fab-text.data-v-ee71dbea {
+  font-size: 28rpx;
+  font-weight: 500;
 }
 

@@ -6,10 +6,10 @@
 				<view v-for="(msg, index) in chatMessages" :key="msg.id || index">
 					<!-- Existing User/System Message Blocks -->
 					<view v-if="msg.type === 'user' || msg.type === 'system'" class="chat-item" :class="{ 'user-message': msg.type === 'user', 'system-message': msg.type === 'system' }">
-						<view class="avatar">
-							<image :src="msg.type === 'user' ? userAvatar : botAvatar" mode="aspectFill"></image>
-						</view>
-						<view class="message-bubble">
+					<view class="avatar">
+						<image :src="msg.type === 'user' ? userAvatar : botAvatar" mode="aspectFill"></image>
+					</view>
+					<view class="message-bubble">
 							<text v-if="!msg.error">{{msg.content}}</text>
 							<text v-else style="color: #ff6666;">{{msg.content}}</text>
 						</view>
@@ -17,15 +17,16 @@
 					
 					<!-- New Thinking Process Block -->
 					<view v-else-if="msg.type === 'thinking_process'" class="thinking-process-container">
-						<view class="thinking-header">
+						<view class="thinking-header" @click="toggleThinkingVisibility(index)">
 							<view class="spinner" v-if="msg.status === 'in_progress'"></view>
 							<image v-else src="/static/images/ac.png" class="status-icon-completed"></image>
 							<text class="thinking-title">{{ msg.title }}</text>
+							<image src="/static/images/arrow-right.png" class="arrow-icon" :class="{ 'expanded': msg.isThinkingVisible }"></image>
 						</view>
-						<view class="steps-list">
-							<view v-for="step in msg.steps" :key="step.id" class="step-item">
-								<view class="step-header" @tap="toggleStep(msg, step)">
-									<image src="/static/images/ac.png" class="status-icon-step"></image>
+						<view v-if="msg.isThinkingVisible" class="steps-list">
+							<view v-for="(step, stepIndex) in msg.steps" :key="step.id" class="step-item">
+								<view class="step-header" @click.stop="toggleStep(index, stepIndex)">
+									<image class="step-icon" :src="getStepIcon(step.type)" mode="aspectFit"></image>
 									<text class="step-title">{{ step.title }}</text>
 									<image src="/static/images/arrow-right.png" class="arrow-icon" :class="{ 'expanded': step.isExpanded }"></image>
 								</view>
@@ -37,8 +38,8 @@
 						</view>
 					</view>
 				</view>
-			</view>
-		</scroll-view>
+				</view>
+			</scroll-view>
 		
 		<!-- 动态任务追踪面板 -->
 		<view class="task-panel" v-if="ongoingTasks.length > 0">
@@ -98,7 +99,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://florida-sbjct-largely-me.trycloudflare.com", 
+			tunnelUrl: "https://solving-titans-roads-seekers.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -390,7 +391,7 @@ export default {
 					this.chatMessages.push(thinkingBlock);
 					this.scrollToBottom();
 				}
-
+				
 				// 记录返回的taskId，可能用于后续操作，如停止任务
 				if (response && response.taskId) {
 					this.currentTaskId = response.taskId;
@@ -544,23 +545,26 @@ export default {
 		},
 		
 		handleRunStepAction(action) {
-			const { runId, runStepId, stepTypeName, message, stepStatus } = action.data;
+			const { runId, runStepId, stepTypeName, message, stepStatus, type } = action.data;
 
 			if (!runId || !runStepId) return;
 
 			// 寻找或创建主思考面板
 			let thinkingBlock = this.chatMessages.find(m => m.id === runId && m.type === 'thinking_process');
 			if (!thinkingBlock) {
-				// 如果面板因为某种原因没有被提前创建，这里作为后备方案创建它
 				thinkingBlock = {
 					id: runId,
 					type: 'thinking_process',
 					status: 'in_progress',
 					title: '校园助手正在执行中...',
 					steps: [],
-					timestamp: Date.now()
+					timestamp: Date.now(),
+					isThinkingVisible: true, // 默认展开
 				};
 				this.chatMessages.push(thinkingBlock);
+			} else {
+				// 如果已存在，确保它是可见的
+				this.$set(thinkingBlock, 'isThinkingVisible', true);
 			}
 			
 			// 寻找或创建步骤
@@ -568,37 +572,76 @@ export default {
 			if (!step) {
 				step = {
 					id: runStepId,
-					title: stepTypeName,
+					type: type, // 保存步骤类型，如 'tool' 或 'llm'
+					title: stepTypeName || this.getStepTitle(action.data), // 使用一个辅助函数获取标题
 					displayContent: '',
 					isJson: false,
-					isExpanded: false
+					isExpanded: false // 默认不展开步骤详情
 				};
 				
-				// 处理步骤内容
 				let content = message;
 				try {
 					const parsed = JSON.parse(content);
-					// 如果解析成功，美化JSON并标记
 					step.displayContent = JSON.stringify(parsed, null, 2);
 					step.isJson = true;
 				} catch (e) {
-					// 如果不是JSON字符串，直接使用
 					step.displayContent = content;
 					step.isJson = false;
 				}
 				
 				thinkingBlock.steps.push(step);
-				this.$forceUpdate(); // 强制刷新UI以显示新步骤
-				this.scrollToBottom();
+			}
+			// 无论如何都强制UI更新，以防万一
+			this.$forceUpdate(); 
+			this.scrollToBottom();
+		},
+
+		toggleThinkingVisibility(messageIndex) {
+			const msg = this.chatMessages[messageIndex];
+			if (msg) {
+				this.$set(msg, 'isThinkingVisible', !msg.isThinkingVisible);
 			}
 		},
 
-		toggleStep(message, step) {
-			step.isExpanded = !step.isExpanded;
-			// 强制UI更新
-			this.$forceUpdate();
+		toggleStep(messageIndex, stepIndex) {
+			const msg = this.chatMessages[messageIndex];
+			if (msg && msg.steps && msg.steps[stepIndex]) {
+				const step = msg.steps[stepIndex];
+				this.$set(step, 'isExpanded', !step.isExpanded);
+			}
 		},
-
+		
+		getStepTitle(runStep) {
+			// 根据runStep的类型和内容生成更友好的标题
+			// (这是一个示例，您可以根据实际的stepTypeName和message内容进行扩展)
+			if (runStep.stepTypeName && runStep.stepTypeName.includes('llm-chat')) {
+				return '正在思考...';
+			}
+			if (runStep.stepTypeName && runStep.stepTypeName.includes('tool-input')) {
+				try {
+					const toolCall = JSON.parse(runStep.message);
+					return `准备调用工具: ${toolCall.tool_name || '未知工具'}`;
+				} catch(e) {
+					return '准备调用工具';
+				}
+			}
+			if (runStep.stepTypeName && runStep.stepTypeName.includes('tool-output')) {
+				return '获取到工具返回结果';
+			}
+			return runStep.stepTypeName || '未知步骤';
+		},
+		
+		getStepIcon(type) {
+			switch (type) {
+				case 'llm':
+					return '/static/images/assistant.png'; // 假设这是LLM思考的图标
+				case 'tool':
+					return '/static/images/settings.png'; // 假设这是工具调用的图标
+				default:
+					return '/static/images/ac.png'; // 默认图标
+			}
+		},
+		
 		handleTaskAction(action) {
 			const taskData = action.task;
 			const existingTaskIndex = this.ongoingTasks.findIndex(t => t.id === taskData.taskId);
@@ -953,10 +996,11 @@ export default {
 	cursor: pointer;
 }
 
-.status-icon-step {
+.step-icon {
 	width: 32rpx;
 	height: 32rpx;
 	margin-right: 16rpx;
+	flex-shrink: 0;
 }
 
 .step-title {
@@ -1034,23 +1078,23 @@ export default {
 			height: 100%;
 	}
 
- .task-info {
+	.task-info {
  margin-left: 80rpx;
 	}
 
- .task-title {
- font-size: 28rpx;
- font-weight: bold;
- color: #333;
+	.task-title {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
 	}
 
- .task-desc {
+	.task-desc {
 		font-size: 24rpx;
  color: #666;
  margin: 10rpx 0;
 	}
 
- .progress-bar {
+	.progress-bar {
 	height: 10rpx;
 	background-color: #f0f0f0;
 	border-radius: 5rpx;
@@ -1058,17 +1102,17 @@ export default {
  margin: 10rpx 0;
 	}
 
- .progress-fill {
+	.progress-fill {
 		height: 100%;
  background-color: #007AFF;
 	}
 	
- .task-time {
+	.task-time {
 	font-size: 24rpx;
 		color: #999;
 	}
 
- .task-status {
+	.task-status {
 		position: absolute;
  top: 20rpx;
 	right: 20rpx;
