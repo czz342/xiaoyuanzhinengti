@@ -254,7 +254,16 @@ var _default = {
       selectedEquipments: []
     };
   },
-  onLoad: function onLoad() {
+  onLoad: function onLoad(options) {
+    var _this = this;
+    // 检查URL中是否有从智能助手跳转过来的 bookingId
+    if (options && options.bookingId) {
+      console.log('通过深层链接接收到bookingId:', options.bookingId);
+      // 延迟一小段时间再执行，确保页面基本渲染完成
+      setTimeout(function () {
+        _this.handleDeepLink(options.bookingId);
+      }, 500);
+    }
     this.fetchClassrooms();
 
     // 初始化日期选择器的范围
@@ -270,7 +279,7 @@ var _default = {
   },
   computed: {
     currentFloorRooms: function currentFloorRooms() {
-      var _this = this;
+      var _this2 = this;
       var building = this.buildings[this.currentBuildingIndex];
       var floor = this.floors[this.currentFloorIndex];
       if (this.roomsData[building] && this.roomsData[building][floor]) {
@@ -280,7 +289,7 @@ var _default = {
         if (this.selectedEquipments.length > 0) {
           rooms = rooms.filter(function (room) {
             // 检查该教室是否包含所有选中的设备
-            return _this.selectedEquipments.every(function (equipment) {
+            return _this2.selectedEquipments.every(function (equipment) {
               // 我们需要一种方式来检查room是否含有该equipment
               // 假设 room.equipment 是一个像 "投影仪,电脑" 这样的字符串
               return room.equipment && room.equipment.includes(equipment);
@@ -294,7 +303,7 @@ var _default = {
   },
   methods: {
     fetchClassrooms: function fetchClassrooms() {
-      var _this2 = this;
+      var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
         var response;
         return _regenerator.default.wrap(function _callee$(_context) {
@@ -310,7 +319,7 @@ var _default = {
               case 4:
                 response = _context.sent;
                 if (response && response.data && Array.isArray(response.data.rows)) {
-                  _this2.processClassroomData(response.data.rows);
+                  _this3.processClassroomData(response.data.rows);
                 } else {
                   console.error("获取到的教室数据格式不正确", response);
                   uni.showToast({
@@ -542,14 +551,14 @@ var _default = {
       return result;
     },
     submitBooking: function submitBooking() {
-      var _this3 = this;
+      var _this4 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
         var timeRange, _timeRange$split, _timeRange$split2, startTimeStr, endTimeStr, startTimeInHours, endTimeInHours, startTime, endTime, bookingData, response, _response$data, _response$data$result, _errorResult$errors, _errorResult$errors$, errorResult, errorMessage;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
-                if (!(_this3.selectedTimeSlots.length === 0)) {
+                if (!(_this4.selectedTimeSlots.length === 0)) {
                   _context2.next = 3;
                   break;
                 }
@@ -562,24 +571,24 @@ var _default = {
                 uni.showLoading({
                   title: '正在提交预约...'
                 });
-                timeRange = _this3.getSelectedTimeRange();
+                timeRange = _this4.getSelectedTimeRange();
                 _timeRange$split = timeRange.split('-'), _timeRange$split2 = (0, _slicedToArray2.default)(_timeRange$split, 2), startTimeStr = _timeRange$split2[0], endTimeStr = _timeRange$split2[1]; // 根据API报错信息和数据存储结果，时间参数必须为Integer类型，且单位为秒
                 startTimeInHours = parseInt(startTimeStr.split(':')[0]);
                 endTimeInHours = parseInt(endTimeStr.split(':')[0]);
                 startTime = startTimeInHours * 3600; // 将小时转换为秒
                 endTime = endTimeInHours * 3600; // 将小时转换为秒
                 bookingData = {
-                  number: _this3.generateRandomString(5),
+                  number: _this4.generateRandomString(5),
                   // 随机生成一个5位数的单据编号
-                  name: "\u9884\u7EA6-".concat(_this3.selectedRoom.name, "-").concat(_this3.currentDate),
-                  lb77_booking_date: _this3.currentDate,
+                  name: "\u9884\u7EA6-".concat(_this4.selectedRoom.name, "-").concat(_this4.currentDate),
+                  lb77_booking_date: _this4.currentDate,
                   lb77_start_time: startTime,
                   // 发送换算后的秒数, e.g., 28800
                   lb77_end_time: endTime,
                   // 发送换算后的秒数, e.g., 32400
                   lb77_status: 'confirmed',
                   // 状态直接设置为 confirmed
-                  lb77_classroom_id_number: _this3.selectedRoom.code // 关联教室的编号
+                  lb77_classroom_id_number: _this4.selectedRoom.code // 关联教室的编号
                 };
                 _context2.prev = 11;
                 _context2.next = 14;
@@ -590,16 +599,16 @@ var _default = {
                 if (response && response.data && response.data.successCount > 0) {
                   uni.showModal({
                     title: '预约成功',
-                    content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6".concat(_this3.selectedRoom.name, "\uFF0C\u65E5\u671F\uFF1A").concat(_this3.currentDate, "\uFF0C\u65F6\u95F4\uFF1A").concat(timeRange),
+                    content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6".concat(_this4.selectedRoom.name, "\uFF0C\u65E5\u671F\uFF1A").concat(_this4.currentDate, "\uFF0C\u65F6\u95F4\uFF1A").concat(timeRange),
                     showCancel: false,
                     success: function success(res) {
                       if (res.confirm) {
                         // 刷新当天的预定数据，以立即反映出刚刚完成的预定
-                        _this3.fetchBookingsForDate(_this3.currentDate);
+                        _this4.fetchBookingsForDate(_this4.currentDate);
 
                         // 重置选择
-                        _this3.selectedRoom = null;
-                        _this3.selectedTimeSlots = [];
+                        _this4.selectedRoom = null;
+                        _this4.selectedTimeSlots = [];
                       }
                     }
                   });
@@ -638,22 +647,22 @@ var _default = {
       this.mapY = e.detail.y;
     },
     fetchBookingsForDate: function fetchBookingsForDate(date) {
-      var _this4 = this;
+      var _this5 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
         var response;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                _this4.dailyBookings = []; // 查询前先清空
+                _this5.dailyBookings = []; // 查询前先清空
                 _context3.prev = 1;
                 _context3.next = 4;
                 return _kingdeeAgent.default.getClassroomBookings(date);
               case 4:
                 response = _context3.sent;
                 if (response && response.data && Array.isArray(response.data.rows)) {
-                  _this4.dailyBookings = response.data.rows;
-                  console.log("\u83B7\u53D6\u5230 ".concat(date, " \u7684 ").concat(_this4.dailyBookings.length, " \u6761\u9884\u5B9A\u8BB0\u5F55\u3002"));
+                  _this5.dailyBookings = response.data.rows;
+                  console.log("\u83B7\u53D6\u5230 ".concat(date, " \u7684 ").concat(_this5.dailyBookings.length, " \u6761\u9884\u5B9A\u8BB0\u5F55\u3002"));
                 }
                 _context3.next = 11;
                 break;
@@ -686,6 +695,20 @@ var _default = {
       uni.navigateTo({
         url: '/pages/features/my-classroom-reservations'
       });
+    },
+    handleDeepLink: function handleDeepLink(bookingId) {
+      // 此处为处理深层链接的逻辑
+      // 理想情况下，这里会调用API获取预约详情，然后用一个自定义的漂亮弹窗显示
+      // 作为第一步验证，我们先用一个简单的系统弹窗来确认功能是否跑通
+
+      uni.showModal({
+        title: '预约详情',
+        content: "\u60A8\u6B63\u5728\u67E5\u770B\u7684\u9884\u7EA6ID\u4E3A\uFF1A".concat(bookingId, "\u3002(\u6B64\u4E3A\u6DF1\u5C42\u94FE\u63A5\u6D4B\u8BD5)"),
+        showCancel: false,
+        confirmText: '知道了'
+      });
+
+      // 进阶操作：可以在这里根据bookingId去高亮某个教室，或执行其他UI更新
     }
   }
 };

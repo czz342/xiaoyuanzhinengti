@@ -4,6 +4,8 @@
 	flex-direction: column;
 	height: 100vh;
 	background-color: #F8F8F8;
+	padding-bottom: 20rpx; /* 为底部导航栏预留空间 */
+	box-sizing: border-box;
 }
 
 /* 搜索栏样式 */
@@ -121,8 +123,16 @@
 	height: 28rpx;
 	margin-left: 8rpx;
 }
-.book-list {
+.book-list-wrapper {
 	flex: 1;
+	position: relative;
+}
+.book-list {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 }
 .book-item {
 	display: flex;
@@ -195,12 +205,13 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	padding-top: 12rpx;
+	box-sizing: border-box;
 }
 .tab-item image {
 	width: 48rpx;
 	height: 48rpx;
-	margin-bottom: 6rpx;
+	margin-bottom: 2rpx;
 }
 .tab-item text {
 	font-size: 22rpx;
@@ -306,13 +317,14 @@
 	line-height: 1.5;
 	text-align: justify;
 }
-.detail-location, .detail-availability, .detail-duedate {
+.detail-location, .detail-availability, .detail-duedate, .detail-borrow-days, .detail-borrow-date, .detail-due-date-calc, .detail-item {
 	display: flex;
+	align-items: center; /* 垂直居中对齐 */
 	font-size: 26rpx;
 	color: #666;
 	margin-bottom: 10rpx;
 }
-.location-label, .availability-label, .duedate-label {
+.location-label, .availability-label, .duedate-label, .borrow-days-label, .borrow-date-label, .due-date-label, .detail-label {
 	width: 160rpx;
 }
 .availability-value.available {
@@ -419,5 +431,29 @@
 	color: #FFFFFF;
 	font-size: 30rpx;
 	border-radius: 40rpx;
+}
+.empty-list {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-top: 150rpx;
+	color: #999;
+}
+.empty-icon {
+	width: 120rpx;
+	height: 120rpx;
+	margin-bottom: 20rpx;
+}
+.book-status.overdue {
+	color: #FF3B30;
+	background-color: #FFEBEB;
+}
+.book-status.borrowing {
+	color: #007AFF;
+	background-color: #E6F2FF;
+}
+.book-status.returned {
+	background-color: #6c757d; /* 灰色状态 */
 }
 

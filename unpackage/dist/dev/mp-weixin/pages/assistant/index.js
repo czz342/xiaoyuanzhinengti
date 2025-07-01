@@ -102,9 +102,13 @@ var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  var l1 = _vm.__map(_vm.chatMessages, function (msg, index) {
+  var l2 = _vm.__map(_vm.chatMessages, function (msg, index) {
     var $orig = _vm.__get_orig(msg)
     var l0 =
+      (msg.type === "user" || msg.type === "system") && !msg.error
+        ? _vm.parseMessage(msg.content)
+        : null
+    var l1 =
       !(msg.type === "user" || msg.type === "system") &&
       msg.type === "thinking_process" &&
       msg.isThinkingVisible
@@ -120,14 +124,24 @@ var render = function () {
     return {
       $orig: $orig,
       l0: l0,
+      l1: l1,
     }
   })
   var g0 = _vm.ongoingTasks.length
+  if (!_vm._isMounted) {
+    _vm.e0 = function ($event, part) {
+      var _temp = arguments[arguments.length - 1].currentTarget.dataset,
+        _temp2 = _temp.eventParams || _temp["event-params"],
+        part = _temp2.part
+      var _temp, _temp2
+      return _vm.handleLinkClick(part.path)
+    }
+  }
   _vm.$mp.data = Object.assign(
     {},
     {
       $root: {
-        l1: l1,
+        l2: l2,
         g0: g0,
       },
     }
@@ -173,17 +187,113 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
-var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
 var _typeof2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/typeof */ 13));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
 var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent */ 43));
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://solving-titans-roads-seekers.trycloudflare.com",
+      tunnelUrl: "https://cent-group-parenting-animated.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -468,7 +578,7 @@ var _default = {
     sendMessage: function sendMessage() {
       var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
-        var userMessage, messageToSend, response, thinkingBlock, lastMessageIndex;
+        var messageToSend, userMessage, response, thinkingProcessPlaceholder, placeholder;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
@@ -483,83 +593,79 @@ var _default = {
                 });
                 return _context3.abrupt("return");
               case 3:
-                if (_this3.sessionId) {
-                  _context3.next = 7;
-                  break;
-                }
-                uni.showToast({
-                  title: '会话未建立，请稍后重试',
-                  icon: 'none'
-                });
-                console.error('sendMessage 失败: sessionId 为空');
-                return _context3.abrupt("return");
-              case 7:
+                // 核心修正：先将输入内容存入局部变量
+                messageToSend = _this3.inputMessage; // Add user message to chat list
                 userMessage = {
                   id: "user-".concat(Date.now()),
-                  // 为用户消息添加唯一ID
                   type: 'user',
-                  content: _this3.inputMessage.trim(),
+                  content: messageToSend,
                   timestamp: Date.now()
                 };
                 _this3.chatMessages.push(userMessage);
+
+                // 然后再清空输入框
+                _this3.inputMessage = '';
                 _this3.scrollToBottom();
-                messageToSend = _this3.inputMessage;
-                _this3.inputMessage = ''; // 立刻清空输入框
-                _context3.prev = 12;
-                console.log("\u51C6\u5907\u53D1\u9001\u6D88\u606F: \"".concat(messageToSend, "\" \u5230 sessionId: ").concat(_this3.sessionId));
-                // uni.showLoading({ title: '正在发送...' });
-                _context3.next = 16;
+                _context3.prev = 8;
+                _context3.next = 11;
                 return _kingdeeAgent.default.sendChatMessage({
                   sessionId: _this3.sessionId,
-                  userInput: messageToSend,
-                  skillInfo: _this3.activeSkill
+                  // 使用存好的局部变量发送
+                  userInput: messageToSend
                 });
-              case 16:
+              case 11:
                 response = _context3.sent;
-                // uni.hideLoading();
                 console.log('消息发送成功，API响应:', response);
-
-                // 提前创建思考面板
+                thinkingProcessPlaceholder = {
+                  id: "thinking-".concat(Date.now()),
+                  type: 'thinking_process',
+                  runId: null,
+                  title: 'AI思考中...',
+                  status: 'in_progress',
+                  isThinkingVisible: true,
+                  steps: []
+                };
+                _this3.chatMessages.push(thinkingProcessPlaceholder);
+                _this3.scrollToBottom();
                 if (response && response.runId) {
-                  thinkingBlock = {
-                    id: response.runId,
-                    type: 'thinking_process',
-                    status: 'in_progress',
-                    title: '校园助手正在执行中...',
-                    steps: [],
-                    timestamp: Date.now()
-                  };
-                  _this3.chatMessages.push(thinkingBlock);
-                  _this3.scrollToBottom();
+                  console.log('API同步响应中包含runId，立即更新占位符');
+                  placeholder = _this3.chatMessages.find(function (msg) {
+                    return msg.id === thinkingProcessPlaceholder.id;
+                  });
+                  if (placeholder) {
+                    _this3.$set(placeholder, 'runId', response.runId);
+                  }
                 }
-
-                // 记录返回的taskId，可能用于后续操作，如停止任务
-                if (response && response.taskId) {
-                  _this3.currentTaskId = response.taskId;
-                  console.log('记录当前任务ID:', _this3.currentTaskId);
-                }
-                _context3.next = 28;
+                _context3.next = 22;
                 break;
+              case 19:
+                _context3.prev = 19;
+                _context3.t0 = _context3["catch"](8);
+                // 用户指出，由于环境性能问题，超时是可预期的，
+                // 且不影响后续WebSocket消息的接收，因此不再将此错误显示在UI上。
+                // 我们仅在控制台记录此错误以供调试。
+                console.warn("\u53D1\u9001\u6D88\u606F\u65F6\u53D1\u751F\u53EF\u9884\u671F\u7684\u9519\u8BEF\uFF08\u901A\u5E38\u662F\u8D85\u65F6\uFF09: ".concat(_context3.t0.message));
+
+                /*
+                const errorId = `error-${Date.now()}`;
+                this.chatMessages.push({
+                	id: errorId,
+                	type: 'system',
+                	content: `发送失败: ${error.message}`,
+                	error: true,
+                	timestamp: Date.now()
+                });
+                this.scrollToBottom();
+                */
               case 22:
                 _context3.prev = 22;
-                _context3.t0 = _context3["catch"](12);
-                // uni.hideLoading();
-                console.error('发送消息失败:', _context3.t0);
-                _this3.addSystemMessage("\u6D88\u606F\u53D1\u9001\u5931\u8D25: ".concat(_context3.t0.message || '网络错误'));
-                // 可选：将发送失败的消息状态更新
-                lastMessageIndex = _this3.chatMessages.length - 1;
-                if (_this3.chatMessages[lastMessageIndex] === userMessage) {
-                  _this3.$set(_this3.chatMessages, lastMessageIndex, _objectSpread(_objectSpread({}, userMessage), {}, {
-                    error: true,
-                    content: userMessage.content + ' (发送失败)'
-                  }));
-                }
-              case 28:
+                return _context3.finish(22);
+              case 24:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[12, 22]]);
+        }, _callee3, null, [[8, 19, 22, 24]]);
       }))();
     },
     addSystemMessage: function addSystemMessage(content) {
@@ -641,131 +747,165 @@ var _default = {
       }
     },
     handleAction: function handleAction(action) {
-      console.log("处理Action:", action);
+      console.log('处理Action:', action);
+      var runId = action.data ? action.data.runId : null;
       switch (action.type) {
-        case 'waiting':
-          this.handleWaitingAction(action);
-          break;
-        case 'chat':
-          this.handleChatAction(action);
-          break;
-        case 'task':
-          this.handleTaskAction(action);
-          break;
-        case 'error':
-          this.handleErrorAction(action);
+        case 'identifySkill':
+        case 'streamDone':
+          // 识别到中控发来的新事件类型，暂不处理，仅消除报错
+          console.log("\u5DF2\u8BC6\u522B\u5E76\u5FFD\u7565Action\u7C7B\u578B: ".concat(action.type));
           break;
         case 'runStepChat':
-          // 新增: 处理思考步骤
-          this.handleRunStepAction(action);
+          {
+            // 使用块级作用域
+            if (!runId) {
+              console.warn('runStepChat消息中没有runId，无法处理:', action);
+              return;
+            }
+
+            // 核心逻辑：寻找正确的思考面板
+            // 1. 先尝试通过runId寻找已关联的面板
+            var thinkingProcess = this.chatMessages.find(function (msg) {
+              return msg.runId === runId;
+            });
+
+            // 2. 如果没找到，说明这是第一个携带runId的消息，需要认领占位符面板
+            if (!thinkingProcess) {
+              thinkingProcess = this.chatMessages.find(function (msg) {
+                return msg.type === 'thinking_process' && !msg.runId;
+              });
+              if (thinkingProcess) {
+                console.log("\u4E3A\u601D\u8003\u9762\u677F\u5360\u4F4D\u7B26\u5173\u8054\u4E0ArunId: ".concat(runId));
+                // 使用$set确保响应性
+                this.$set(thinkingProcess, 'runId', runId);
+              }
+            }
+
+            // 3. 如果仍然没有找到（异常情况），则创建一个新的
+            if (!thinkingProcess) {
+              console.warn("\u672A\u627E\u5230\u4E0ErunId ".concat(runId, " \u5339\u914D\u7684\u601D\u8003\u8FC7\u7A0B\uFF0C\u5C06\u521B\u5EFA\u4E00\u4E2A\u65B0\u7684\u3002"));
+              thinkingProcess = {
+                id: "thinking-".concat(runId),
+                type: 'thinking_process',
+                runId: runId,
+                title: 'AI思考中...',
+                status: 'in_progress',
+                isThinkingVisible: true,
+                steps: []
+              };
+              this.chatMessages.push(thinkingProcess);
+            }
+
+            // 更新思考过程的状态
+            if (thinkingProcess.status !== 'completed') {
+              thinkingProcess.status = 'in_progress';
+            }
+            var stepData = action.data;
+            var stepIndex = thinkingProcess.steps.findIndex(function (s) {
+              return s.id === stepData.runStepId;
+            });
+            var displayContent = this.formatStepContent(stepData.message);
+            var newStep = {
+              id: stepData.runStepId,
+              title: stepData.stepTypeName,
+              type: stepData.stepType,
+              status: stepData.stepStatus,
+              content: stepData.message,
+              displayContent: displayContent.content,
+              isJson: displayContent.isJson,
+              isExpanded: false // 默认折叠新步骤
+            };
+
+            if (stepIndex > -1) {
+              // 更新现有步骤
+              this.$set(thinkingProcess.steps, stepIndex, newStep);
+            } else {
+              // 添加新步骤
+              thinkingProcess.steps.push(newStep);
+            }
+            this.$forceUpdate(); // 强制视图更新
+            this.scrollToBottom();
+          }
+          break;
+        case 'chat':
+          {
+            // 使用块级作用域
+            if (!runId) {
+              console.warn('Chat消息中没有runId，无法处理:', action);
+              return;
+            }
+
+            // 定位到对应的思考过程
+            // 1. 先尝试通过runId寻找已关联的面板
+            var _thinkingProcess = this.chatMessages.find(function (msg) {
+              return msg.runId === runId;
+            });
+
+            // 2. 如果没找到，认领占位符面板 (处理AI直接回答的场景)
+            if (!_thinkingProcess) {
+              _thinkingProcess = this.chatMessages.find(function (msg) {
+                return msg.type === 'thinking_process' && !msg.runId;
+              });
+              if (_thinkingProcess) {
+                console.log("Chat\u6D88\u606F\u62B5\u8FBE\uFF0C\u4E3A\u601D\u8003\u9762\u677F\u5360\u4F4D\u7B26\u5173\u8054\u4E0ArunId: ".concat(runId));
+                this.$set(_thinkingProcess, 'runId', runId);
+              }
+            }
+            if (_thinkingProcess) {
+              // 当最终chat消息到达时，标记思考过程为完成
+              _thinkingProcess.status = 'completed';
+              _thinkingProcess.title = 'AI思考完成';
+            }
+            var messageData = action.data;
+            var messageId = "final-message-".concat(runId); // 使用runId确保唯一性
+
+            var finalMessage = this.chatMessages.find(function (msg) {
+              return msg.id === messageId;
+            });
+            if (finalMessage) {
+              // 追加内容
+              finalMessage.content += messageData.message;
+            } else {
+              // 创建新消息
+              finalMessage = {
+                id: messageId,
+                type: 'system',
+                content: messageData.message,
+                runId: runId,
+                // 关联runId
+                timestamp: Date.now()
+              };
+              this.chatMessages.push(finalMessage);
+            }
+            this.scrollToBottom();
+            this.$forceUpdate(); // 确保视图更新
+          }
+
+          break;
+        case 'waiting':
+          // 等待状态，可以用来显示一个通用的"处理中"状态，但我们已有思考面板，故忽略
+          console.log('收到waiting状态，暂不处理。');
           break;
         default:
-          console.warn("未知的Action类型:", action.type);
+          console.error('未知的Action类型:', action.type);
       }
     },
-    handleWaitingAction: function handleWaitingAction(action) {
-      if (action.waitState === 'start') {
-        this.isAssistantTyping = true;
-        this.addOrUpdateBotMessage("...", "typing_indicator");
-      } else {
-        // end
-        this.isAssistantTyping = false;
-        this.removeBotMessage("typing_indicator");
-      }
-    },
-    handleErrorAction: function handleErrorAction(action) {
-      var _action$data;
-      console.error("收到来自AI助手的错误:", action.data);
-      var errorMessage = ((_action$data = action.data) === null || _action$data === void 0 ? void 0 : _action$data.desc) || "助手返回了一个未知错误";
-      this.addSystemMessage("\u62B1\u6B49\uFF0C\u51FA\u9519\u4E86: ".concat(errorMessage));
-    },
-    handleChatAction: function handleChatAction(action) {
-      this.isAssistantTyping = false;
-      this.removeBotMessage("typing_indicator");
-
-      // 如果这个chat消息关联着一个思考过程，那么就将该过程标记为完成
-      if (action.data && action.data.runId) {
-        var thinkingBlockIndex = this.chatMessages.findIndex(function (m) {
-          return m.id === action.data.runId && m.type === 'thinking_process';
-        });
-        if (thinkingBlockIndex > -1) {
-          // 使用 $set 保证响应式更新
-          this.$set(this.chatMessages[thinkingBlockIndex], 'status', 'completed');
-          this.$set(this.chatMessages[thinkingBlockIndex], 'title', '执行完成');
-        }
-      }
-
-      // 根据用户提供的正确日志结构，从 action.data.message 获取文本
-      // 并使用 action.data.taskId 作为唯一标识符来合并流式消息
-      if (action.data && action.data.message) {
-        // 使用一个唯一的ID来聚合最终的聊天消息，以避免与使用相同runId/taskId的"思考过程"面板冲突
-        var finalMessageId = "final-message-".concat(action.data.runId || action.data.taskId);
-        this.addOrUpdateBotMessage(action.data.message, finalMessageId);
-      } else {
-        console.error("收到的chat action格式不正确，缺少 data.message:", action);
-      }
-    },
-    handleRunStepAction: function handleRunStepAction(action) {
-      var _action$data2 = action.data,
-        runId = _action$data2.runId,
-        runStepId = _action$data2.runStepId,
-        stepTypeName = _action$data2.stepTypeName,
-        message = _action$data2.message,
-        stepStatus = _action$data2.stepStatus,
-        type = _action$data2.type;
-      if (!runId || !runStepId) return;
-
-      // 寻找或创建主思考面板
-      var thinkingBlock = this.chatMessages.find(function (m) {
-        return m.id === runId && m.type === 'thinking_process';
-      });
-      if (!thinkingBlock) {
-        thinkingBlock = {
-          id: runId,
-          type: 'thinking_process',
-          status: 'in_progress',
-          title: '校园助手正在执行中...',
-          steps: [],
-          timestamp: Date.now(),
-          isThinkingVisible: true // 默认展开
+    formatStepContent: function formatStepContent(content) {
+      try {
+        // 尝试解析为JSON
+        var parsed = JSON.parse(content);
+        // 如果成功，格式化为带缩进的字符串
+        return {
+          content: JSON.stringify(parsed, null, 2),
+          isJson: true
         };
-
-        this.chatMessages.push(thinkingBlock);
-      } else {
-        // 如果已存在，确保它是可见的
-        this.$set(thinkingBlock, 'isThinkingVisible', true);
-      }
-
-      // 寻找或创建步骤
-      var step = thinkingBlock.steps.find(function (s) {
-        return s.id === runStepId;
-      });
-      if (!step) {
-        step = {
-          id: runStepId,
-          type: type,
-          // 保存步骤类型，如 'tool' 或 'llm'
-          title: stepTypeName || this.getStepTitle(action.data),
-          // 使用一个辅助函数获取标题
-          displayContent: '',
-          isJson: false,
-          isExpanded: false // 默认不展开步骤详情
+      } catch (e) {
+        // 如果解析失败，说明是普通文本
+        return {
+          content: content,
+          isJson: false
         };
-
-        var content = message;
-        try {
-          var parsed = JSON.parse(content);
-          step.displayContent = JSON.stringify(parsed, null, 2);
-          step.isJson = true;
-        } catch (e) {
-          step.displayContent = content;
-          step.isJson = false;
-        }
-        thinkingBlock.steps.push(step);
       }
-      // 无论如何都强制UI更新，以防万一
-      this.$forceUpdate();
-      this.scrollToBottom();
     },
     toggleThinkingVisibility: function toggleThinkingVisibility(messageIndex) {
       var msg = this.chatMessages[messageIndex];
@@ -799,18 +939,13 @@ var _default = {
       }
       return runStep.stepTypeName || '未知步骤';
     },
-    getStepIcon: function getStepIcon(type) {
-      switch (type) {
-        case 'llm':
-          return '/static/images/assistant.png';
-        // 假设这是LLM思考的图标
-        case 'tool':
-          return '/static/images/settings.png';
-        // 假设这是工具调用的图标
-        default:
-          return '/static/images/ac.png';
-        // 默认图标
-      }
+    getStepIcon: function getStepIcon(stepType) {
+      var icons = {
+        'llm': '/static/images/assistant.png',
+        'tool': '/static/images/settings.png',
+        'ac': '/static/images/ac.png'
+      };
+      return icons[stepType] || '/static/images/ac.png';
     },
     handleTaskAction: function handleTaskAction(action) {
       var taskData = action.task;
@@ -969,6 +1104,75 @@ var _default = {
         clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = null;
       }
+    },
+    parseMessage: function parseMessage(content) {
+      // 正则表达式，用于匹配 Markdown 链接 [文字](路径) 或裸露的 /pages/ 路径
+      var regex = /\[([^\]]+)\]\(([^)]+)\)|(\/pages\/[\w\/?=&.-]+)/g;
+      var parts = [];
+      var lastIndex = 0;
+      var match;
+      while ((match = regex.exec(content)) !== null) {
+        // 添加链接前的文本部分
+        if (match.index > lastIndex) {
+          parts.push({
+            type: 'text',
+            content: content.substring(lastIndex, match.index)
+          });
+        }
+
+        // 判断匹配到的是哪种链接
+        if (match[1] && match[2]) {
+          // 匹配到 Markdown 链接
+          parts.push({
+            type: 'link',
+            text: match[1],
+            path: match[2]
+          });
+        } else if (match[3]) {
+          // 匹配到裸露路径
+          parts.push({
+            type: 'link',
+            text: '点击查看详情',
+            path: match[3]
+          }); // 使用默认文本
+        }
+
+        lastIndex = regex.lastIndex;
+      }
+
+      // 添加最后一个链接后的文本部分
+      if (lastIndex < content.length) {
+        parts.push({
+          type: 'text',
+          content: content.substring(lastIndex)
+        });
+      }
+
+      // 如果没有找到任何链接，则返回包含整个内容的单个文本部分
+      return parts.length > 0 ? parts : [{
+        type: 'text',
+        content: content
+      }];
+    },
+    handleLinkClick: function handleLinkClick(path) {
+      if (!path || !path.startsWith('/pages/')) {
+        console.error('无效或不安全的页面路径:', path);
+        uni.showToast({
+          title: '无法跳转到该页面',
+          icon: 'none'
+        });
+        return;
+      }
+      uni.navigateTo({
+        url: path,
+        fail: function fail(err) {
+          console.error('跳转失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     }
   },
   onUnload: function onUnload() {

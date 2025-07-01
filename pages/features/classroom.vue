@@ -239,7 +239,16 @@ export default {
 			selectedEquipments: []
 		}
 	},
-	onLoad() {
+	onLoad(options) {
+		// 检查URL中是否有从智能助手跳转过来的 bookingId
+		if (options && options.bookingId) {
+			console.log('通过深层链接接收到bookingId:', options.bookingId);
+			// 延迟一小段时间再执行，确保页面基本渲染完成
+			setTimeout(() => {
+				this.handleDeepLink(options.bookingId);
+			}, 500);
+		}
+		
 		this.fetchClassrooms();
 		
 		// 初始化日期选择器的范围
@@ -598,6 +607,20 @@ export default {
 			uni.navigateTo({
 				url: '/pages/features/my-classroom-reservations'
 			});
+		},
+		handleDeepLink(bookingId) {
+			// 此处为处理深层链接的逻辑
+			// 理想情况下，这里会调用API获取预约详情，然后用一个自定义的漂亮弹窗显示
+			// 作为第一步验证，我们先用一个简单的系统弹窗来确认功能是否跑通
+			
+			uni.showModal({
+				title: '预约详情',
+				content: `您正在查看的预约ID为：${bookingId}。(此为深层链接测试)`,
+				showCancel: false,
+				confirmText: '知道了'
+			});
+			
+			// 进阶操作：可以在这里根据bookingId去高亮某个教室，或执行其他UI更新
 		}
 	}
 }

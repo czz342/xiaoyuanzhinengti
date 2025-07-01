@@ -71,9 +71,32 @@
 				selectedDate: '' // 用于存储选中的日期
 			};
 		},
-		onLoad() {
-			this.selectedDate = this.getFormattedDate(new Date());
-			this.fetchReservations();
+		onLoad(options) {
+			const {
+				reservationId,
+				date
+			} = options;
+
+			if (date) {
+				this.selectedDate = date;
+			} else {
+				this.selectedDate = this.getFormattedDate(new Date());
+			}
+
+			this.fetchReservations().then(() => {
+				if (reservationId && this.reservations.length > 0) {
+					const reservation = this.reservations.find(r => r.id === reservationId);
+					if (reservation) {
+						this.showQrCodeModal(reservation);
+					} else {
+						console.warn(`[my-studyroom-reservations] Reservation with id ${reservationId} not found on date ${this.selectedDate}`);
+						uni.showToast({
+							title: '未在指定日期找到预约记录',
+							icon: 'none'
+						});
+					}
+				}
+			});
 		},
 		methods: {
 			onDateChange(date) {

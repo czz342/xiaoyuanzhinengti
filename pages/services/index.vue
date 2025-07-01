@@ -160,35 +160,20 @@
 						<text class="card-time">{{currentTime}} 更新</text>
 					</view>
 					<view class="card-content">
-						<view class="heatmap-container">
-							<image src="/static/images/heatmap.png" mode="aspectFit" class="heatmap-image"></image>
-							<view class="heatmap-legend">
-								<view class="legend-item">
-									<view class="legend-color low"></view>
-									<text>空闲</text>
-								</view>
-								<view class="legend-item">
-									<view class="legend-color medium"></view>
-									<text>适中</text>
-								</view>
-								<view class="legend-item">
-									<view class="legend-color high"></view>
-									<text>拥挤</text>
-								</view>
-							</view>
+						<view class="charts-container">
+							<qiun-data-charts 
+								type="column"
+								:opts="chartOptions"
+								:chartData="chartData"
+								:errorShow="!chartData.categories || chartData.categories.length === 0"
+								error-message="暂无数据"
+							/>
 						</view>
-						<view class="canteen-recommendation">
-							<text class="recommendation-label">推荐食堂：</text>
-							<view class="canteen-badges">
-								<view class="canteen-badge">
-									<text>二食堂</text>
-									<view class="badge-status low"></view>
-								</view>
-								<view class="canteen-badge">
-									<text>四食堂</text>
-									<view class="badge-status medium"></view>
-								</view>
-							</view>
+						<view class="custom-legend">
+							<view class="legend-item"><view class="legend-color" style="background-color: #4cd964;"></view><text>空闲</text></view>
+							<view class="legend-item"><view class="legend-color" style="background-color: #FEEA9A;"></view><text>适中</text></view>
+							<view class="legend-item"><view class="legend-color" style="background-color: #ff9500;"></view><text>繁忙</text></view>
+							<view class="legend-item"><view class="legend-color" style="background-color: #ff3b30;"></view><text>拥挤</text></view>
 						</view>
 					</view>
 				</view>
@@ -222,7 +207,13 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+import qiunDataCharts from '@/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue';
+
 export default {
+	components: {
+		qiunDataCharts
+	},
 	data() {
 		return {
 			// 九宫格角标数据
@@ -244,6 +235,37 @@ export default {
 			// 时间数据
 			currentTime: '12:30',
 			nextClassTime: 45,
+
+			chartData: {},
+			chartOptions: {
+				padding: [15,15,0,5],
+				enableScroll: false,
+				legend: {
+					show: false
+				},
+				xAxis: {
+					disableGrid: true,
+					axisLine: false
+				},
+				yAxis: {
+					show: true,
+					disableGrid: true,
+					data: [{ 
+						min: 0,
+						max: 600
+					}]
+				},
+				extra: {
+					column: {
+						type: "group",
+						width: 20,
+						activeBgColor: "#000000",
+						activeBgOpacity: 0.08,
+						labelPosition: "top",
+						barBorderRadius: [4, 4, 0, 0]
+					}
+				}
+			},
 			
 			// 下一节课信息
 			nextClass: {
@@ -287,6 +309,10 @@ export default {
 	onLoad() {
 		// 页面加载时可以根据当前时间判断显示哪些推荐卡片
 		this.getCurrentTimeInfo();
+	},
+	onShow() {
+		this.updateTime();
+		this.fetchCanteenTraffic();
 	},
 	methods: {
 		navigateTo(url) {
@@ -345,6 +371,84 @@ export default {
 		checkIfExamPeriod() {
 			// 检查当前是否为考试周，这里用固定值模拟
 			return true;
+		},
+		updateTime() {
+			const now = new Date();
+			this.currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+		},
+		async fetchCanteenTraffic() {
+			try {
+				const canteenResponse = await KingdeeAgentService.getCanteenList();
+				if (!canteenResponse || !canteenResponse.data || !canteenResponse.data.rows) {
+					throw new Error("获取食堂列表失败");
+				}
+				
+				const canteens = canteenResponse.data.rows;
+				const now = new Date();
+				const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+				const endTime = this.formatDateTime(now);
+				const startTime = this.formatDateTime(oneHourAgo);
+
+				const trafficPromises = canteens.map(canteen => 
+					KingdeeAgentService.getTodaysCanteenOrders(canteen.number, startTime, endTime)
+				);
+				
+				const trafficResults = await Promise.all(trafficPromises);
+				
+				const categories = [];
+				const seriesData = [];
+				const displayMultiplier = 10;
+				
+				trafficResults.forEach((res, index) => {
+					const canteenName = canteens[index].name;
+					const trafficCount = (res && res.data) ? parseInt(res.data.totalCount, 10) : 0;
+					const displayCount = trafficCount * displayMultiplier;
+					
+					categories.push(canteenName);
+
+					let color = '';
+					if (displayCount <= 100) {
+						color = '#4cd964'; // Green
+					} else if (displayCount <= 300) {
+						color = '#FEEA9A'; // Light Yellow
+					} else if (displayCount <= 500) {
+						color = '#ff9500'; // Orange
+					} else {
+						color = '#ff3b30'; // Red
+					}
+
+					seriesData.push({
+						value: displayCount,
+						color: color
+					});
+				});
+
+				this.chartData = {
+					categories: categories,
+					series: [
+						{
+							name: "当前人流量",
+							data: seriesData
+						}
+					]
+				};
+
+			} catch (error) {
+				console.error("获取食堂人流数据失败:", error);
+				this.chartData = {
+					categories: [],
+					series: []
+				};
+			}
+		},
+		formatDateTime(date) {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			const hours = String(date.getHours()).padStart(2, '0');
+			const minutes = String(date.getMinutes()).padStart(2, '0');
+			const seconds = String(date.getSeconds()).padStart(2, '0');
+			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 		}
 	}
 }
@@ -603,95 +707,6 @@ export default {
 	color: #333;
 }
 
-/* 食堂人流量卡片样式 */
-.heatmap-container {
-	margin-bottom: 20rpx;
-}
-
-.heatmap-image {
-	width: 100%;
-	height: 200rpx;
-	border-radius: 10rpx;
-}
-
-.heatmap-legend {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 10rpx;
-}
-
-.legend-item {
-	display: flex;
-	align-items: center;
-	margin-left: 20rpx;
-	font-size: 22rpx;
-	color: #999;
-}
-
-.legend-color {
-	width: 20rpx;
-	height: 10rpx;
-	border-radius: 5rpx;
-	margin-right: 6rpx;
-}
-
-.legend-color.low {
-	background-color: #00B578;
-}
-
-.legend-color.medium {
-	background-color: #FF9500;
-}
-
-.legend-color.high {
-	background-color: #FF3B30;
-}
-
-.canteen-recommendation {
-	display: flex;
-	align-items: center;
-}
-
-.recommendation-label {
-	font-size: 26rpx;
-	color: #666;
-}
-
-.canteen-badges {
-	display: flex;
-	flex: 1;
-}
-
-.canteen-badge {
-	display: flex;
-	align-items: center;
-	background-color: #f5f5f5;
-	padding: 6rpx 16rpx;
-	border-radius: 20rpx;
-	margin-left: 20rpx;
-	font-size: 24rpx;
-	color: #333;
-}
-
-.badge-status {
-	width: 16rpx;
-	height: 16rpx;
-	border-radius: 50%;
-	margin-left: 10rpx;
-}
-
-.badge-status.low {
-	background-color: #00B578;
-}
-
-.badge-status.medium {
-	background-color: #FF9500;
-}
-
-.badge-status.high {
-	background-color: #FF3B30;
-}
-
 /* 自习室空位卡片样式 */
 .study-rooms {
 	display: flex;
@@ -759,5 +774,37 @@ export default {
 	line-height: 80rpx;
 	border-radius: 40rpx;
 	font-size: 28rpx;
+}
+
+.charts-container {
+	width: 100%;
+	height: 300rpx;
+}
+
+.recommendation-card .card-content {
+    padding: 20rpx;
+}
+
+.custom-legend {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-top: 20rpx;
+	padding-bottom: 10rpx;
+}
+
+.legend-item {
+	display: flex;
+	align-items: center;
+	margin: 0 15rpx;
+	font-size: 24rpx;
+	color: #666;
+}
+
+.legend-color {
+	width: 20rpx;
+	height: 20rpx;
+	border-radius: 4rpx;
+	margin-right: 10rpx;
 }
 </style>

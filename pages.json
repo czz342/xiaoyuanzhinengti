@@ -37,6 +37,18 @@
 			}
 		},
 		{
+			"path": "pages/features/food",
+			"style": {
+				"navigationBarTitleText": "食堂点餐"
+			}
+		},
+		{
+			"path": "pages/features/food-history",
+			"style": {
+				"navigationBarTitleText": "我的订单"
+			}
+		},
+		{
 			"path": "pages/features/express",
 			"style": {
 				"navigationBarTitleText": "快递服务"

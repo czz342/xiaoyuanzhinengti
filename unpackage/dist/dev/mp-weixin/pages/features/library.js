@@ -98,10 +98,50 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "recyclableRender", function() { return recyclableRender; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "components", function() { return components; });
 var components
+try {
+  components = {
+    uniNumberBox: function () {
+      return __webpack_require__.e(/*! import() | uni_modules/uni-number-box/components/uni-number-box/uni-number-box */ "uni_modules/uni-number-box/components/uni-number-box/uni-number-box").then(__webpack_require__.bind(null, /*! @/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue */ 273))
+    },
+  }
+} catch (e) {
+  if (
+    e.message.indexOf("Cannot find module") !== -1 &&
+    e.message.indexOf(".vue") !== -1
+  ) {
+    console.error(e.message)
+    console.error("1. 排查组件名称拼写是否正确")
+    console.error(
+      "2. 排查组件是否符合 easycom 规范，文档：https://uniapp.dcloud.net.cn/collocation/pages?id=easycom"
+    )
+    console.error(
+      "3. 若组件不符合 easycom 规范，需手动引入，并在 components 中注册该组件"
+    )
+  } else {
+    throw e
+  }
+}
 var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
+  var g0 =
+    _vm.currentTab === "search" && !_vm.isSearchMode
+      ? _vm.recommendedBooks.length
+      : null
+  var g1 =
+    _vm.currentTab === "shelf" || _vm.currentTab === "history"
+      ? !_vm.myBorrowings.length && !_vm.isLoading
+      : null
+  _vm.$mp.data = Object.assign(
+    {},
+    {
+      $root: {
+        g0: g0,
+        g1: g1,
+      },
+    }
+  )
 }
 var recyclableRender = false
 var staticRenderFns = []
@@ -142,10 +182,96 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
 var _toConsumableArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/toConsumableArray */ 18));
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
+var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -328,129 +454,247 @@ var _default = {
       // 图书详情
       showBookDetail: false,
       selectedBook: {},
+      borrowingDays: 30,
+      // 新增：借阅天数
+
       // AR导航
       showARNavigation: false,
-      // 模拟数据 - 推荐图书
-      recommendedBooks: [{
-        id: 1,
-        title: '人类简史',
-        author: '尤瓦尔·赫拉利',
-        publisher: '中信出版社',
-        isbn: '9787508647357',
-        cover: '/static/images/book1.png',
-        tags: ['历史', '人类学'],
-        available: true,
-        location: '人文社科区 A12-3',
-        description: '这是一部宏大的人类简史，从人类的起源讲起，将生物演化与历史发展交织在一起，描述了从远古人类演化至今的历程。'
-      }, {
-        id: 2,
-        title: '三体',
-        author: '刘慈欣',
-        publisher: '重庆出版社',
-        isbn: '9787536692930',
-        cover: '/static/images/book2.png',
-        tags: ['科幻', '奇幻'],
-        available: false,
-        dueDate: '2023-06-01',
-        location: '科幻小说区 B05-2',
-        description: '在文化大革命如火如荼进行的同时，军方探寻外星文明的绝秘计划"红岸工程"取得了突破性进展。但在按下发射键的那一刻，历经劫难的叶文洁没有意识到，她彻底改变了人类的命运。'
-      }, {
-        id: 3,
-        title: '活着',
-        author: '余华',
-        publisher: '作家出版社',
-        isbn: '9787506365437',
-        cover: '/static/images/book3.png',
-        tags: ['文学', '当代'],
-        available: true,
-        location: '现当代文学区 C02-1',
-        description: '《活着》是余华的代表作之一，讲述了农村人福贵悲惨的人生遭遇。福贵少年时代嗜赌成性，终于赌光了家业，福贵的父亲被他活活气死，福贵和妻子家珍在贫困中勉强生活。'
-      }, {
-        id: 4,
-        title: '算法导论',
-        author: '科尔曼等',
-        publisher: '机械工业出版社',
-        isbn: '9787111407010',
-        cover: '/static/images/book4.png',
-        tags: ['计算机', '算法'],
-        available: true,
-        location: '计算机科学区 D08-4',
-        description: '本书提供了对当代计算机算法研究的一个全面、系统的阐述，重点讨论了设计与分析高效算法所需的工具与技术，以及在解决实际应用问题时如何有效地利用各种算法。'
-      }],
-      // 模拟数据 - 搜索结果
+      // 图书列表数据
+      recommendedBooks: [],
       searchResults: [],
-      // 模拟数据 - 我的书架
-      myShelf: [{
-        id: 5,
-        title: '百年孤独',
-        author: '加西亚·马尔克斯',
-        publisher: '南海出版公司',
-        isbn: '9787544253994',
-        cover: '/static/images/book5.png',
-        tags: ['文学', '魔幻现实主义'],
-        borrowDate: '2023-04-15',
-        dueDate: '2023-05-15',
-        description: '《百年孤独》是魔幻现实主义文学的代表作，描写了布恩迪亚家族七代人的传奇故事，以及加勒比海沿岸小镇马孔多的百年兴衰。'
-      }, {
-        id: 6,
-        title: '解忧杂货店',
-        author: '东野圭吾',
-        publisher: '南海出版公司',
-        isbn: '9787544270878',
-        cover: '/static/images/book6.png',
-        tags: ['小说', '治愈'],
-        borrowDate: '2023-04-20',
-        dueDate: '2023-05-20',
-        description: '这是一部充满温情的作品，故事讲述了在一家名为"解忧杂货店"的店铺，人们可以将烦恼写成信投进店后的信箱，就能在第二天收到回答。'
-      }],
-      // 模拟数据 - 借阅历史
-      borrowHistory: [{
-        id: 7,
-        title: '置身事内',
-        author: '兰小欢',
-        publisher: '上海人民出版社',
-        isbn: '9787208171336',
-        cover: '/static/images/book7.png',
-        tags: ['经济', '政治'],
-        borrowDate: '2023-03-10',
-        returnDate: '2023-04-10',
-        description: '本书是一部融通经济学、社会学、政治学等多学科知识，分析中国地方政府行为模式与运行机制的通识读物。'
-      }, {
-        id: 8,
-        title: '围城',
-        author: '钱钟书',
-        publisher: '人民文学出版社',
-        isbn: '9787020090006',
-        cover: '/static/images/book8.png',
-        tags: ['文学', '现代'],
-        borrowDate: '2023-02-15',
-        returnDate: '2023-03-15',
-        description: '《围城》是钱钟书所著的长篇小说，描写了青年方鸿渐从美国留学回来后，在抗战初期的上海、香港，以及内地三闾大学的种种遭遇。'
-      }]
+      // 我的借阅数据
+      myBorrowings: [],
+      isLoading: false,
+      // 用于防止重复加载
+      showBorrowDetail: false,
+      // 控制借阅详情弹窗
+      selectedBorrowing: {} // 选中的借阅记录
     };
+  },
+  onLoad: function onLoad() {
+    this.fetchBooks();
   },
   computed: {
     // 根据当前标签页显示不同的图书列表
     displayBooks: function displayBooks() {
-      if (this.isSearchMode) {
-        return this.searchResults;
-      }
-      switch (this.currentTab) {
-        case 'search':
-          return this.recommendedBooks;
-        case 'shelf':
-          return this.myShelf;
-        case 'history':
-          return this.borrowHistory;
-        default:
-          return this.recommendedBooks;
-      }
+      // 简化逻辑，只处理搜索模式和默认的推荐图书
+      return this.isSearchMode ? this.searchResults : this.recommendedBooks;
+    },
+    borrowDate: function borrowDate() {
+      var today = new Date();
+      return today.toLocaleDateString();
+    },
+    calculatedDueDate: function calculatedDueDate() {
+      var today = new Date();
+      today.setDate(today.getDate() + this.borrowingDays);
+      return today.toLocaleDateString();
     }
   },
   methods: {
+    // 获取图书列表
+    fetchBooks: function fetchBooks() {
+      var _this = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+        var response;
+        return _regenerator.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                uni.showLoading({
+                  title: '加载中...'
+                });
+                _context.prev = 1;
+                _context.next = 4;
+                return _kingdeeAgent.default.getBooksList();
+              case 4:
+                response = _context.sent;
+                if (response && response.status && response.data && Array.isArray(response.data.rows)) {
+                  // 映射API数据到页面格式
+                  _this.recommendedBooks = response.data.rows.map(function (book) {
+                    // 从完整路径中提取文件名
+                    var fullPath = book.lb77_picturefield || '';
+                    var fileName = fullPath.split('\\').pop();
+                    return {
+                      id: book.number,
+                      // 使用ISBN作为唯一ID
+                      title: book.name,
+                      author: book.lb77_author,
+                      publisher: book.lb77_press,
+                      isbn: book.number,
+                      // 将后台返回的文件名与本地静态资源路径拼接
+                      cover: fileName ? "/static/images/BookPicture/".concat(fileName) : '/static/images/book-placeholder.png',
+                      tags: book.lb77_type ? book.lb77_type.split(',') : ['综合'],
+                      // 假设API返回的状态'C'为可借阅，需要根据实际业务调整
+                      available: book.status === 'C',
+                      location: book.lb77_addr,
+                      description: '暂无简介' // API暂未提供简介字段
+                    };
+                  });
+                } else {
+                  uni.showToast({
+                    title: response.message || '获取图书列表失败',
+                    icon: 'none'
+                  });
+                }
+                _context.next = 12;
+                break;
+              case 8:
+                _context.prev = 8;
+                _context.t0 = _context["catch"](1);
+                console.error("获取图书列表失败:", _context.t0);
+                uni.showToast({
+                  title: '网络请求失败，请稍后重试',
+                  icon: 'none'
+                });
+              case 12:
+                _context.prev = 12;
+                uni.hideLoading();
+                return _context.finish(12);
+              case 15:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, null, [[1, 8, 12, 15]]);
+      }))();
+    },
+    // 获取我的借阅记录
+    fetchMyBorrowings: function fetchMyBorrowings() {
+      var _this2 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+        var studentId, response;
+        return _regenerator.default.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                _this2.isLoading = true;
+                uni.showLoading({
+                  title: '加载中...'
+                });
+                _context2.prev = 2;
+                studentId = '645730151'; // 根据约定使用硬编码ID
+                _context2.next = 6;
+                return _kingdeeAgent.default.getPersonalBookBorrowings(studentId);
+              case 6:
+                response = _context2.sent;
+                if (response && response.status && response.data && Array.isArray(response.data.rows)) {
+                  _this2.myBorrowings = response.data.rows.map(function (item) {
+                    var dueDate = new Date(item.lb77_endtime);
+                    var now = new Date();
+                    // 注意：API未返回实际归还日期，这里的状态是基于应还日期的推测
+                    var isOverdue = now > dueDate;
+                    var statusText = isOverdue ? '已到期' : '借阅中';
+                    var statusClass = isOverdue ? 'overdue' : 'borrowing';
+                    return {
+                      billno: item.billno,
+                      title: item.lb77_name,
+                      author: item.lb77_author,
+                      cover: item.lb77_picturefield ? "/static/images/BookPicture/".concat(item.lb77_picturefield.split('\\').pop()) : '/static/images/book-placeholder.png',
+                      borrowDate: new Date(item.createtime).toLocaleDateString(),
+                      dueDate: dueDate.toLocaleDateString(),
+                      statusText: statusText,
+                      statusClass: statusClass
+                    };
+                  });
+                } else {
+                  uni.showToast({
+                    title: response.message || '获取借阅记录失败',
+                    icon: 'none'
+                  });
+                  _this2.myBorrowings = [];
+                }
+                _context2.next = 14;
+                break;
+              case 10:
+                _context2.prev = 10;
+                _context2.t0 = _context2["catch"](2);
+                console.error("获取借阅记录失败:", _context2.t0);
+                uni.showToast({
+                  title: '网络请求失败',
+                  icon: 'none'
+                });
+              case 14:
+                _context2.prev = 14;
+                _this2.isLoading = false;
+                uni.hideLoading();
+                return _context2.finish(14);
+              case 18:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, null, [[2, 10, 14, 18]]);
+      }))();
+    },
+    // 借阅图书
+    borrowBook: function borrowBook() {
+      var _this3 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
+        var studentId, billno, borrowingData, response, _response$data, _response$data$result, _response$data$result2, _response$data$result3, _response$data$result4, errorMsg;
+        return _regenerator.default.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                uni.showLoading({
+                  title: '正在提交...'
+                });
+                _context3.prev = 1;
+                // 注意：学生ID应从登录信息中动态获取，此处为测试用例
+                studentId = '645730151'; // 自动生成一个唯一的单据编号
+                billno = "borrow-".concat(Date.now());
+                borrowingData = {
+                  billno: billno,
+                  lb77_day: _this3.borrowingDays,
+                  // 使用v-model绑定的天数
+                  lb77_books_number: _this3.selectedBook.isbn,
+                  lb77_students_number: studentId
+                };
+                _context3.next = 7;
+                return _kingdeeAgent.default.createBookBorrowingRequest(borrowingData);
+              case 7:
+                response = _context3.sent;
+                if (response && response.status && response.data && response.data.successCount > 0) {
+                  uni.showToast({
+                    title: '借阅成功!',
+                    icon: 'success'
+                  });
+                  _this3.hideBookDetail();
+                  // 借阅成功后刷新列表
+                  _this3.fetchBooks();
+                } else {
+                  // 尝试获取更详细的错误信息
+                  errorMsg = (response === null || response === void 0 ? void 0 : (_response$data = response.data) === null || _response$data === void 0 ? void 0 : (_response$data$result = _response$data.result) === null || _response$data$result === void 0 ? void 0 : (_response$data$result2 = _response$data$result[0]) === null || _response$data$result2 === void 0 ? void 0 : (_response$data$result3 = _response$data$result2.errors) === null || _response$data$result3 === void 0 ? void 0 : (_response$data$result4 = _response$data$result3[0]) === null || _response$data$result4 === void 0 ? void 0 : _response$data$result4.msg) || response.message || '借阅失败';
+                  uni.showToast({
+                    title: errorMsg,
+                    icon: 'none',
+                    duration: 3000
+                  });
+                }
+                _context3.next = 15;
+                break;
+              case 11:
+                _context3.prev = 11;
+                _context3.t0 = _context3["catch"](1);
+                console.error('借阅请求失败:', _context3.t0);
+                uni.showToast({
+                  title: '请求异常，请稍后重试',
+                  icon: 'none'
+                });
+              case 15:
+                _context3.prev = 15;
+                uni.hideLoading();
+                return _context3.finish(15);
+              case 18:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, null, [[1, 11, 15, 18]]);
+      }))();
+    },
     // 搜索图书
     searchBooks: function searchBooks() {
-      var _this = this;
+      var _this4 = this;
       if (!this.searchKeyword.trim()) {
         this.isSearchMode = false;
         return;
@@ -462,8 +706,8 @@ var _default = {
       });
       setTimeout(function () {
         // 模拟搜索结果
-        _this.searchResults = _this.mockSearchResults(_this.searchKeyword);
-        _this.isSearchMode = true;
+        _this4.searchResults = _this4.mockSearchResults(_this4.searchKeyword);
+        _this4.isSearchMode = true;
         uni.hideLoading();
       }, 1000);
     },
@@ -471,7 +715,7 @@ var _default = {
     mockSearchResults: function mockSearchResults(keyword) {
       // 简单模拟，实际应用中会调用API进行搜索
       // 这里将所有图书数据合并后进行简单过滤
-      var allBooks = [].concat((0, _toConsumableArray2.default)(this.recommendedBooks), (0, _toConsumableArray2.default)(this.myShelf), (0, _toConsumableArray2.default)(this.borrowHistory));
+      var allBooks = [].concat((0, _toConsumableArray2.default)(this.recommendedBooks), (0, _toConsumableArray2.default)(this.searchResults));
 
       // 过滤符合关键词的图书
       return allBooks.filter(function (book) {
@@ -481,7 +725,7 @@ var _default = {
     },
     // 扫描图书
     scanBook: function scanBook() {
-      var _this2 = this;
+      var _this5 = this;
       uni.scanCode({
         scanType: ['qrCode', 'barCode'],
         success: function success(res) {
@@ -490,11 +734,11 @@ var _default = {
           // 判断是ISBN还是QR码
           if (res.result.length >= 10 && /^\d+$/.test(res.result)) {
             // 当作ISBN处理
-            _this2.searchKeyword = res.result;
-            _this2.searchBooks();
+            _this5.searchKeyword = res.result;
+            _this5.searchBooks();
           } else {
             // 当作书架二维码处理
-            _this2.startARNavigation();
+            _this5.startARNavigation();
           }
         }
       });
@@ -504,48 +748,34 @@ var _default = {
       this.currentTab = tab;
       this.isSearchMode = false;
       this.searchKeyword = '';
+      // 切换时按需加载数据
+      if (tab === 'search' && this.recommendedBooks.length === 0) {
+        this.fetchBooks();
+      } else if (tab === 'history') {
+        this.fetchMyBorrowings();
+      }
     },
     // 查看图书详情
     viewBookDetail: function viewBookDetail(book) {
       this.selectedBook = book;
+      this.borrowingDays = 30; // 每次打开弹窗时重置为默认值
       this.showBookDetail = true;
     },
     // 隐藏图书详情
     hideBookDetail: function hideBookDetail() {
       this.showBookDetail = false;
     },
-    // 借阅图书
-    borrowBook: function borrowBook() {
-      var _this3 = this;
-      uni.showLoading({
-        title: '处理中...'
-      });
-      setTimeout(function () {
-        uni.hideLoading();
-        uni.showModal({
-          title: '借阅成功',
-          content: "\u60A8\u5DF2\u6210\u529F\u501F\u9605\u300A".concat(_this3.selectedBook.title, "\u300B\uFF0C\u8BF7\u57282023-06-15\u524D\u5F52\u8FD8\u3002"),
-          showCancel: false,
-          success: function success(res) {
-            if (res.confirm) {
-              // 更新图书状态
-              _this3.selectedBook.available = false;
-              _this3.selectedBook.dueDate = '2023-06-15';
-
-              // 添加到我的书架
-              _this3.myShelf.unshift(_objectSpread(_objectSpread({}, _this3.selectedBook), {}, {
-                borrowDate: '2023-05-15',
-                dueDate: '2023-06-15'
-              }));
-              _this3.hideBookDetail();
-            }
-          }
-        });
-      }, 1500);
+    // 新增：显示/隐藏借阅详情
+    viewBorrowingDetail: function viewBorrowingDetail(item) {
+      this.selectedBorrowing = item;
+      this.showBorrowDetail = true;
+    },
+    hideBorrowingDetail: function hideBorrowingDetail() {
+      this.showBorrowDetail = false;
     },
     // 预约图书
     reserveBook: function reserveBook() {
-      var _this4 = this;
+      var _this6 = this;
       uni.showLoading({
         title: '处理中...'
       });
@@ -553,11 +783,11 @@ var _default = {
         uni.hideLoading();
         uni.showModal({
           title: '预约成功',
-          content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6\u300A".concat(_this4.selectedBook.title, "\u300B\uFF0C\u56FE\u4E66\u5F52\u8FD8\u540E\u5C06\u901A\u77E5\u60A8\u3002"),
+          content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6\u300A".concat(_this6.selectedBook.title, "\u300B\uFF0C\u56FE\u4E66\u5F52\u8FD8\u540E\u5C06\u901A\u77E5\u60A8\u3002"),
           showCancel: false,
           success: function success(res) {
             if (res.confirm) {
-              _this4.hideBookDetail();
+              _this6.hideBookDetail();
             }
           }
         });

@@ -6,6 +6,8 @@
     "pages/features/classroom",
     "pages/features/my-classroom-reservations",
     "pages/features/library",
+    "pages/features/food",
+    "pages/features/food-history",
     "pages/features/express",
     "pages/features/health",
     "pages/features/studyroom",

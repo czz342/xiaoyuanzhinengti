@@ -68,11 +68,15 @@
 				loading: true,
 				reservations: [], // 预约列表
 				selectedReservation: null, // 当前选中的预约
-				selectedDate: '' // 用于存储选中的日期
+				selectedDate: '', // 用于存储选中的日期
+				bookingNumberFromLink: null // 用于存储从链接传入的预约number
 			};
 		},
-		onLoad() {
+		onLoad(options) {
 			this.selectedDate = this.getFormattedDate(new Date());
+			if (options && options.number) {
+				this.bookingNumberFromLink = options.number;
+			}
 			this.fetchReservations();
 		},
 		methods: {
@@ -112,6 +116,18 @@
 								status: this.getBookingStatus(item.lb77_booking_date, item.lb77_end_time)
 							};
 						});
+
+						// 处理来自深层链接的ID
+						if (this.bookingNumberFromLink) {
+							const targetReservation = this.reservations.find(r => r.id === this.bookingNumberFromLink);
+							if (targetReservation) {
+								// 使用setTimeout确保DOM更新后再打开弹窗
+								setTimeout(() => {
+									this.showQrCodeModal(targetReservation);
+								}, 100);
+							}
+							this.bookingNumberFromLink = null; // 处理后重置
+						}
 					} else {
 						throw new Error(response.message || '获取预约记录失败');
 					}

@@ -464,14 +464,17 @@ class KingdeeAgentService {
         // 根据新文档，此接口不需要 assistantId, callbackUrl, stream等参数
       };
 
-      // 新增：如果传入了有效的技能信息，则添加到message对象中
-      if (skillInfo && skillInfo.id && skillInfo.type) {
-        requestBody.message.skillId = skillInfo.id;
-        requestBody.message.skillType = skillInfo.type;
-        console.log(`Request will be sent with specific skill:`, skillInfo);
+      // 根据 skillInfo 添加技能相关字段
+      /* 我们现在采用中控模式，由中控决定调用哪个技能，因此初始消息不应强制指定skillId
+      if (skillInfo && skillInfo.skillId && skillInfo.skillType) {
+        message.content.skillId = skillInfo.skillId;
+        message.content.skillType = skillInfo.skillType;
+        console.log(`[sendChatMessage] 已附加技能信息: skillId=${skillInfo.skillId}, skillType=${skillInfo.skillType}`);
       } else {
-        console.warn(`No valid skillInfo provided, sending a generic chat message.`);
+        console.log('[sendChatMessage] 未提供技能信息，将作为通用消息发送。');
       }
+      */
+      console.log('[sendChatMessage] 未提供技能信息，将作为通用消息发送以触发中控。');
 
       console.log(`Sending chat message with new request body:`, JSON.stringify(requestBody));
 
@@ -722,6 +725,159 @@ class KingdeeAgentService {
     });
 
     return response;
+  }
+
+  /**
+   * @description 获取图书列表
+   * @param {number} pageSize 每页数量
+   * @param {number} pageNo 页码
+   */
+  static async getBooksList(pageSize = 100, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_books/lb77_booklist/getBooksList',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * 创建图书借阅申请
+   * @param {object} borrowingData - 借阅数据对象
+   * @example
+   * {
+   *   billno: "Your-Unique-Bill-No",
+   *   lb77_day: 30,
+   *   lb77_books_number: "9787040396638",
+   *   lb77_students_number: "student12345"
+   * }
+   */
+  static async createBookBorrowingRequest(borrowingData) {
+    return request({
+      url: `/kapi/v2/lb77/lb77_books/lb77_borrowbook/CreateBookBorrowingRequest`,
+      method: 'POST',
+      data: {
+        // API文档要求将数据对象包裹在一个数组中
+        data: [borrowingData]
+      },
+    });
+  }
+
+  /**
+   * @description 根据学号获取个人图书借阅记录
+   * @param {string} studentId - 学号
+   * @param {number} pageSize - 每页数量
+   * @param {number} pageNo - 页码
+   */
+  static async getPersonalBookBorrowings(studentId, pageSize = 50, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_books/lb77_borrowbook/getPersonalBookBorrowings',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_students_number: studentId
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 获取食堂列表
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getCanteenList(pageSize = 100, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_canteens/lb77_canteens/getCanteenList',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据食堂ID获取菜品列表
+   * @param {string} canteenId - 食堂编码
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getDishList(canteenId, pageSize = 200, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_canteens/lb77_food_items/getDishList',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_canteen_id_number: canteenId
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 创建食堂订单
+   * @param {object} orderData - 订单数据
+   */
+  static async createCanteenOrder(orderData) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_canteens/lb77_canteen_orders/createCanteenOrder',
+      method: 'POST',
+      data: {
+        data: [orderData]
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号获取个人食堂订单历史
+   * @param {string} studentId - 学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getPersonalOrderHistory(studentId, pageSize = 50, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_canteens/lb77_canteen_orders/getPersonalOrderHistory',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_student_number: studentId
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 查询指定食堂在特定时间段内的订单数量，用于计算人流量
+   * @param {string} canteenNumber - 食堂的编码
+   * @param {string} startTime - 查询的开始时间 (格式: YYYY-MM-DD HH:mm:ss)
+   * @param {string} endTime - 查询的结束时间 (格式: YYYY-MM-DD HH:mm:ss)
+   */
+  static async getTodaysCanteenOrders(canteenNumber, startTime, endTime) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_canteens/lb77_canteen_orders/getTodaysCanteenOrders',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_canteen_number: canteenNumber,
+          lb77_dining_type: "堂食,外带", // 查询所有就餐方式
+          starttime: startTime,
+          endtime: endTime
+        },
+        pageSize: 1, // 我们只需要totalCount，不需要订单详情
+        pageNo: 1
+      }
+    });
   }
 }
 

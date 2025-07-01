@@ -32,15 +32,16 @@
 		</view>
 		
 		<!-- 搜索结果/推荐图书 -->
-		<view class="book-section">
+		<view class="book-section" v-if="currentTab === 'search'">
 			<view class="section-header">
-				<text class="section-title">{{isSearchMode ? '搜索结果' : '推荐图书'}}</text>
+				<text class="section-title">{{isSearchMode ? '搜索结果' : `推荐图书 (${recommendedBooks.length})`}}</text>
 				<view class="section-filter" v-if="isSearchMode" @tap="showFilterOptions">
 					<text>筛选</text>
 					<image src="/static/images/filter.png" mode="aspectFit"></image>
 				</view>
 			</view>
 			
+			<view class="book-list-wrapper">
 			<scroll-view scroll-y="true" class="book-list">
 				<view 
 					class="book-item" 
@@ -61,6 +62,40 @@
 					</view>
 				</view>
 			</scroll-view>
+			</view>
+		</view>
+		
+		<!-- 我的借阅列表 -->
+		<view class="book-section" v-if="currentTab === 'shelf' || currentTab === 'history'">
+			<view class="section-header">
+				<text class="section-title">{{ currentTab === 'shelf' ? '我的书架' : '借阅历史' }}</text>
+			</view>
+			
+			<view class="book-list-wrapper">
+				<scroll-view scroll-y="true" class="book-list">
+					<!-- 复用 book-item 的样式来展示借阅记录 -->
+					<view 
+						class="book-item" 
+						v-for="(item) in myBorrowings" 
+						:key="item.billno"
+						@tap="viewBorrowingDetail(item)"
+					>
+						<image :src="item.cover" mode="aspectFill" class="book-cover"></image>
+						<view class="book-info">
+							<text class="book-title">{{ item.title }}</text>
+							<text class="book-author">借阅日期: {{ item.borrowDate }}</text>
+							<text class="book-author">应还日期: {{ item.dueDate }}</text>
+							<view class="book-status" :class="item.statusClass">
+								<text>{{ item.statusText }}</text>
+							</view>
+						</view>
+					</view>
+					<view v-if="!myBorrowings.length && !isLoading" class="empty-list">
+						<image src="/static/images/empty-box.png" class="empty-icon"></image>
+						<text class="empty-text">您还没有借阅任何图书</text>
+					</view>
+				</scroll-view>
+			</view>
 		</view>
 		
 		<!-- 底部导航栏 -->
@@ -68,10 +103,6 @@
 			<view class="tab-item" @tap="switchTab('search')">
 				<image :src="currentTab === 'search' ? '/static/images/search-active.png' : '/static/images/search.png'" mode="aspectFit"></image>
 				<text :class="{'active': currentTab === 'search'}">图书搜索</text>
-			</view>
-			<view class="tab-item" @tap="switchTab('shelf')">
-				<image :src="currentTab === 'shelf' ? '/static/images/shelf-active.png' : '/static/images/shelf.png'" mode="aspectFit"></image>
-				<text :class="{'active': currentTab === 'shelf'}">我的书架</text>
 			</view>
 			<view class="tab-item" @tap="switchTab('history')">
 				<image :src="currentTab === 'history' ? '/static/images/history-active.png' : '/static/images/history.png'" mode="aspectFit"></image>
@@ -115,6 +146,18 @@
 						<view class="detail-availability">
 							<text class="availability-label">借阅状态:</text>
 							<text class="availability-value" :class="{'available': selectedBook.available}">{{selectedBook.available ? '可借阅' : '已借出'}}</text>
+						</view>
+						<view class="detail-borrow-days" v-if="selectedBook.available">
+							<text class="borrow-days-label">借阅天数:</text>
+							<uni-number-box v-model="borrowingDays" :min="1" :max="90"></uni-number-box>
+						</view>
+						<view class="detail-borrow-date" v-if="selectedBook.available">
+							<text class="borrow-date-label">借阅日期:</text>
+							<text class="borrow-date-value">{{ borrowDate }}</text>
+						</view>
+						<view class="detail-due-date-calc" v-if="selectedBook.available">
+							<text class="due-date-label">应还日期:</text>
+							<text class="due-date-value">{{ calculatedDueDate }}</text>
 						</view>
 						<view class="detail-duedate" v-if="!selectedBook.available">
 							<text class="duedate-label">预计归还日期:</text>
@@ -166,10 +209,55 @@
 				<button class="ar-exit-btn" @tap="exitARNavigation">退出导航</button>
 			</view>
 		</view>
+		
+		<!-- 借阅详情弹窗 -->
+		<view class="book-detail-popup" v-if="showBorrowDetail">
+			<view class="popup-mask" @tap="hideBorrowingDetail"></view>
+			<view class="popup-content">
+				<view class="popup-header">
+					<text class="popup-title">借阅详情</text>
+					<view class="popup-close" @tap="hideBorrowingDetail">
+						<image src="/static/images/close.png" mode="aspectFit"></image>
+					</view>
+				</view>
+				<view class="popup-body">
+					<view class="detail-book">
+						<image :src="selectedBorrowing.cover" mode="aspectFill" class="detail-cover"></image>
+						<view class="detail-info">
+							<text class="detail-title">{{ selectedBorrowing.title }}</text>
+							<text class="detail-author">作者: {{ selectedBorrowing.author }}</text>
+						</view>
+					</view>
+					<view class="detail-section">
+						<text class="detail-section-title">详细信息</text>
+						<view class="detail-item">
+							<text class="detail-label">单据编号:</text>
+							<text class="detail-value">{{ selectedBorrowing.billno }}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">借阅日期:</text>
+							<text class="detail-value">{{ selectedBorrowing.borrowDate }}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">应还日期:</text>
+							<text class="detail-value">{{ selectedBorrowing.dueDate }}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">当前状态:</text>
+							<view class="book-status" :class="selectedBorrowing.statusClass" style="margin-top:0; margin-left: -10rpx;">
+								<text>{{ selectedBorrowing.statusText }}</text>
+							</view>
+						</view>
+					</view>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
@@ -183,143 +271,167 @@ export default {
 			// 图书详情
 			showBookDetail: false,
 			selectedBook: {},
+			borrowingDays: 30, // 新增：借阅天数
 			
 			// AR导航
 			showARNavigation: false,
 			
-			// 模拟数据 - 推荐图书
-			recommendedBooks: [
-				{
-					id: 1,
-					title: '人类简史',
-					author: '尤瓦尔·赫拉利',
-					publisher: '中信出版社',
-					isbn: '9787508647357',
-					cover: '/static/images/book1.png',
-					tags: ['历史', '人类学'],
-					available: true,
-					location: '人文社科区 A12-3',
-					description: '这是一部宏大的人类简史，从人类的起源讲起，将生物演化与历史发展交织在一起，描述了从远古人类演化至今的历程。'
-				},
-				{
-					id: 2,
-					title: '三体',
-					author: '刘慈欣',
-					publisher: '重庆出版社',
-					isbn: '9787536692930',
-					cover: '/static/images/book2.png',
-					tags: ['科幻', '奇幻'],
-					available: false,
-					dueDate: '2023-06-01',
-					location: '科幻小说区 B05-2',
-					description: '在文化大革命如火如荼进行的同时，军方探寻外星文明的绝秘计划"红岸工程"取得了突破性进展。但在按下发射键的那一刻，历经劫难的叶文洁没有意识到，她彻底改变了人类的命运。'
-				},
-				{
-					id: 3,
-					title: '活着',
-					author: '余华',
-					publisher: '作家出版社',
-					isbn: '9787506365437',
-					cover: '/static/images/book3.png',
-					tags: ['文学', '当代'],
-					available: true,
-					location: '现当代文学区 C02-1',
-					description: '《活着》是余华的代表作之一，讲述了农村人福贵悲惨的人生遭遇。福贵少年时代嗜赌成性，终于赌光了家业，福贵的父亲被他活活气死，福贵和妻子家珍在贫困中勉强生活。'
-				},
-				{
-					id: 4,
-					title: '算法导论',
-					author: '科尔曼等',
-					publisher: '机械工业出版社',
-					isbn: '9787111407010',
-					cover: '/static/images/book4.png',
-					tags: ['计算机', '算法'],
-					available: true,
-					location: '计算机科学区 D08-4',
-					description: '本书提供了对当代计算机算法研究的一个全面、系统的阐述，重点讨论了设计与分析高效算法所需的工具与技术，以及在解决实际应用问题时如何有效地利用各种算法。'
-				}
-			],
-			
-			// 模拟数据 - 搜索结果
+			// 图书列表数据
+			recommendedBooks: [],
 			searchResults: [],
 			
-			// 模拟数据 - 我的书架
-			myShelf: [
-				{
-					id: 5,
-					title: '百年孤独',
-					author: '加西亚·马尔克斯',
-					publisher: '南海出版公司',
-					isbn: '9787544253994',
-					cover: '/static/images/book5.png',
-					tags: ['文学', '魔幻现实主义'],
-					borrowDate: '2023-04-15',
-					dueDate: '2023-05-15',
-					description: '《百年孤独》是魔幻现实主义文学的代表作，描写了布恩迪亚家族七代人的传奇故事，以及加勒比海沿岸小镇马孔多的百年兴衰。'
-				},
-				{
-					id: 6,
-					title: '解忧杂货店',
-					author: '东野圭吾',
-					publisher: '南海出版公司',
-					isbn: '9787544270878',
-					cover: '/static/images/book6.png',
-					tags: ['小说', '治愈'],
-					borrowDate: '2023-04-20',
-					dueDate: '2023-05-20',
-					description: '这是一部充满温情的作品，故事讲述了在一家名为"解忧杂货店"的店铺，人们可以将烦恼写成信投进店后的信箱，就能在第二天收到回答。'
-				}
-			],
-			
-			// 模拟数据 - 借阅历史
-			borrowHistory: [
-				{
-					id: 7,
-					title: '置身事内',
-					author: '兰小欢',
-					publisher: '上海人民出版社',
-					isbn: '9787208171336',
-					cover: '/static/images/book7.png',
-					tags: ['经济', '政治'],
-					borrowDate: '2023-03-10',
-					returnDate: '2023-04-10',
-					description: '本书是一部融通经济学、社会学、政治学等多学科知识，分析中国地方政府行为模式与运行机制的通识读物。'
-				},
-				{
-					id: 8,
-					title: '围城',
-					author: '钱钟书',
-					publisher: '人民文学出版社',
-					isbn: '9787020090006',
-					cover: '/static/images/book8.png',
-					tags: ['文学', '现代'],
-					borrowDate: '2023-02-15',
-					returnDate: '2023-03-15',
-					description: '《围城》是钱钟书所著的长篇小说，描写了青年方鸿渐从美国留学回来后，在抗战初期的上海、香港，以及内地三闾大学的种种遭遇。'
-				}
-			]
+			// 我的借阅数据
+			myBorrowings: [],
+			isLoading: false, // 用于防止重复加载
+			showBorrowDetail: false, // 控制借阅详情弹窗
+			selectedBorrowing: {} // 选中的借阅记录
 		}
+	},
+	onLoad() {
+		this.fetchBooks();
 	},
 	computed: {
 		// 根据当前标签页显示不同的图书列表
 		displayBooks() {
-			if (this.isSearchMode) {
-				return this.searchResults;
-			}
-			
-			switch (this.currentTab) {
-				case 'search':
-					return this.recommendedBooks;
-				case 'shelf':
-					return this.myShelf;
-				case 'history':
-					return this.borrowHistory;
-				default:
-					return this.recommendedBooks;
-			}
+			// 简化逻辑，只处理搜索模式和默认的推荐图书
+			return this.isSearchMode ? this.searchResults : this.recommendedBooks;
+		},
+		borrowDate() {
+			const today = new Date();
+			return today.toLocaleDateString();
+		},
+		calculatedDueDate() {
+			const today = new Date();
+			today.setDate(today.getDate() + this.borrowingDays);
+			return today.toLocaleDateString();
 		}
 	},
 	methods: {
+		// 获取图书列表
+		async fetchBooks() {
+			uni.showLoading({
+				title: '加载中...'
+			});
+			try {
+				const response = await KingdeeAgentService.getBooksList();
+				if (response && response.status && response.data && Array.isArray(response.data.rows)) {
+					// 映射API数据到页面格式
+					this.recommendedBooks = response.data.rows.map(book => {
+						// 从完整路径中提取文件名
+						const fullPath = book.lb77_picturefield || '';
+						const fileName = fullPath.split('\\').pop();
+						
+						return {
+							id: book.number, // 使用ISBN作为唯一ID
+							title: book.name,
+							author: book.lb77_author,
+							publisher: book.lb77_press,
+							isbn: book.number,
+							// 将后台返回的文件名与本地静态资源路径拼接
+							cover: fileName ? `/static/images/BookPicture/${fileName}` : '/static/images/book-placeholder.png',
+							tags: book.lb77_type ? book.lb77_type.split(',') : ['综合'],
+							// 假设API返回的状态'C'为可借阅，需要根据实际业务调整
+							available: book.status === 'C',
+							location: book.lb77_addr,
+							description: '暂无简介' // API暂未提供简介字段
+						};
+					});
+				} else {
+					uni.showToast({
+						title: response.message || '获取图书列表失败',
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error("获取图书列表失败:", error);
+				uni.showToast({
+					title: '网络请求失败，请稍后重试',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
+			}
+		},
+			
+		// 获取我的借阅记录
+		async fetchMyBorrowings() {
+			this.isLoading = true;
+			uni.showLoading({ title: '加载中...' });
+			try {
+				const studentId = '645730151'; // 根据约定使用硬编码ID
+				const response = await KingdeeAgentService.getPersonalBookBorrowings(studentId);
+				if (response && response.status && response.data && Array.isArray(response.data.rows)) {
+					this.myBorrowings = response.data.rows.map(item => {
+						const dueDate = new Date(item.lb77_endtime);
+						const now = new Date();
+						// 注意：API未返回实际归还日期，这里的状态是基于应还日期的推测
+						const isOverdue = now > dueDate;
+						const statusText = isOverdue ? '已到期' : '借阅中';
+						const statusClass = isOverdue ? 'overdue' : 'borrowing';
+						
+						return {
+							billno: item.billno,
+							title: item.lb77_name,
+							author: item.lb77_author,
+							cover: item.lb77_picturefield ? `/static/images/BookPicture/${item.lb77_picturefield.split('\\').pop()}` : '/static/images/book-placeholder.png',
+							borrowDate: new Date(item.createtime).toLocaleDateString(),
+							dueDate: dueDate.toLocaleDateString(),
+							statusText: statusText,
+							statusClass: statusClass
+						};
+					});
+				} else {
+					uni.showToast({ title: response.message || '获取借阅记录失败', icon: 'none' });
+					this.myBorrowings = [];
+				}
+			} catch (error) {
+				console.error("获取借阅记录失败:", error);
+				uni.showToast({ title: '网络请求失败', icon: 'none' });
+			} finally {
+				this.isLoading = false;
+				uni.hideLoading();
+			}
+		},
+		
+		// 借阅图书
+		async borrowBook() {
+			uni.showLoading({ title: '正在提交...' });
+			
+			try {
+				// 注意：学生ID应从登录信息中动态获取，此处为测试用例
+				const studentId = '645730151';
+				
+				// 自动生成一个唯一的单据编号
+				const billno = `borrow-${Date.now()}`;
+		
+				const borrowingData = {
+					billno: billno,
+					lb77_day: this.borrowingDays, // 使用v-model绑定的天数
+					lb77_books_number: this.selectedBook.isbn,
+					lb77_students_number: studentId
+				};
+		
+				const response = await KingdeeAgentService.createBookBorrowingRequest(borrowingData);
+		
+				if (response && response.status && response.data && response.data.successCount > 0) {
+					uni.showToast({ title: '借阅成功!', icon: 'success' });
+					this.hideBookDetail();
+					// 借阅成功后刷新列表
+					this.fetchBooks();
+				} else {
+					// 尝试获取更详细的错误信息
+					const errorMsg = response?.data?.result?.[0]?.errors?.[0]?.msg || response.message || '借阅失败';
+					uni.showToast({ title: errorMsg, icon: 'none', duration: 3000 });
+				}
+		
+			} catch (error) {
+				console.error('借阅请求失败:', error);
+				uni.showToast({ title: '请求异常，请稍后重试', icon: 'none' });
+			} finally {
+				uni.hideLoading();
+		}
+	},
+		
 		// 搜索图书
 		searchBooks() {
 			if (!this.searchKeyword.trim()) {
@@ -347,8 +459,7 @@ export default {
 			// 这里将所有图书数据合并后进行简单过滤
 			const allBooks = [
 				...this.recommendedBooks,
-				...this.myShelf,
-				...this.borrowHistory
+				...this.searchResults
 			];
 			
 			// 过滤符合关键词的图书
@@ -385,11 +496,18 @@ export default {
 			this.currentTab = tab;
 			this.isSearchMode = false;
 			this.searchKeyword = '';
+			// 切换时按需加载数据
+			if (tab === 'search' && this.recommendedBooks.length === 0) {
+				this.fetchBooks();
+			} else if (tab === 'history') {
+				this.fetchMyBorrowings();
+			}
 		},
 		
 		// 查看图书详情
 		viewBookDetail(book) {
 			this.selectedBook = book;
+			this.borrowingDays = 30; // 每次打开弹窗时重置为默认值
 			this.showBookDetail = true;
 		},
 		
@@ -398,36 +516,13 @@ export default {
 			this.showBookDetail = false;
 		},
 		
-		// 借阅图书
-		borrowBook() {
-			uni.showLoading({
-				title: '处理中...'
-			});
-			
-			setTimeout(() => {
-				uni.hideLoading();
-				uni.showModal({
-					title: '借阅成功',
-					content: `您已成功借阅《${this.selectedBook.title}》，请在2023-06-15前归还。`,
-					showCancel: false,
-					success: (res) => {
-						if (res.confirm) {
-							// 更新图书状态
-							this.selectedBook.available = false;
-							this.selectedBook.dueDate = '2023-06-15';
-							
-							// 添加到我的书架
-							this.myShelf.unshift({
-								...this.selectedBook,
-								borrowDate: '2023-05-15',
-								dueDate: '2023-06-15'
-							});
-							
-							this.hideBookDetail();
-						}
-					}
-				});
-			}, 1500);
+		// 新增：显示/隐藏借阅详情
+		viewBorrowingDetail(item) {
+			this.selectedBorrowing = item;
+			this.showBorrowDetail = true;
+		},
+		hideBorrowingDetail() {
+			this.showBorrowDetail = false;
 		},
 		
 		// 预约图书
@@ -490,6 +585,8 @@ export default {
 	flex-direction: column;
 	height: 100vh;
 	background-color: #F8F8F8;
+	padding-bottom: 20rpx; /* 为底部导航栏预留空间 */
+	box-sizing: border-box;
 }
 
 /* 搜索栏样式 */
@@ -624,8 +721,17 @@ export default {
 	margin-left: 8rpx;
 }
 
-.book-list {
+.book-list-wrapper {
 	flex: 1;
+	position: relative;
+}
+
+.book-list {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 }
 
 .book-item {
@@ -707,13 +813,14 @@ export default {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	padding-top: 12rpx;
+	box-sizing: border-box;
 }
 
 .tab-item image {
 	width: 48rpx;
 	height: 48rpx;
-	margin-bottom: 6rpx;
+	margin-bottom: 2rpx;
 }
 
 .tab-item text {
@@ -837,14 +944,15 @@ export default {
 	text-align: justify;
 }
 
-.detail-location, .detail-availability, .detail-duedate {
+.detail-location, .detail-availability, .detail-duedate, .detail-borrow-days, .detail-borrow-date, .detail-due-date-calc, .detail-item {
 	display: flex;
+	align-items: center; /* 垂直居中对齐 */
 	font-size: 26rpx;
 	color: #666;
 	margin-bottom: 10rpx;
 }
 
-.location-label, .availability-label, .duedate-label {
+.location-label, .availability-label, .duedate-label, .borrow-days-label, .borrow-date-label, .due-date-label, .detail-label {
 	width: 160rpx;
 }
 
@@ -967,5 +1075,34 @@ export default {
 	color: #FFFFFF;
 	font-size: 30rpx;
 	border-radius: 40rpx;
+}
+
+.empty-list {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-top: 150rpx;
+	color: #999;
+}
+
+.empty-icon {
+	width: 120rpx;
+	height: 120rpx;
+	margin-bottom: 20rpx;
+}
+
+.book-status.overdue {
+	color: #FF3B30;
+	background-color: #FFEBEB;
+}
+
+.book-status.borrowing {
+	color: #007AFF;
+	background-color: #E6F2FF;
+}
+
+.book-status.returned {
+	background-color: #6c757d; /* 灰色状态 */
 }
 </style> 

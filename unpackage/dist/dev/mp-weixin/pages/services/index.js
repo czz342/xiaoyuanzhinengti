@@ -98,10 +98,44 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "recyclableRender", function() { return recyclableRender; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "components", function() { return components; });
 var components
+try {
+  components = {
+    qiunDataCharts: function () {
+      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 223))
+    },
+  }
+} catch (e) {
+  if (
+    e.message.indexOf("Cannot find module") !== -1 &&
+    e.message.indexOf(".vue") !== -1
+  ) {
+    console.error(e.message)
+    console.error("1. 排查组件名称拼写是否正确")
+    console.error(
+      "2. 排查组件是否符合 easycom 规范，文档：https://uniapp.dcloud.net.cn/collocation/pages?id=easycom"
+    )
+    console.error(
+      "3. 若组件不符合 easycom 规范，需手动引入，并在 components 中注册该组件"
+    )
+  } else {
+    throw e
+  }
+}
 var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
+  var g0 = _vm.isLunchTime
+    ? !_vm.chartData.categories || _vm.chartData.categories.length === 0
+    : null
+  _vm.$mp.data = Object.assign(
+    {},
+    {
+      $root: {
+        g0: g0,
+      },
+    }
+  )
 }
 var recyclableRender = false
 var staticRenderFns = []
@@ -137,10 +171,14 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 /* WEBPACK VAR INJECTION */(function(uni) {
 
+var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
+var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 //
 //
 //
@@ -349,22 +387,15 @@ exports.default = void 0;
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+var qiunDataCharts = function qiunDataCharts() {
+  Promise.all(/*! require.ensure | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then((function () {
+    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 223));
+  }).bind(null, __webpack_require__)).catch(__webpack_require__.oe);
+};
 var _default = {
+  components: {
+    qiunDataCharts: qiunDataCharts
+  },
   data: function data() {
     return {
       // 九宫格角标数据
@@ -384,6 +415,36 @@ var _default = {
       // 时间数据
       currentTime: '12:30',
       nextClassTime: 45,
+      chartData: {},
+      chartOptions: {
+        padding: [15, 15, 0, 5],
+        enableScroll: false,
+        legend: {
+          show: false
+        },
+        xAxis: {
+          disableGrid: true,
+          axisLine: false
+        },
+        yAxis: {
+          show: true,
+          disableGrid: true,
+          data: [{
+            min: 0,
+            max: 600
+          }]
+        },
+        extra: {
+          column: {
+            type: "group",
+            width: 20,
+            activeBgColor: "#000000",
+            activeBgOpacity: 0.08,
+            labelPosition: "top",
+            barBorderRadius: [4, 4, 0, 0]
+          }
+        }
+      },
       // 下一节课信息
       nextClass: {
         name: '高等数学（II）',
@@ -421,6 +482,10 @@ var _default = {
   onLoad: function onLoad() {
     // 页面加载时可以根据当前时间判断显示哪些推荐卡片
     this.getCurrentTimeInfo();
+  },
+  onShow: function onShow() {
+    this.updateTime();
+    this.fetchCanteenTraffic();
   },
   methods: {
     navigateTo: function navigateTo(url) {
@@ -477,6 +542,99 @@ var _default = {
     checkIfExamPeriod: function checkIfExamPeriod() {
       // 检查当前是否为考试周，这里用固定值模拟
       return true;
+    },
+    updateTime: function updateTime() {
+      var now = new Date();
+      this.currentTime = "".concat(String(now.getHours()).padStart(2, '0'), ":").concat(String(now.getMinutes()).padStart(2, '0'));
+    },
+    fetchCanteenTraffic: function fetchCanteenTraffic() {
+      var _this = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+        var canteenResponse, canteens, now, oneHourAgo, endTime, startTime, trafficPromises, trafficResults, categories, seriesData, displayMultiplier;
+        return _regenerator.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _context.prev = 0;
+                _context.next = 3;
+                return _kingdeeAgent.default.getCanteenList();
+              case 3:
+                canteenResponse = _context.sent;
+                if (!(!canteenResponse || !canteenResponse.data || !canteenResponse.data.rows)) {
+                  _context.next = 6;
+                  break;
+                }
+                throw new Error("获取食堂列表失败");
+              case 6:
+                canteens = canteenResponse.data.rows;
+                now = new Date();
+                oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+                endTime = _this.formatDateTime(now);
+                startTime = _this.formatDateTime(oneHourAgo);
+                trafficPromises = canteens.map(function (canteen) {
+                  return _kingdeeAgent.default.getTodaysCanteenOrders(canteen.number, startTime, endTime);
+                });
+                _context.next = 14;
+                return Promise.all(trafficPromises);
+              case 14:
+                trafficResults = _context.sent;
+                categories = [];
+                seriesData = [];
+                displayMultiplier = 10;
+                trafficResults.forEach(function (res, index) {
+                  var canteenName = canteens[index].name;
+                  var trafficCount = res && res.data ? parseInt(res.data.totalCount, 10) : 0;
+                  var displayCount = trafficCount * displayMultiplier;
+                  categories.push(canteenName);
+                  var color = '';
+                  if (displayCount <= 100) {
+                    color = '#4cd964'; // Green
+                  } else if (displayCount <= 300) {
+                    color = '#FEEA9A'; // Light Yellow
+                  } else if (displayCount <= 500) {
+                    color = '#ff9500'; // Orange
+                  } else {
+                    color = '#ff3b30'; // Red
+                  }
+
+                  seriesData.push({
+                    value: displayCount,
+                    color: color
+                  });
+                });
+                _this.chartData = {
+                  categories: categories,
+                  series: [{
+                    name: "当前人流量",
+                    data: seriesData
+                  }]
+                };
+                _context.next = 26;
+                break;
+              case 22:
+                _context.prev = 22;
+                _context.t0 = _context["catch"](0);
+                console.error("获取食堂人流数据失败:", _context.t0);
+                _this.chartData = {
+                  categories: [],
+                  series: []
+                };
+              case 26:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, null, [[0, 22]]);
+      }))();
+    },
+    formatDateTime: function formatDateTime(date) {
+      var year = date.getFullYear();
+      var month = String(date.getMonth() + 1).padStart(2, '0');
+      var day = String(date.getDate()).padStart(2, '0');
+      var hours = String(date.getHours()).padStart(2, '0');
+      var minutes = String(date.getMinutes()).padStart(2, '0');
+      var seconds = String(date.getSeconds()).padStart(2, '0');
+      return "".concat(year, "-").concat(month, "-").concat(day, " ").concat(hours, ":").concat(minutes, ":").concat(seconds);
     }
   }
 };
