@@ -53,8 +53,11 @@
             <text class="package-desc">{{pkg.description}}</text>
             <text class="update-time">{{pkg.updateTime}}</text>
           </view>
-          <view class="action-area" v-if="pkg.status === 'arrived'">
-            <button class="action-btn pickup" @tap.stop="showPickupCode(pkg)">取件码</button>
+          <view class="action-area">
+            <view v-if="pkg.status === '待取件'" class="pickup-code-on-card">
+              <text class="pickup-code-label">取件码</text>
+              <text class="pickup-code-value">{{ pkg.pickupCode }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -89,11 +92,11 @@
             <text class="detail-label">物品描述</text>
             <text class="detail-value">{{currentPackage.description}}</text>
           </view>
-          <view class="detail-item" v-if="currentPackage.status === 'arrived'">
+          <view class="detail-item" v-if="currentPackage.status === '待取件'">
             <text class="detail-label">驿站位置</text>
             <text class="detail-value">{{currentPackage.location}}</text>
           </view>
-          <view class="detail-item" v-if="currentPackage.status === 'arrived'">
+          <view class="detail-item" v-if="currentPackage.status === '待取件'">
             <text class="detail-label">取件码</text>
             <text class="pickup-code">{{currentPackage.pickupCode}}</text>
           </view>
@@ -110,7 +113,7 @@
           </view>
         </view>
 
-        <view class="detail-actions" v-if="currentPackage.status === 'arrived'">
+        <view class="detail-actions" v-if="currentPackage.status === '待取件'">
           <button class="detail-btn navigate" @tap="navigateToPickup">
             <text class="btn-icon">🧭</text>
             <text>导航取件</text>
@@ -175,6 +178,8 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
   data() {
     return {
@@ -195,106 +200,174 @@ export default {
           '步行50米后可在右侧看到快递驿站'
         ]
       },
-      allPackages: [
-        {
-          id: 1,
-          courier: '顺丰速运',
-          courierIcon: '/static/images/sf-express.png',
-          trackingNumber: 'SF1234567890123',
-          description: '图书 1件',
-          status: 'arrived',
-          statusText: '待取件',
-          statusClass: 'status-arrived',
-          updateTime: '今天 12:30',
-          location: '第二教学楼东侧快递驿站',
-          pickupCode: 'SF8842',
-          distance: '650米',
-          trackingInfo: [
-            { status: '快递已到达驿站，请凭取件码尽快领取', time: '今天 12:30' },
-            { status: '快递已到达学校集散中心', time: '今天 10:15' },
-            { status: '快件正在派送途中', time: '今天 08:42' },
-            { status: '快件已到达当地配送站', time: '昨天 20:13' },
-            { status: '快件已从上海发出', time: '昨天 06:25' },
-            { status: '快件已揽收', time: '前天 18:00' }
-          ]
-        },
-        {
-          id: 2,
-          courier: '中通快递',
-          courierIcon: '/static/images/zt-express.png',
-          trackingNumber: 'ZT98765432109876',
-          description: '衣物 1件',
-          status: 'inTransit',
-          statusText: '运输中',
-          statusClass: 'status-transit',
-          updateTime: '今天 09:15',
-          trackingInfo: [
-            { status: '快件已到达当地配送站', time: '今天 09:15' },
-            { status: '快件已从北京发出', time: '昨天 14:30' },
-            { status: '快件已揽收', time: '昨天 10:22' }
-          ]
-        },
-        {
-          id: 3,
-          courier: '圆通速递',
-          courierIcon: '/static/images/yt-express.png',
-          trackingNumber: 'YT3333333333333',
-          description: '电子产品 1件',
-          status: 'arrived',
-          statusText: '待取件',
-          statusClass: 'status-arrived',
-          updateTime: '昨天 15:45',
-          location: '图书馆南侧快递驿站',
-          pickupCode: 'YT2468',
-          distance: '850米',
-          trackingInfo: [
-            { status: '快递已到达驿站，请凭取件码尽快领取', time: '昨天 15:45' },
-            { status: '快递已到达学校集散中心', time: '昨天 13:20' },
-            { status: '快件正在派送途中', time: '昨天 09:18' },
-            { status: '快件已到达当地配送站', time: '前天 22:34' },
-            { status: '快件已从广州发出', time: '3天前 10:15' },
-            { status: '快件已揽收', time: '3天前 08:00' }
-          ]
-        },
-        {
-          id: 4,
-          courier: '京东物流',
-          courierIcon: '/static/images/jd-express.png',
-          trackingNumber: 'JD1212121212121',
-          description: '日用品 2件',
-          status: 'completed',
-          statusText: '已签收',
-          statusClass: 'status-completed',
-          updateTime: '3天前 14:30',
-          trackingInfo: [
-            { status: '包裹已签收，感谢您使用京东物流', time: '3天前 14:30' },
-            { status: '快递已到达驿站，请凭取件码尽快领取', time: '3天前 10:25' },
-            { status: '快递已到达学校集散中心', time: '3天前 08:10' },
-            { status: '快件正在派送途中', time: '4天前 15:43' },
-            { status: '快件已到达当地配送站', time: '4天前 06:30' },
-            { status: '快件已从上海发出', time: '5天前 18:22' },
-            { status: '快件已揽收', time: '5天前 15:10' }
-          ]
-        }
-      ]
+      allPackages: []
     }
   },
   computed: {
     inTransitCount() {
-      return this.allPackages.filter(pkg => pkg.status === 'inTransit').length;
+      return this.allPackages.filter(pkg => pkg.status === '运输中').length;
     },
     arrivedCount() {
-      return this.allPackages.filter(pkg => pkg.status === 'arrived').length;
+      return this.allPackages.filter(pkg => pkg.status === '待取件').length;
     },
     completedCount() {
-      return this.allPackages.filter(pkg => pkg.status === 'completed').length;
+      return this.allPackages.filter(pkg => pkg.status === '已签收').length;
     },
     filteredPackages() {
-      if (this.filter === 'all') return this.allPackages;
-      return this.allPackages.filter(pkg => pkg.status === this.filter);
+      if (this.filter === 'all') {
+        return this.allPackages;
+      }
+      const statusMap = {
+        inTransit: '运输中',
+        arrived: '待取件',
+        completed: '已签收'
+      };
+      const chineseStatus = statusMap[this.filter];
+      return this.allPackages.filter(pkg => pkg.status === chineseStatus);
     }
   },
   methods: {
+    async fetchPackages() {
+      try {
+        const response = await KingdeeAgentService.getExpressPackagesByPhone('13735563391');
+        if (response && response.data && response.data.rows) {
+          let packages = response.data.rows.map(pkg => this.formatPackageData(pkg));
+          
+          // 定义状态的排序优先级
+          const statusOrder = {
+            '待取件': 1,
+            '运输中': 2,
+            '已签收': 3
+          };
+          
+          // 对快递列表进行排序
+          packages.sort((a, b) => {
+            const orderA = statusOrder[a.status] || 99; // 未知状态排在最后
+            const orderB = statusOrder[b.status] || 99;
+            if (orderA !== orderB) {
+              return orderA - orderB;
+            }
+            // 如果状态相同，可以根据更新时间降序排
+            return new Date(b.updateTime) - new Date(a.updateTime);
+          });
+          
+          this.allPackages = packages;
+
+        } else {
+          uni.showToast({ title: '加载快递信息失败', icon: 'none' });
+        }
+      } catch (error) {
+        console.error('获取快递列表失败:', error);
+        uni.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
+      }
+    },
+
+    formatPackageData(pkg) {
+      const statusMap = {
+        '待取件': { text: '待取件', class: 'status-arrived' },
+        '运输中': { text: '运输中', class: 'status-transit' },
+        '已签收': { text: '已签收', class: 'status-completed' }
+      };
+      
+      const courierMap = {
+        '顺丰快递': '/static/images/sf-express.png',
+        '中通快递': '/static/images/zt-express.png',
+        '圆通速递': '/static/images/yt-express.png',
+        '京东物流': '/static/images/jd-express.png'
+      };
+
+      return {
+        id: pkg.billno,
+        courier: pkg.lb77_courier_name,
+        courierIcon: courierMap[pkg.lb77_courier_name] || '/static/images/default-express.png',
+        trackingNumber: pkg.billno,
+        description: pkg.lb77_package_desc,
+        status: pkg.lb77_status,
+        statusText: statusMap[pkg.lb77_status]?.text || '未知状态',
+        statusClass: statusMap[pkg.lb77_status]?.class || '',
+        updateTime: this.formatTrackTime(pkg.lb77_datetimefield ? new Date(pkg.lb77_datetimefield) : new Date(pkg.modifytime)),
+        location: pkg.lb77_pickup_station_name,
+        pickupCode: pkg.lb77_pickup_code,
+        distance: '约' + (Math.floor(Math.random() * 10) * 100 + 100) + '米',
+        trackingInfo: this.generateTrackingInfo(pkg)
+      };
+    },
+
+    generateTrackingInfo(pkg) {
+        const info = [];
+        const arrivalTime = pkg.lb77_datetimefield ? new Date(pkg.lb77_datetimefield) : new Date();
+        const format = (date) => this.formatTrackTime(date);
+
+        // 1. 已签收（如果状态是已签收）
+        if (pkg.lb77_status === '已签收') {
+            const signTime = new Date(arrivalTime.getTime() + Math.random() * 2 * 3600 * 1000); // 随机生成签收时间
+            info.push({ status: '您的快递已签收，感谢使用。', time: format(signTime) });
+        }
+
+        // 2. 到达驿站（如果状态是待取件或已签收）
+        if (pkg.lb77_status === '待取件' || pkg.lb77_status === '已签收') {
+            info.push({
+                status: `[${pkg.lb77_pickup_station_name || '未知驿站'}] 快递已到达，请凭取件码 ${pkg.lb77_pickup_code || 'N/A'} 尽快领取。`,
+                time: format(arrivalTime)
+            });
+        }
+
+        // 3. 派送中
+        const dispatchTime = new Date(arrivalTime.getTime() - (2 + Math.random() * 4) * 3600 * 1000);
+        info.push({ status: `[${pkg.lb77_courier_name || '快递员'}] 正在为您派送，联系电话：138****1234。`, time: format(dispatchTime) });
+
+        // 4. 到达集散中心
+        const cityCenterTime = new Date(dispatchTime.getTime() - (1 + Math.random() * 3) * 3600 * 1000);
+        info.push({ status: '快件已到达 [本地集散中心] ，准备进行派送。', time: format(cityCenterTime) });
+
+        // 5. 离开上一站
+        const departureTime = new Date(cityCenterTime.getTime() - (12 + Math.random() * 24) * 3600 * 1000);
+        info.push({ status: '快件已从 [始发地] 发出。', time: format(departureTime) });
+
+        // 6. 已揽收
+        const pickupTime = new Date(departureTime.getTime() - (1 + Math.random() * 5) * 3600 * 1000);
+        info.push({ status: '快件已被揽收。', time: format(pickupTime) });
+        
+        // 如果是运输中，则移除和到达驿站相关的信息
+        if (pkg.lb77_status === '运输中') {
+            return info.filter(item => !item.status.includes('快递已到达') && !item.status.includes('已签收'));
+        }
+
+        return info;
+    },
+
+    formatTrackTime(date) {
+        if (!date) return 'N/A';
+        if (!(date instanceof Date)) {
+            date = new Date(date);
+        }
+        if (isNaN(date.getTime())) return '无效日期';
+
+        const now = new Date();
+        const isToday = date.getFullYear() === now.getFullYear() &&
+                        date.getMonth() === now.getMonth() &&
+                        date.getDate() === now.getDate();
+
+        const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString();
+        
+        now.setDate(now.getDate() + 1); // 恢复now的日期
+
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const timeStr = `${hours}:${minutes}`;
+
+        if (isToday) {
+            return `今天 ${timeStr}`;
+        }
+        if (isYesterday) {
+            return `昨天 ${timeStr}`;
+        }
+        
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${month}-${day} ${timeStr}`;
+    },
+    
     // 扫描快递单号
     scanPackage() {
       uni.scanCode({
@@ -418,30 +491,36 @@ export default {
               icon: 'success'
             });
           }
+          // 在第一个弹窗关闭后，再触发第二个弹窗
+          this.showNewPackageNotification();
         }
       });
+    },
+
+    showNewPackageNotification() {
+        const packageToNotify = this.allPackages.find(p => p.status === '待取件');
+        if (packageToNotify) {
+            // 移除setTimeout，让弹窗在正确时机立即出现
+            uni.showModal({
+                title: '新快递到达提醒',
+                content: `您有来自【${packageToNotify.courier}】的快递已到达【${packageToNotify.location}】，是否立即查看？`,
+                confirmText: '查看',
+                cancelText: '稍后',
+                success: (res) => {
+                    if (res.confirm) {
+                        this.showPackageDetail(packageToNotify);
+                    }
+                }
+            });
+        }
     }
   },
-  onLoad() {
-    // 页面加载时执行
-    this.autoDetectExpressFromSMS();
+  async onLoad() {
+    await this.fetchPackages(); // 等待数据加载完成
+    this.autoDetectExpressFromSMS(); // 然后再显示第一个弹窗
   },
   onShow() {
-    // 模拟新快递通知
-    if (Math.random() > 0.5) {
-      setTimeout(() => {
-        uni.showModal({
-          title: '新快递到达',
-          content: '您有1个新快递已到达第二教学楼东侧快递驿站，是否查看详情？',
-          confirmText: '查看',
-          success: (res) => {
-            if (res.confirm) {
-              this.showPackageDetail(this.allPackages[0]);
-            }
-          }
-        });
-      }, 1500);
-    }
+    // 页面显示时可以考虑是否需要刷新
   }
 }
 </script>
@@ -614,17 +693,27 @@ export default {
   min-width: 140rpx;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 }
-.action-btn {
-  font-size: 26rpx;
-  padding: 10rpx 24rpx;
-  border-radius: 30rpx;
-  background: #fff;
-  border: 1rpx solid;
+.pickup-code-on-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff7e6;
+  padding: 8rpx 20rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid #ffeacc;
 }
-.pickup {
+.pickup-code-label {
+  font-size: 20rpx;
+  color: #ff9500;
+}
+.pickup-code-value {
+  font-size: 28rpx;
+  font-weight: bold;
   color: #ff8000;
-  border-color: #ff8000;
+  line-height: 1.2;
 }
 .empty-tip {
   display: flex;

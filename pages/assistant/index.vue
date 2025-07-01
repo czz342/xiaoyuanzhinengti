@@ -104,7 +104,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://cent-group-parenting-animated.trycloudflare.com", 
+			tunnelUrl: "https://rewards-pas-features-consulting.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,

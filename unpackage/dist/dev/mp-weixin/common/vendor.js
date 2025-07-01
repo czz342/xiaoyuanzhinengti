@@ -30717,6 +30717,48 @@ var KingdeeAgentService = /*#__PURE__*/function () {
       }
       return getTodaysCanteenOrders;
     }()
+    /**
+     * @description 根据手机号获取名下所有快递包裹
+     * @param {string} phoneNumber - 收件人的手机号码
+     * @param {number} pageSize - 每页数量
+     * @param {number} pageNo - 页码
+     */
+  }, {
+    key: "getExpressPackagesByPhone",
+    value: function () {
+      var _getExpressPackagesByPhone = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee26(phoneNumber) {
+        var pageSize,
+          pageNo,
+          _args26 = arguments;
+        return _regenerator.default.wrap(function _callee26$(_context26) {
+          while (1) {
+            switch (_context26.prev = _context26.next) {
+              case 0:
+                pageSize = _args26.length > 1 && _args26[1] !== undefined ? _args26[1] : 50;
+                pageNo = _args26.length > 2 && _args26[2] !== undefined ? _args26[2] : 1;
+                return _context26.abrupt("return", (0, _request.request)({
+                  url: '/kapi/v2/lb77/lb77_express/lb77_express_packages/getExpressPackagesByPhone',
+                  method: 'POST',
+                  data: {
+                    data: {
+                      lb77_recipient_lb77_phone: phoneNumber
+                    },
+                    pageSize: pageSize,
+                    pageNo: pageNo
+                  }
+                }));
+              case 3:
+              case "end":
+                return _context26.stop();
+            }
+          }
+        }, _callee26);
+      }));
+      function getExpressPackagesByPhone(_x26) {
+        return _getExpressPackagesByPhone.apply(this, arguments);
+      }
+      return getExpressPackagesByPhone;
+    }()
   }]);
   return KingdeeAgentService;
 }();

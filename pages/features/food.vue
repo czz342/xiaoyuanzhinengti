@@ -110,6 +110,29 @@
 				</scroll-view>
 			</view>
 		</uni-popup>
+
+		<!-- 菜品详情弹窗 -->
+		<uni-popup ref="foodDetailPopup" type="bottom">
+			<view class="food-detail-popup-container" v-if="selectedFoodItem">
+				<image :src="selectedFoodItem.image" mode="aspectFill" class="popup-food-image"></image>
+				<view class="popup-close-btn" @tap="closeFoodDetailPopup">
+					<uni-icons type="close" color="#333" size="24"></uni-icons>
+				</view>
+				<view class="popup-food-content">
+					<text class="popup-food-name">{{ selectedFoodItem.name }}</text>
+					<view class="food-tags popup-tags">
+						<view v-for="(tag, tagIndex) in selectedFoodItem.tags" :key="tagIndex" class="food-tag">
+							<text>{{ tag }}</text>
+						</view>
+					</view>
+					<text class="popup-food-sales">月售{{ selectedFoodItem.monthlySales }}+</text>
+					<view class="popup-footer">
+						<text class="popup-food-price">¥{{ selectedFoodItem.price.toFixed(2) }}</text>
+						<button class="popup-add-to-cart-btn" @tap="addToCartFromPopup">加入购物车</button>
+					</view>
+				</view>
+			</view>
+		</uni-popup>
 	</view>
 </template>
 
@@ -124,7 +147,8 @@ export default {
 			cart: [],
 			canteens: [],
 			filters: ['全部', '特价', '热销', '套餐', '素食'],
-			foodItems: []
+			foodItems: [],
+			selectedFoodItem: null // 用于菜品详情弹窗
 		}
 	},
 	computed: {
@@ -252,10 +276,17 @@ export default {
 			this.selectedFilter = index;
 		},
 		viewFoodDetail(item) {
-			uni.showToast({
-				title: '查看详情: ' + item.name,
-				icon: 'none'
-			});
+			this.selectedFoodItem = item;
+			this.$refs.foodDetailPopup.open();
+		},
+		closeFoodDetailPopup() {
+			this.$refs.foodDetailPopup.close();
+		},
+		addToCartFromPopup() {
+			if (this.selectedFoodItem) {
+				this.addToCart(this.selectedFoodItem);
+				this.closeFoodDetailPopup();
+			}
 		},
 		addToCart(item) {
 			const existingItem = this.cart.find(cartItem => cartItem.number === item.number);
@@ -732,5 +763,83 @@ export default {
 
 .item-controls {
 	/* 数量选择器样式会由uni-number-box组件自带 */
+}
+
+/* 菜品详情弹窗样式 */
+.food-detail-popup-container {
+	background-color: #ffffff;
+	border-top-left-radius: 30rpx;
+	border-top-right-radius: 30rpx;
+	padding-bottom: constant(safe-area-inset-bottom);
+	padding-bottom: env(safe-area-inset-bottom);
+	position: relative;
+	overflow: hidden;
+}
+
+.popup-food-image {
+	width: 100%;
+	height: 450rpx;
+}
+
+.popup-close-btn {
+	position: absolute;
+	top: 30rpx;
+	right: 30rpx;
+	width: 60rpx;
+	height: 60rpx;
+	background-color: rgba(255, 255, 255, 0.8);
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	backdrop-filter: blur(5px);
+}
+
+.popup-food-content {
+	padding: 30rpx;
+}
+
+.popup-food-name {
+	font-size: 40rpx;
+	font-weight: bold;
+	margin-bottom: 20rpx;
+	display: block;
+}
+
+.popup-tags {
+	margin-bottom: 20rpx;
+}
+
+.popup-food-sales {
+	font-size: 24rpx;
+	color: #999;
+	margin-bottom: 30rpx;
+	display: block;
+}
+
+.popup-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 20rpx;
+}
+
+.popup-food-price {
+	font-size: 44rpx;
+	color: #ff3b30;
+	font-weight: bold;
+}
+
+.popup-add-to-cart-btn {
+	background-color: #007AFF;
+	color: #ffffff;
+	border: none;
+	border-radius: 50rpx;
+	padding: 0 50rpx;
+	height: 80rpx;
+	line-height: 80rpx;
+	font-size: 28rpx;
+	font-weight: bold;
+	box-shadow: 0 6rpx 15rpx rgba(0, 122, 255, 0.4);
 }
 </style> 

@@ -879,6 +879,26 @@ class KingdeeAgentService {
       }
     });
   }
+
+  /**
+   * @description 根据手机号获取名下所有快递包裹
+   * @param {string} phoneNumber - 收件人的手机号码
+   * @param {number} pageSize - 每页数量
+   * @param {number} pageNo - 页码
+   */
+  static async getExpressPackagesByPhone(phoneNumber, pageSize = 50, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_express/lb77_express_packages/getExpressPackagesByPhone',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_recipient_lb77_phone: phoneNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
 }
 
 export default KingdeeAgentService; 
