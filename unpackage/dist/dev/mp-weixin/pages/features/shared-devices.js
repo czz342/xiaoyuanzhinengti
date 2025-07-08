@@ -101,7 +101,7 @@ var components
 try {
   components = {
     uniIcons: function () {
-      return Promise.all(/*! import() | uni_modules/uni-icons/components/uni-icons/uni-icons */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/uni-icons/components/uni-icons/uni-icons")]).then(__webpack_require__.bind(null, /*! @/uni_modules/uni-icons/components/uni-icons/uni-icons.vue */ 280))
+      return Promise.all(/*! import() | uni_modules/uni-icons/components/uni-icons/uni-icons */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/uni-icons/components/uni-icons/uni-icons")]).then(__webpack_require__.bind(null, /*! @/uni_modules/uni-icons/components/uni-icons/uni-icons.vue */ 296))
     },
   }
 } catch (e) {
@@ -160,11 +160,15 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 /* WEBPACK VAR INJECTION */(function(uni) {
 
+var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-//
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
+var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
+var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 //
 //
 //
@@ -300,41 +304,18 @@ exports.default = void 0;
 var _default = {
   data: function data() {
     return {
-      nearbyDevices: [{
-        icon: '/static/images/washer-icon.png',
-        name: '洗衣机 W001',
-        location: '图书馆一楼',
-        distance: '50m',
-        status: '空闲中',
-        statusClass: 'status-available'
-      }, {
-        icon: '/static/images/washer-icon.png',
-        name: '洗衣机 W002',
-        location: '图书馆一楼',
-        distance: '50m',
-        status: '使用中',
-        statusClass: 'status-busy'
-      }, {
-        icon: '/static/images/printer-icon.png',
-        name: '打印机 P001',
-        location: '图书馆一楼',
-        distance: '30m',
-        status: '空闲中',
-        statusClass: 'status-available'
-      }, {
-        icon: '/static/images/printer-icon.png',
-        name: '打印机 P002',
-        location: '图书馆一楼',
-        distance: '30m',
-        status: '空闲中',
-        statusClass: 'status-available'
-      }],
+      stats: {
+        availableLaundry: 0,
+        availablePrinters: 0,
+        deviceIntegrity: '0%'
+      },
+      nearbyDevices: [],
       usageGuides: [{
-        cover: '/static/images/guide-laundry.png',
+        cover: '/static/images/guide-laundry.jpg',
         title: '如何使用智能洗衣服务',
         description: '3分钟快速了解智能洗衣全流程'
       }, {
-        cover: '/static/images/guide-printing.png',
+        cover: '/static/images/guide-printing.jpg',
         title: '自助打印使用指南',
         description: '远程打印全攻略'
       }, {
@@ -344,7 +325,115 @@ var _default = {
       }]
     };
   },
+  onShow: function onShow() {
+    this.loadPageData();
+  },
   methods: {
+    loadPageData: function loadPageData() {
+      var _this = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+        var _allDevicesRes$data$r, _allDevicesRes$data, _busyLaundryRes$data$, _busyLaundryRes$data, _busyPrinterRes$data$, _busyPrinterRes$data, allDevicesRes, allDevices, queryTime, _yield$Promise$all, _yield$Promise$all2, busyLaundryRes, busyPrinterRes, busyLaundryIds, busyPrinterIds, totalLaundry, availableLaundry, totalPrinters, availablePrinters, normalDevices, processedDevices;
+        return _regenerator.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                uni.showLoading({
+                  title: '加载中...'
+                });
+                _context.prev = 1;
+                _context.next = 4;
+                return _kingdeeAgent.default.getAllSharedDevices(200);
+              case 4:
+                allDevicesRes = _context.sent;
+                allDevices = (_allDevicesRes$data$r = allDevicesRes === null || allDevicesRes === void 0 ? void 0 : (_allDevicesRes$data = allDevicesRes.data) === null || _allDevicesRes$data === void 0 ? void 0 : _allDevicesRes$data.rows) !== null && _allDevicesRes$data$r !== void 0 ? _allDevicesRes$data$r : []; // 2. 获取当前时间用于查询繁忙设备
+                queryTime = _this.formatDate(new Date()); // 3. 并行获取繁忙的洗衣机和打印机
+                _context.next = 9;
+                return Promise.all([_kingdeeAgent.default.getBusyLaundryDeviceIds(queryTime), _kingdeeAgent.default.getBusyPrinterDeviceIds(queryTime)]);
+              case 9:
+                _yield$Promise$all = _context.sent;
+                _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2);
+                busyLaundryRes = _yield$Promise$all2[0];
+                busyPrinterRes = _yield$Promise$all2[1];
+                busyLaundryIds = new Set(((_busyLaundryRes$data$ = busyLaundryRes === null || busyLaundryRes === void 0 ? void 0 : (_busyLaundryRes$data = busyLaundryRes.data) === null || _busyLaundryRes$data === void 0 ? void 0 : _busyLaundryRes$data.rows) !== null && _busyLaundryRes$data$ !== void 0 ? _busyLaundryRes$data$ : []).map(function (d) {
+                  return d.lb77_device_number;
+                }));
+                busyPrinterIds = new Set(((_busyPrinterRes$data$ = busyPrinterRes === null || busyPrinterRes === void 0 ? void 0 : (_busyPrinterRes$data = busyPrinterRes.data) === null || _busyPrinterRes$data === void 0 ? void 0 : _busyPrinterRes$data.rows) !== null && _busyPrinterRes$data$ !== void 0 ? _busyPrinterRes$data$ : []).map(function (d) {
+                  return d.lb77_device_number;
+                })); // 4. 计算统计数据和设备列表
+                totalLaundry = 0;
+                availableLaundry = 0;
+                totalPrinters = 0;
+                availablePrinters = 0;
+                normalDevices = 0;
+                processedDevices = allDevices.map(function (device) {
+                  var status = '';
+                  var statusClass = '';
+                  var isLaundry = device.lb77_device_type === '洗衣机';
+                  var isPrinter = device.lb77_device_type === '打印机';
+                  if (isLaundry) totalLaundry++;
+                  if (isPrinter) totalPrinters++;
+                  if (device.lb77_status !== '正常') {
+                    status = '故障';
+                    statusClass = 'status-fault'; // 需要定义这个新class
+                  } else {
+                    normalDevices++;
+                    var isBusy = false;
+                    if (isLaundry) isBusy = busyLaundryIds.has(device.number);
+                    if (isPrinter) isBusy = busyPrinterIds.has(device.number);
+                    if (isBusy) {
+                      status = '使用中';
+                      statusClass = 'status-busy';
+                    } else {
+                      status = '空闲中';
+                      statusClass = 'status-available';
+                      if (isLaundry) availableLaundry++;
+                      if (isPrinter) availablePrinters++;
+                    }
+                  }
+                  return {
+                    id: device.number,
+                    icon: isLaundry ? '/static/images/washer-icon.png' : '/static/images/printer-icon.png',
+                    name: device.name,
+                    location: device.lb77_location,
+                    status: status,
+                    statusClass: statusClass
+                  };
+                });
+                _this.stats.availableLaundry = availableLaundry;
+                _this.stats.availablePrinters = availablePrinters;
+                _this.stats.deviceIntegrity = allDevices.length > 0 ? "".concat(Math.round(normalDevices / allDevices.length * 100), "%") : '100%';
+                _this.nearbyDevices = processedDevices;
+                _context.next = 31;
+                break;
+              case 27:
+                _context.prev = 27;
+                _context.t0 = _context["catch"](1);
+                console.error("加载共享设备页面数据失败:", _context.t0);
+                uni.showToast({
+                  title: '数据加载失败',
+                  icon: 'error'
+                });
+              case 31:
+                _context.prev = 31;
+                uni.hideLoading();
+                return _context.finish(31);
+              case 34:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, null, [[1, 27, 31, 34]]);
+      }))();
+    },
+    formatDate: function formatDate(date) {
+      var y = date.getFullYear();
+      var m = (date.getMonth() + 1).toString().padStart(2, '0');
+      var d = date.getDate().toString().padStart(2, '0');
+      var h = date.getHours().toString().padStart(2, '0');
+      var i = date.getMinutes().toString().padStart(2, '0');
+      var s = date.getSeconds().toString().padStart(2, '0');
+      return "".concat(y, "-").concat(m, "-").concat(d, " ").concat(h, ":").concat(i, ":").concat(s);
+    },
     navigateToLaundry: function navigateToLaundry() {
       uni.navigateTo({
         url: '/pages/features/laundry'

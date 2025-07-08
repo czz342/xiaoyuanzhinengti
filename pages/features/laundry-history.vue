@@ -6,26 +6,37 @@
 
 		<!-- 筛选标签 -->
 		<view class="filter-tabs">
-			<view class="tab-item" :class="{ 'active': filter === 'all' }" @tap="filter = 'all'">全部</view>
-			<view class="tab-item" :class="{ 'active': filter === 'completed' }" @tap="filter = 'completed'">已完成</view>
-			<view class="tab-item" :class="{ 'active': filter === 'processing' }" @tap="filter = 'processing'">进行中</view>
+			<view class="tab-item" :class="{ 'active': filter === 'all' }" @tap="setFilter('all')">全部</view>
+			<view class="tab-item" :class="{ 'active': filter === 'completed' }" @tap="setFilter('completed')">已完成</view>
+			<view class="tab-item" :class="{ 'active': filter === 'processing' }" @tap="setFilter('processing')">进行中</view>
 		</view>
 
 		<!-- 订单列表 -->
-		<scroll-view scroll-y class="order-list">
+		<scroll-view scroll-y class="order-list" @scrolltolower="loadMore" lower-threshold="50">
+			<view v-if="isLoading" class="loading-state">
+				<uni-load-more status="loading"></uni-load-more>
+			</view>
 			<view v-for="order in filteredOrders" :key="order.id" class="order-card">
 				<view class="card-header">
-					<text class="location">{{ order.location }} - {{ order.machine }}</text>
+					<text class="location">{{ order.location }}</text>
 					<text class="status" :class="order.status">{{ order.statusText }}</text>
 				</view>
 				<view class="card-body">
+					<view class="order-detail">
+						<text class="detail-label">设备：</text>
+						<text class="detail-value">{{ order.machine }}</text>
+					</view>
 					<view class="order-detail">
 						<text class="detail-label">模式：</text>
 						<text class="detail-value">{{ order.mode }}</text>
 					</view>
 					<view class="order-detail">
-						<text class="detail-label">时间：</text>
-						<text class="detail-value">{{ order.time }}</text>
+						<text class="detail-label">开始：</text>
+						<text class="detail-value">{{ order.startTime }}</text>
+					</view>
+					<view class="order-detail">
+						<text class="detail-label">结束：</text>
+						<text class="detail-value">{{ order.endTime }}</text>
 					</view>
 					<view class="order-detail">
 						<text class="detail-label">金额：</text>
@@ -33,55 +44,34 @@
 					</view>
 				</view>
 				<view class="card-footer">
-					<button class="footer-btn outline" @tap="viewDetails(order)">查看详情</button>
 					<button class="footer-btn" @tap="orderAgain(order)">再来一单</button>
 				</view>
 			</view>
-			<view v-if="filteredOrders.length === 0" class="empty-state">
+			<view v-if="!isLoading && orders.length === 0" class="empty-state">
 				<image src="/static/images/empty-box.png" mode="aspectFit" class="empty-icon"></image>
 				<text class="empty-text">暂无相关订单</text>
+			</view>
+			<view v-if="!isLoading && orders.length > 0">
+				<uni-load-more :status="loadMoreStatus"></uni-load-more>
 			</view>
 		</scroll-view>
 	</view>
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
 			filter: 'all',
-			orders: [
-				{
-					id: 1,
-					location: '五栋宿舍楼',
-					machine: '07号机',
-					status: 'completed',
-					statusText: '已完成',
-					mode: '标准洗',
-					time: '2024-05-20 18:30',
-					cost: '4.00'
-				},
-				{
-					id: 2,
-					location: '二栋宿舍楼',
-					machine: '03号机',
-					status: 'completed',
-					statusText: '已完成',
-					mode: '快速洗',
-					time: '2024-05-18 12:15',
-					cost: '3.00'
-				},
-				{
-					id: 3,
-					location: '五栋宿舍楼',
-					machine: '02号机',
-					status: 'processing',
-					statusText: '进行中',
-					mode: '强力洗',
-					time: '2024-05-21 09:00',
-					cost: '5.00'
-				}
-			]
+			orders: [],
+			isLoading: true,
+			pageNo: 1,
+			pageSize: 10,
+			hasMore: true,
+			loadMoreStatus: 'more', // more, loading, noMore
+			studentId: '645730151', // 测试学号
 		}
 	},
 	computed: {
@@ -92,10 +82,77 @@ export default {
 			return this.orders.filter(order => order.status === this.filter);
 		}
 	},
+	onLoad(options) {
+		if (options && options.filter) {
+			this.filter = options.filter;
+		}
+		this.loadOrders(true);
+	},
 	methods: {
+		async loadOrders(isRefresh = false) {
+			if (isRefresh) {
+				this.pageNo = 1;
+				this.orders = [];
+				this.hasMore = true;
+				this.loadMoreStatus = 'more';
+				this.isLoading = true;
+			}
+			
+			if (!this.hasMore) {
+				this.loadMoreStatus = 'noMore';
+				return;
+			}
+
+			this.loadMoreStatus = 'loading';
+			
+			try {
+				const res = await KingdeeAgentService.getMyLaundryOrders(this.studentId, this.pageSize, this.pageNo);
+				const fetchedOrders = res?.data?.rows ?? [];
+
+				if (fetchedOrders.length < this.pageSize) {
+					this.hasMore = false;
+					this.loadMoreStatus = 'noMore';
+				}
+
+				const formattedOrders = fetchedOrders.map(o => {
+					const now = new Date();
+					const endTime = new Date(o.lb77_end_time);
+					const isProcessing = now < endTime;
+
+					return {
+						id: o.billno,
+						location: o.lb77_device_lb77_location,
+						machine: o.lb77_device_name,
+						status: isProcessing ? 'processing' : 'completed',
+						statusText: isProcessing ? '进行中' : '已完成',
+						mode: o.lb77_laundry_mode_name,
+						startTime: o.createtime,
+						endTime: o.lb77_end_time,
+						cost: o.lb77_cost.toFixed(2)
+					};
+				});
+
+				this.orders = [...this.orders, ...formattedOrders];
+				this.pageNo++;
+
+			} catch (error) {
+				console.error("获取洗衣订单失败:", error);
+				uni.showToast({ title: '加载失败', icon: 'error' });
+				this.loadMoreStatus = 'more';
+			} finally {
+				this.isLoading = false;
+			}
+		},
+		loadMore() {
+			this.loadOrders();
+		},
+		setFilter(newFilter) {
+			this.filter = newFilter;
+			// 本地筛选，无需重新加载
+		},
 		viewDetails(order) {
 			uni.showToast({
-				title: `查看订单 ${order.id} 详情`,
+				title: `功能开发中`,
 				icon: 'none'
 			});
 		},
@@ -139,6 +196,7 @@ export default {
 	border-radius: 30rpx;
 	margin-right: 20rpx;
 	background-color: #fff;
+	transition: all 0.3s;
 }
 
 .tab-item.active {
@@ -193,6 +251,7 @@ export default {
 .detail-label {
 	color: #999;
 	width: 120rpx;
+	flex-shrink: 0;
 }
 
 .detail-value {
@@ -243,5 +302,9 @@ export default {
 .empty-text {
 	font-size: 28rpx;
 	color: #999;
+}
+
+.loading-state {
+	padding: 40rpx 0;
 }
 </style> 

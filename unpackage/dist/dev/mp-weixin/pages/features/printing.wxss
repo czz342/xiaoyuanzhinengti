@@ -388,3 +388,53 @@
 	color: #FFFFFF;
 }
 
+/* 打印机选择弹窗 */
+.printer-selection-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1000; /* 需要比打印设置弹窗的z-index高 */
+}
+.printer-scroll-list {
+    max-height: 60vh;
+}
+.list-item {
+    display: flex;
+    align-items: center;
+    padding: 24rpx 0;
+    border-bottom: 1rpx solid #f0f0f0;
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.list-item-icon {
+    width: 64rpx;
+    height: 64rpx;
+    margin-right: 20rpx;
+}
+.list-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.list-item-name {
+    font-size: 28rpx;
+    color: #333;
+    margin-bottom: 4rpx;
+}
+.list-item-location {
+    font-size: 24rpx;
+    color: #999;
+}
+.list-item-check {
+    margin-left: 20rpx;
+}
+.empty-list-text {
+    text-align: center;
+    padding: 40rpx;
+    font-size: 26rpx;
+    color: #999;
+}
+

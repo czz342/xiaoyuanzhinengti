@@ -79,6 +79,15 @@
 						<text class="grid-text">智慧洗衣打印</text>
 						<view class="grid-badge" v-if="deviceCount > 0">{{deviceCount}}</view>
 					</view>
+					
+					<!-- 社团活动 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/club-activities')">
+						<view class="grid-icon lifestyle">
+							<image src="/static/images/club.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">社团活动</text>
+						<view class="grid-badge" v-if="clubActivityCount > 0">{{clubActivityCount}}</view>
+					</view>
 				</view>
 			</view>
 			
@@ -153,7 +162,7 @@
 				</view>
 				
 				<!-- 食堂人流量热力图卡片 -->
-				<view class="recommendation-card" v-if="isLunchTime">
+				<view class="recommendation-card" v-if="isLunchTime" id="canteenTrafficCard">
 					<view class="card-header canteen-header">
 						<image src="/static/images/food.png" mode="aspectFit" class="card-icon"></image>
 						<text class="card-title">食堂人流量</text>
@@ -214,6 +223,22 @@ export default {
 	components: {
 		qiunDataCharts
 	},
+	onLoad(options) {
+		// 页面加载时可以根据当前时间判断显示哪些推荐卡片
+		this.getCurrentTimeInfo();
+		
+		// 检查URL中是否有滚动到指定位置的指令
+		if (options && options.scrollTo === 'canteenTraffic') {
+			this.scrollTarget = 'canteenTrafficCard';
+		}
+	},
+	onReady() {
+		// 如果有滚动目标，则执行滚动。onReady确保DOM渲染完毕
+		if (this.scrollTarget) {
+			this.scrollToView(this.scrollTarget);
+			this.scrollTarget = null; // 执行后重置，避免重复滚动
+		}
+	},
 	data() {
 		return {
 			// 九宫格角标数据
@@ -226,6 +251,10 @@ export default {
 			psychologyCount: 0,
 			medicalCount: 0,
 			studyRoomCount: 8,
+			clubActivityCount: 9, // 社团活动角标
+			
+			pageScrollTop: 0, // 页面滚动位置
+			scrollTarget: null, // 深度链接滚动目标
 			
 			// 场景判断
 			isBeforeClass: true,
@@ -306,20 +335,17 @@ export default {
 			]
 		}
 	},
-	onLoad() {
-		// 页面加载时可以根据当前时间判断显示哪些推荐卡片
-		this.getCurrentTimeInfo();
-	},
 	onShow() {
 		this.updateTime();
 		this.fetchCanteenTraffic();
 	},
 	methods: {
+		// 页面跳转
 		navigateTo(url) {
-			uni.navigateTo({
-				url: url
-			});
+			uni.navigateTo({ url });
 		},
+		
+		// 筛选选项
 		showFilterOptions() {
 			uni.showActionSheet({
 				itemList: ['全部', '学业相关', '生活服务', '健康服务'],
@@ -331,6 +357,7 @@ export default {
 				}
 			});
 		},
+		
 		getCurrentTimeInfo() {
 			// 获取当前时间，并判断场景
 			const now = new Date();
@@ -449,6 +476,43 @@ export default {
 			const minutes = String(date.getMinutes()).padStart(2, '0');
 			const seconds = String(date.getSeconds()).padStart(2, '0');
 			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+		},
+		scrollToView(selectorId) {
+			// 使用nextTick确保视图更新完毕
+			this.$nextTick(() => {
+				const query = uni.createSelectorQuery().in(this);
+				query.select('#' + selectorId).boundingClientRect(data => {
+					if (data) {
+						// 计算使其居中显示的滚动距离
+						// 目标滚动位置 = 目标元素顶部相对于视口的位置 + 已滚动的距离 - 屏幕高度的一半 + 目标元素高度的一半
+						const scrollTop = data.top + this.pageScrollTop - (uni.getSystemInfoSync().windowHeight / 2) + (data.height / 2);
+						uni.pageScrollTo({
+							scrollTop: scrollTop,
+							duration: 300
+						});
+					}
+				}).exec();
+			});
+		},
+		
+		// 记录页面滚动位置，用于后续精确计算
+		onPageScroll(e) {
+			this.pageScrollTop = e.scrollTop;
+		},
+
+		// 模拟从API获取食堂数据
+		fetchCanteenData() {
+			// 模拟API返回的数据
+			return new Promise(resolve => {
+				setTimeout(() => {
+					resolve([
+						{ name: '食堂A', traffic: 300 },
+						{ name: '食堂B', traffic: 500 },
+						{ name: '食堂C', traffic: 200 },
+						{ name: '食堂D', traffic: 400 }
+					]);
+				}, 1000);
+			});
 		}
 	}
 }

@@ -3,27 +3,27 @@
 		<!-- 顶部状态卡片 -->
 		<view class="status-card">
 			<view class="status-header">
-				<text class="location-name">图书馆一楼打印区</text>
+				<text class="location-name">校园打印区</text>
 				<view class="distance-info">
 					<uni-icons type="location" size="14" color="#666"></uni-icons>
-					<text>30m</text>
+					<text>多地点</text>
 				</view>
 			</view>
 			<view class="status-grid">
 				<view class="status-item">
-					<text class="status-number available">8</text>
+					<text class="status-number available">{{ availablePrinters.length }}</text>
 					<text class="status-label">空闲打印机</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number busy">2</text>
+					<text class="status-number busy">{{ busyPrinters.length }}</text>
 					<text class="status-label">使用中</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number">2</text>
+					<text class="status-number">~{{ estimatedWaitTime }}</text>
 					<text class="status-label">分钟等待</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number">￥0.2</text>
+					<text class="status-number">￥{{ startingPrice }}</text>
 					<text class="status-label">每张</text>
 				</view>
 			</view>
@@ -33,7 +33,7 @@
 		<view class="quick-print">
 			<view class="section-header">
 				<text class="section-title">快速打印</text>
-				<text class="upload-history" @tap="viewHistory">上传历史</text>
+				<text class="upload-history" @tap="viewHistory">打印历史</text>
 			</view>
 			<view class="upload-area" @tap="uploadFile">
 				<image src="/static/images/upload.png" mode="aspectFit" class="upload-icon"></image>
@@ -81,8 +81,8 @@
 							</view>
 						</view>
 						<view class="printer-price">
-							<text class="price-amount">￥{{printer.price}}</text>
-							<text class="price-unit">/张</text>
+							<text class="price-amount">￥{{startingPrice}}</text>
+							<text class="price-unit">/张起</text>
 						</view>
 					</view>
 					<view class="printer-features">
@@ -125,8 +125,8 @@
 								<text 
 									v-for="(option, index) in colorOptions" 
 									:key="index"
-									:class="['color-option', selectedColor === option.id ? 'active' : '']"
-									@tap="selectColor(option.id)">
+									:class="['color-option', selectedColor.number === option.number ? 'active' : '']"
+									@tap="selectColor(option)">
 									{{option.name}}
 								</text>
 							</view>
@@ -142,7 +142,8 @@
 						<view class="setting-row">
 							<text class="setting-label">打印机选择</text>
 							<view class="printer-selection">
-								<text>推荐打印机：{{recommendedPrinter.name}}</text>
+								<text v-if="recommendedPrinter">推荐：{{recommendedPrinter.name}}</text>
+								<text v-else>暂无推荐</text>
 								<text class="change-printer" @tap="showPrinterList">更换</text>
 							</view>
 						</view>
@@ -150,7 +151,7 @@
 					<view class="price-summary">
 						<view class="price-row">
 							<text>单价</text>
-							<text>￥{{unitPrice}}/张</text>
+							<text>￥{{unitPrice.toFixed(2)}}/张</text>
 						</view>
 						<view class="price-row">
 							<text>份数</text>
@@ -172,117 +173,220 @@
 				</view>
 			</view>
 		</view>
+		
+		<!-- 打印机选择弹窗 -->
+		<view class="printer-selection-popup" v-if="showPrinterSelectionPopup">
+			<view class="popup-mask" @tap="closePrinterSelection"></view>
+			<view class="popup-content">
+				<view class="popup-header">
+					<text class="popup-title">选择打印机</text>
+					<view class="popup-close" @tap="closePrinterSelection">
+						<uni-icons type="closeempty" size="20" color="#999"></uni-icons>
+					</view>
+				</view>
+				<scroll-view scroll-y class="printer-scroll-list">
+					<view class="list-item" v-for="printer in availablePrinters" :key="printer.id" @tap="selectPrinter(printer)">
+						<image src="/static/images/printer-icon.png" mode="aspectFit" class="list-item-icon"></image>
+						<view class="list-item-info">
+							<text class="list-item-name">{{ printer.name }}</text>
+							<text class="list-item-location">{{ printer.location }}</text>
+						</view>
+						<view v-if="recommendedPrinter && recommendedPrinter.id === printer.id" class="list-item-check">
+							 <uni-icons type="checkmarkempty" size="24" color="#007AFF"></uni-icons>
+						</view>
+					</view>
+					<view v-if="availablePrinters.length === 0" class="empty-list-text">
+						暂无其他空闲打印机
+					</view>
+				</scroll-view>
+			</view>
+		</view>
 	</view>
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
 			currentFilter: 'all',
 			showPrintPopup: false,
+			showPrinterSelectionPopup: false, // 控制打印机选择弹窗
 			currentFile: null,
 			copies: 1,
-			selectedColor: 'black',
+			selectedColor: null, // 将存储整个价格对象
 			doubleSided: false,
 			pageRange: '',
 			pageCount: 0,
-			unitPrice: 0.2,
+			unitPrice: 0.0,
 			
-			colorOptions: [
-				{ id: 'black', name: '黑白' },
-				{ id: 'color', name: '彩色' }
-			],
-			
-			recommendedPrinter: {
-				id: 'P001',
-				name: '打印机 P001',
-				type: '惠普激光打印机',
-				location: '图书馆一楼',
-				status: '空闲',
-				image: '/static/images/printer-icon.png'
-			},
-			
-			printers: [
-				{
-					id: 'P001',
-					name: '打印机 P001',
-					type: '惠普激光打印机',
-					location: '图书馆一楼',
-					status: '空闲',
-					statusClass: 'status-available',
-					speed: 30,
-					image: '/static/images/printer-icon.png',
-					features: ['双面打印', '黑白', '彩色'],
-					price: 0.2,
-					rating: 4.8
-				},
-				{
-					id: 'P002',
-					name: '打印机 P002',
-					type: '惠普激光打印机',
-					location: '图书馆一楼',
-					status: '使用中',
-					statusClass: 'status-busy',
-					speed: 30,
-					image: '/static/images/printer-icon.png',
-					features: ['双面打印', '黑白'],
-					price: 0.2,
-					rating: 4.6
-				},
-				// 更多打印机数据...
-			]
+			colorOptions: [], // 从API获取
+			recommendedPrinter: null,
+			printers: [], // 从API获取
+			busyPrinters: [],
+			estimatedWaitTime: 0,
+			startingPrice: 0.0,
+			recommendedDeviceIdFromQuery: null,
 		}
 	},
 	computed: {
+		availablePrinters() {
+			return this.printers.filter(p => p.status === '空闲');
+		},
 		filteredPrinters() {
 			if (this.currentFilter === 'all') return this.printers;
 			return this.printers.filter(printer => {
 				if (this.currentFilter === 'available') return printer.status === '空闲';
-				if (this.currentFilter === 'color') return printer.features.includes('彩色');
+				if (this.currentFilter === 'color') return printer.features.includes('彩色'); // 模拟筛选
 			});
 		}
 	},
+	async onLoad(options) {
+		if (options.recommendDeviceId) {
+			this.recommendedDeviceIdFromQuery = options.recommendDeviceId;
+		}
+		await this.loadPageData();
+
+		if (this.recommendedDeviceIdFromQuery) {
+			const recommended = this.availablePrinters.find(p => p.id === this.recommendedDeviceIdFromQuery);
+			if (recommended) {
+				this.recommendedPrinter = recommended;
+				// 模拟一个文件并打开打印窗口
+				this.uploadFile(true); 
+			} else {
+				uni.showToast({
+					title: '推荐的打印机当前不可用',
+					icon: 'none'
+				});
+				// 即使推荐的不可用，也刷新一个随机的推荐
+				this.refreshRecommendation();
+			}
+		} else {
+			// 正常加载时，刷新随机推荐
+			this.refreshRecommendation();
+		}
+	},
 	methods: {
+		async loadPageData() {
+			uni.showLoading({ title: '加载中...' });
+			try {
+				const [devicesRes, busyRes, pricingRes] = await Promise.all([
+					KingdeeAgentService.getDevicesByType('打印机', 200),
+					KingdeeAgentService.getBusyPrinterDeviceIds(this.formatDate(new Date())),
+					KingdeeAgentService.getServicePricing('打印', 100)
+				]);
+
+				const allPrinters = devicesRes?.data?.rows ?? [];
+				const busyPrinterIds = new Set((busyRes?.data?.rows ?? []).map(d => d.lb77_device_number));
+				this.colorOptions = (pricingRes?.data?.rows ?? []).sort((a,b) => a.lb77_unit_price - b.lb77_unit_price);
+				
+				if (this.colorOptions.length > 0) {
+					this.startingPrice = this.colorOptions[0].lb77_unit_price.toFixed(2);
+					this.selectedColor = this.colorOptions[0];
+					this.unitPrice = this.colorOptions[0].lb77_unit_price;
+				}
+
+				this.printers = allPrinters.map(device => {
+					let status = '';
+					let statusClass = '';
+
+					if (device.lb77_status !== '正常') {
+						status = '故障';
+						statusClass = 'status-fault';
+					} else {
+						if (busyPrinterIds.has(device.number)) {
+							status = '使用中';
+							statusClass = 'status-busy';
+						} else {
+							status = '空闲';
+							statusClass = 'status-available';
+						}
+					}
+					
+					return {
+						id: device.number,
+						name: device.name,
+						type: device.lb77_brand_model,
+						location: device.lb77_location,
+						status: status,
+						statusClass: statusClass,
+						speed: 30, // 模拟
+						image: '/static/images/printer-icon.png',
+						features: ['双面打印', '彩色'], // 模拟
+						rating: (Math.random() * 0.5 + 4.5).toFixed(1) // 模拟
+					};
+				});
+
+				this.busyPrinters = this.printers.filter(p => p.status === '使用中');
+				this.refreshRecommendation();
+				
+			} catch (error) {
+				console.error("加载打印页数据失败:", error);
+				uni.showToast({ title: '数据加载失败', icon: 'error' });
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		formatDate(date) {
+			const y = date.getFullYear();
+			const m = (date.getMonth() + 1).toString().padStart(2, '0');
+			const d = date.getDate().toString().padStart(2, '0');
+			const h = date.getHours().toString().padStart(2, '0');
+			const i = date.getMinutes().toString().padStart(2, '0');
+			const s = date.getSeconds().toString().padStart(2, '0');
+			return `${y}-${m}-${d} ${h}:${i}:${s}`;
+		},
+		refreshRecommendation() {
+			const available = this.availablePrinters;
+			if (available.length > 0) {
+				const randomIndex = Math.floor(Math.random() * available.length);
+				this.recommendedPrinter = available[randomIndex];
+			} else {
+				this.recommendedPrinter = null;
+			}
+		},
 		setFilter(filter) {
 			this.currentFilter = filter;
 		},
-		uploadFile() {
+		uploadFile(isAutoTrigger = false) {
 			// 模拟文件上传
 			this.currentFile = {
-				name: '课程作业.pdf',
+				name: isAutoTrigger ? '智能助手推荐打印任务.pdf' : '课程作业.pdf',
 				size: '2.5MB',
 				pages: 10
 			};
 			this.pageCount = this.currentFile.pages;
 			this.showPrintPopup = true;
+			if (!isAutoTrigger) {
+				this.refreshRecommendation(); // 只有手动上传才刷新推荐
+			}
 		},
 		viewHistory() {
-			uni.showToast({
-				title: '查看历史记录',
-				icon: 'none'
-			});
+			uni.navigateTo({ url: '/pages/features/printing-history' });
 		},
 		decreaseCopies() {
-			if (this.copies > 1) {
-				this.copies--;
-			}
+			if (this.copies > 1) this.copies--;
 		},
 		increaseCopies() {
 			this.copies++;
 		},
-		selectColor(colorId) {
-			this.selectedColor = colorId;
-			this.unitPrice = colorId === 'color' ? 0.5 : 0.2;
+		selectColor(colorOption) {
+			this.selectedColor = colorOption;
+			this.unitPrice = colorOption.lb77_unit_price;
 		},
 		toggleDoubleSided(e) {
 			this.doubleSided = e.detail.value;
 		},
 		showPrinterList() {
-			uni.showToast({
-				title: '选择打印机',
-				icon: 'none'
-			});
+			this.showPrinterSelectionPopup = true;
+		},
+		closePrinterSelection() {
+			this.showPrinterSelectionPopup = false;
+		},
+		selectPrinter(printer) {
+			this.recommendedPrinter = printer;
+			this.closePrinterSelection();
 		},
 		calculateTotal() {
 			return (this.unitPrice * this.pageCount * this.copies).toFixed(2);
@@ -291,34 +395,49 @@ export default {
 			this.showPrintPopup = false;
 			this.currentFile = null;
 			this.copies = 1;
-			this.selectedColor = 'black';
+			if (this.colorOptions.length > 0) {
+				this.selectedColor = this.colorOptions[0];
+				this.unitPrice = this.colorOptions[0].lb77_unit_price;
+			}
 			this.doubleSided = false;
 			this.pageRange = '';
 		},
-		confirmPrint() {
-			uni.showLoading({
-				title: '正在打印...'
-			});
+		async confirmPrint() {
+			if (!this.recommendedPrinter) {
+				uni.showToast({ title: '当前无可用打印机', icon: 'none' });
+				return;
+			}
 			
-			// 模拟打印请求
-			setTimeout(() => {
+			uni.showLoading({ title: '正在提交...' });
+			
+			const jobData = {
+				billno: `DY${Date.now()}`,
+				lb77_device_number: this.recommendedPrinter.id,
+				lb77_user_number: '645730151', // @TODO: 动态获取
+				lb77_laundry_mode_number: this.selectedColor.number, // 使用价目表编码
+				lb77_pages: this.pageCount * this.copies // @TODO: 确认是总页数还是单份页数
+			};
+			
+			try {
+				const res = await KingdeeAgentService.createPrintJob(jobData);
+				if (res && res.data && res.data.successCount > 0) {
+					uni.hideLoading();
+					uni.showToast({ title: '打印任务已提交', icon: 'success' });
+					this.showPrintPopup = false;
+					
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/features/printing-history?filter=pending'
+						});
+					}, 1500);
+
+				} else {
+					throw new Error(res.message || '提交失败');
+				}
+			} catch(error) {
 				uni.hideLoading();
-				uni.showToast({
-					title: '打印任务已提交',
-					icon: 'success'
-				});
-				this.showPrintPopup = false;
-				
-				// 模拟推送打印完成通知
-				setTimeout(() => {
-					uni.showModal({
-						title: '打印完成通知',
-						content: '您的文件已打印完成，请前往图书馆一楼取件处领取。预计取件时间3分钟。',
-						showCancel: false,
-						confirmText: '我知道了'
-					});
-				}, 3000);
-			}, 1500);
+				uni.showToast({ title: error.message || '提交失败，请重试', icon: 'error' });
+			}
 		}
 	}
 }
@@ -780,5 +899,55 @@ export default {
 .confirm-btn {
 	background-color: #007AFF;
 	color: #FFFFFF;
+}
+
+/* 打印机选择弹窗 */
+.printer-selection-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1000; /* 需要比打印设置弹窗的z-index高 */
+}
+.printer-scroll-list {
+    max-height: 60vh;
+}
+.list-item {
+    display: flex;
+    align-items: center;
+    padding: 24rpx 0;
+    border-bottom: 1rpx solid #f0f0f0;
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.list-item-icon {
+    width: 64rpx;
+    height: 64rpx;
+    margin-right: 20rpx;
+}
+.list-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.list-item-name {
+    font-size: 28rpx;
+    color: #333;
+    margin-bottom: 4rpx;
+}
+.list-item-location {
+    font-size: 24rpx;
+    color: #999;
+}
+.list-item-check {
+    margin-left: 20rpx;
+}
+.empty-list-text {
+    text-align: center;
+    padding: 40rpx;
+    font-size: 26rpx;
+    color: #999;
 }
 </style> 

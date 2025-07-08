@@ -1,116 +1,188 @@
 <template>
 	<view class="psych-assessment-page">
-		<!-- 顶部banner -->
+		<!-- banner -->
 		<view class="assessment-banner">
-			<image src="/static/images/psychology-banner.png" mode="aspectFill" class="banner-image"></image>
+			<image class="banner-image" src="/static/images/psychology-banner.png" mode="aspectFill"></image>
 			<view class="banner-content">
 				<text class="banner-title">心理健康评估</text>
 				<text class="banner-subtitle">关爱自己，从了解开始</text>
 			</view>
 		</view>
 		
-		<!-- 主内容区域 -->
 		<view class="assessment-container">
-			<!-- 标签页切换 -->
+			<!-- Tabs -->
 			<view class="tabs">
 				<view 
 					class="tab-item" 
 					v-for="(tab, index) in tabs" 
 					:key="index" 
 					:class="{ active: currentTab === index }"
-					@tap="switchTab(index)"
-				>
-					<text>{{tab}}</text>
+					@tap="switchTab(index)">
+					<text>{{ tab }}</text>
 				</view>
 			</view>
 			
-			<!-- 评估问卷列表 -->
-			<view class="assessment-list" v-if="currentTab === 0">
-				<view class="section-title">
-					<text>专业评估问卷</text>
+			<!-- 心理健康评估 -->
+			<view v-if="currentTab === 0">
+				<view class="assessment-content">
+					<!-- 问卷列表 -->
+					<view v-if="assessmentStep === 'list'">
+						<view class="questionnaire-list">
+							<view class="questionnaire-card" v-for="q in questionnaireList" :key="q.id" @tap="startAssessment(q)">
+								<image class="q-card-icon" :src="q.icon" mode="aspectFit"></image>
+								<view class="q-card-info">
+									<text class="q-card-title">{{ q.title }}</text>
+									<text class="q-card-desc">{{ q.description }}</text>
 				</view>
-				
-				<view class="assessment-cards">
-					<view class="assessment-card" v-for="(item, index) in assessmentList" :key="index" @tap="startAssessment(item)">
-						<view class="card-left">
-							<image :src="item.icon" mode="aspectFit" class="card-icon"></image>
+								<button class="start-btn">开始评估</button>
 						</view>
-						<view class="card-content">
-							<view class="card-title">{{item.title}}</view>
-							<view class="card-desc">{{item.description}}</view>
-							<view class="card-meta">
-								<text class="meta-item"><text class="meta-label">题目:</text> {{item.questionCount}}题</text>
-								<text class="meta-item"><text class="meta-label">时间:</text> 约{{item.timeNeeded}}分钟</text>
 							</view>
 						</view>
-						<view class="card-right">
-							<image src="/static/images/arrow-right.png" mode="aspectFit" class="arrow-icon"></image>
+					
+					<!-- 答题界面 -->
+					<view v-if="assessmentStep === 'answering'">
+						<view class="question-list">
+							<view class="question-item" v-for="(question, index) in currentQuestionnaire.questions" :key="index">
+								<view class="question-title">{{ index + 1 }}. {{ question.text }}</view>
+								<radio-group @change="handleRadioChange($event, index)">
+									<label class="option-item" v-for="(option, oIndex) in question.options" :key="oIndex">
+										<view class="option-text">
+											<radio :value="String(oIndex)" :checked="question.selected === oIndex" />
+											<text>{{ option.text }}</text>
 						</view>
+									</label>
+								</radio-group>
 					</view>
 				</view>
+						<button class="submit-button" @tap="submitAssessment" :disabled="!isAllQuestionsAnswered">提交问卷</button>
 			</view>
 			
-			<!-- 我的报告 -->
-			<view class="report-list" v-if="currentTab === 1">
-				<view class="section-title">
-					<text>我的评估报告</text>
+					<!-- 报告结果 -->
+					<view v-if="assessmentStep === 'report'">
+						<view class="report-card">
+							<view class="report-title">您的心理健康评估报告</view>
+							<view class="report-item">
+								<text class="report-label">评估结果：</text>
+								<text class="report-value result-level">{{ assessmentReport.level }}</text>
 				</view>
-				
-				<view class="empty-state" v-if="myReports.length === 0">
-					<image src="/static/images/empty-reports.png" mode="aspectFit" class="empty-image"></image>
-					<text class="empty-text">暂无评估报告</text>
-					<button class="primary-btn" @tap="switchTab(0)">去完成评估</button>
+							<view class="report-item">
+								<text class="report-label">总得分：</text>
+								<text class="report-value">{{ assessmentReport.score }}</text>
 				</view>
-				
-				<view class="report-cards" v-else>
-					<view class="report-card" v-for="(report, index) in myReports" :key="index" @tap="viewReport(report)">
-						<view class="report-header">
-							<text class="report-title">{{report.title}}</text>
-							<text class="report-date">{{report.date}}</text>
+							<view class="report-item">
+								<text class="report-label">评估建议：</text>
+								<text class="report-value">{{ assessmentReport.suggestion }}</text>
 						</view>
-						<view class="report-summary">
-							<text class="summary-text">{{report.summary}}</text>
-						</view>
-						<view class="report-footer">
-							<view class="score-display">
-								<text class="score-label">总分</text>
-								<text class="score-value">{{report.score}}</text>
-							</view>
-							<button class="view-btn">查看详情</button>
+							<button class="retest-button" @tap="resetAssessment">重新评估</button>
 						</view>
 					</view>
 				</view>
 			</view>
 			
 			<!-- 咨询预约 -->
-			<view class="counseling-section" v-if="currentTab === 2">
+			<view v-if="currentTab === 1">
+				<view class="counseling-section">
 				<view class="section-title">
 					<text>咨询师预约</text>
 				</view>
-				
-				<view class="counselor-list">
+					<view v-if="isLoadingCounselors" class="loading-state">
+						<uni-load-more status="loading"></uni-load-more>
+					</view>
+					<view v-else class="counselor-list">
 					<view class="counselor-card" v-for="(counselor, index) in counselors" :key="index" @tap="showCounselorDetail(counselor)">
-						<image :src="counselor.avatar" mode="aspectFill" class="counselor-avatar"></image>
+							<image class="counselor-avatar" :src="counselor.avatar" mode="aspectFill"></image>
 						<view class="counselor-info">
 							<view class="counselor-header">
-								<text class="counselor-name">{{counselor.name}}</text>
-								<text class="counselor-title">{{counselor.title}}</text>
+									<text class="counselor-name">{{ counselor.name }}</text>
+									<text class="counselor-title">{{ counselor.title }}</text>
 							</view>
 							<view class="counselor-specialties">
 								<text class="specialty-label">专长：</text>
 								<view class="specialty-tags">
-									<text class="specialty-tag" v-for="(tag, tagIndex) in counselor.specialties" :key="tagIndex">{{tag}}</text>
+										<text class="specialty-tag" v-for="(tag, tagIndex) in counselor.specialties" :key="tagIndex">{{ tag }}</text>
 								</view>
 							</view>
 							<view class="counselor-rating">
 								<view class="stars">
-									<text class="star" v-for="n in 5" :key="n" :class="{active: n <= counselor.rating}">★</text>
+										<text class="star" v-for="n in 5" :key="n" :class="{ active: n <= counselor.rating }">★</text>
 								</view>
-								<text class="rating-value">{{counselor.rating.toFixed(1)}}</text>
-								<text class="rating-count">({{counselor.ratingCount}})</text>
+									<text class="rating-value">{{ counselor.rating.toFixed(1) }}</text>
+									<text class="rating-count">({{ counselor.ratingCount }})</text>
 							</view>
 						</view>
 						<button class="book-btn">预约</button>
+						</view>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 我的记录 -->
+			<view v-if="currentTab === 2">
+				<view class="my-records-section">
+					<uni-segmented-control
+						:current="recordsTab"
+						:values="['评估报告', '咨询预约']"
+						@clickItem="onRecordsTabClick"
+						style-type="button"
+						active-color="#007AFF"
+					></uni-segmented-control>
+					
+					<view class="records-content">
+						<!-- 我的评估报告 -->
+						<view v-if="recordsTab === 0">
+							<view v-if="isLoadingReports" class="loading-state">
+								<uni-load-more status="loading" contentText="报告加载中..."></uni-load-more>
+							</view>
+							<view v-else-if="myPsychReports.length === 0" class="empty-state">
+								<image src="/static/images/empty-box.png" mode="aspectFit" class="empty-image"></image>
+								<text class="empty-text">您还没有评估报告</text>
+								<button class="primary-btn" @tap="switchTab(0)">立即评估</button>
+							</view>
+							<view v-else class="report-list">
+								<view class="my-report-card" v-for="report in myPsychReports" :key="report.id">
+									<view class="my-report-header">
+										<text class="my-report-title">{{ report.lb77_questionnairetitle }}</text>
+										<text class="my-report-date">{{ formatDate(new Date(report.createtime), 'yyyy-MM-dd') }}</text>
+									</view>
+									<view class="my-report-body">
+										<view class="my-report-item">
+											<text class="my-report-label">评估结果</text>
+											<text class="my-report-value result">{{ report.lb77_resultsummary }}</text>
+										</view>
+										<view class="my-report-item">
+											<text class="my-report-label">总得分</text>
+											<text class="my-report-value score">{{ report.lb77_totalscore }}</text>
+										</view>
+									</view>
+								</view>
+							</view>
+						</view>
+						
+						<!-- 我的咨询预约 -->
+						<view v-if="recordsTab === 1">
+							<view v-if="isLoadingAppointments" class="loading-state">
+								<uni-load-more status="loading" contentText="预约加载中..."></uni-load-more>
+							</view>
+							<view v-else-if="myAppointments.length === 0" class="empty-state">
+								<image src="/static/images/empty-box.png" mode="aspectFit" class="empty-image"></image>
+								<text class="empty-text">您还没有咨询预约</text>
+								<button class="primary-btn" @tap="switchTab(1)">立即预约</button>
+							</view>
+							<view v-else class="appointment-list">
+								<view class="appointment-card" v-for="apt in processedAppointments" :key="apt.id">
+									<view class="apt-header">
+										<text class="apt-counselor">{{ apt.lb77_counselor_name }}</text>
+										<text class="apt-status" :class="apt.statusClass">{{ apt.lb77_appointment_status }}</text>
+									</view>
+									<view class="apt-body">
+										<text class="apt-time">时间：{{ formatDate(new Date(apt.lb77_appointment_date), 'yyyy-MM-dd') }} {{ secondsToTime(apt.lb77_starttime) }}</text>
+									</view>
+									<view class="apt-footer" v-if="apt.lb77_appointment_status === '已预约'">
+										<button class="cancel-btn" @tap="confirmCancelAppointment(apt.id)">取消预约</button>
+									</view>
+								</view>
+							</view>
+						</view>
 					</view>
 				</view>
 			</view>
@@ -161,9 +233,6 @@
 							<text class="detail-label">可预约时段</text>
 							<view class="time-slots">
 								<view class="date-selector">
-									<view class="date-arrow" @tap="previousDate">
-										<image src="/static/images/arrow-left.png" mode="aspectFit"></image>
-									</view>
 									<view class="dates">
 										<view 
 											class="date-item" 
@@ -176,21 +245,24 @@
 											<text class="date-weekday">{{date.weekday}}</text>
 										</view>
 									</view>
-									<view class="date-arrow" @tap="nextDate">
-										<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-									</view>
 								</view>
 								
-								<view class="time-grid">
+								<view v-if="isLoadingSchedule" class="loading-state">
+									<uni-load-more status="loading" contentText="号源加载中..."></uni-load-more>
+								</view>
+								<view v-else-if="availableTimeSlots.length === 0" class="empty-slots">
+									<text>暂无号源</text>
+								</view>
+								<view class="time-grid" v-else>
 									<view 
 										class="time-block" 
 										v-for="(time, timeIndex) in availableTimeSlots" 
 										:key="timeIndex"
 										:class="{
 											available: time.available,
-											selected: selectedTimeIndex === timeIndex && time.available
+											selected: selectedTime.startTime === time.startTime && time.available
 										}"
-										@tap="selectTime(timeIndex, time)"
+										@tap="selectTime(time)"
 									>
 										<text>{{time.time}}</text>
 									</view>
@@ -201,8 +273,8 @@
 					
 					<button 
 						class="book-button" 
-						:disabled="!selectedTimeIndex >= 0"
-						:class="{disabled: !(selectedTimeIndex >= 0)}"
+						:disabled="!selectedTime.startTime"
+						:class="{disabled: !selectedTime.startTime}"
 						@tap="bookAppointment"
 					>
 						确认预约
@@ -214,144 +286,161 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
-			// 标签页
-			tabs: ['评估问卷', '我的报告', '咨询预约'],
+			tabs: ['心理健康评估', '咨询师预约', '我的记录'],
 			currentTab: 0,
+			currentUser: {
+				studentId: '645730151',
+				name: '张三'
+			},
 			
-			// 评估问卷列表
-			assessmentList: [
-				{
-					id: 1,
-					title: 'PHQ-9 抑郁症筛查量表',
-					description: '用于评估个体是否存在抑郁症状及其严重程度',
-					questionCount: 9,
-					timeNeeded: 3,
-					icon: '/static/images/assessment-depression.png'
-				},
-				{
-					id: 2,
-					title: 'GAD-7 广泛性焦虑量表',
-					description: '筛查广泛性焦虑障碍，评估焦虑症状严重程度',
-					questionCount: 7,
-					timeNeeded: 2,
-					icon: '/static/images/assessment-anxiety.png'
-				},
-				{
-					id: 3,
-					title: 'SAS 社交焦虑量表',
-					description: '评估社交情境中的焦虑水平及社交恐惧程度',
-					questionCount: 20,
-					timeNeeded: 5,
-					icon: '/static/images/assessment-social.png'
-				},
-				{
-					id: 4,
-					title: '大学生心理健康综合评估',
-					description: '全面评估大学生常见心理健康问题和心理适应状态',
-					questionCount: 30,
-					timeNeeded: 10,
-					icon: '/static/images/assessment-comprehensive.png'
-				}
-			],
-			
-			// 我的报告
-			myReports: [
-				{
-					id: 1,
-					title: 'PHQ-9 抑郁症筛查量表',
-					date: '2023-05-15',
-					score: 4,
-					summary: '您的抑郁症状评分为轻度，建议关注情绪变化，保持规律作息和适当运动。',
-					recommendations: [
-						'保持规律的作息时间',
-						'每天进行30分钟有氧运动',
-						'学习简单的放松技巧',
-						'与朋友保持社交联系'
-					]
-				},
-				{
-					id: 2,
-					title: 'GAD-7 广泛性焦虑量表',
-					date: '2023-05-10',
-					score: 6,
-					summary: '您的焦虑症状评分为中度，建议学习焦虑管理技巧，必要时寻求专业帮助。',
-					recommendations: [
-						'学习呼吸放松技巧',
-						'尝试正念冥想练习',
-						'识别并挑战消极思维',
-						'考虑预约心理咨询'
-					]
-				}
-			],
+			// 心理评估
+			assessmentStep: 'list', // 'list', 'answering', 'report'
+			questionnaireList: [],
+			currentQuestionnaire: null,
+			assessmentReport: null,
 			
 			// 咨询师列表
-			counselors: [
-				{
-					id: 1,
-					name: '王丽萍',
-					title: '资深心理咨询师',
-					avatar: '/static/images/counselor1.png',
-					specialties: ['抑郁症', '焦虑障碍', '人际关系'],
-					rating: 4.9,
-					ratingCount: 128,
-					background: '北京大学心理学博士，10年心理咨询经验，擅长认知行为疗法和心理动力学疗法。',
-					style: '温和支持型，善于倾听，注重建立咨询关系，帮助来访者发掘自身资源解决问题。'
-				},
-				{
-					id: 2,
-					name: '李明哲',
-					title: '心理咨询师',
-					avatar: '/static/images/counselor2.png',
-					specialties: ['学业压力', '情绪管理', '生涯规划'],
-					rating: 4.7,
-					ratingCount: 86,
-					background: '清华大学应用心理学硕士，5年大学生心理咨询经验，擅长解决方案聚焦治疗。',
-					style: '直接引导型，善于提供明确反馈和具体建议，帮助来访者找到实用解决方案。'
-				},
-				{
-					id: 3,
-					name: '张雨晴',
-					title: '青少年心理咨询师',
-					avatar: '/static/images/counselor3.png',
-					specialties: ['自我认同', '亲子关系', '适应困难'],
-					rating: 4.8,
-					ratingCount: 103,
-					background: '中国科学院心理研究所硕士，8年青少年心理咨询经验，擅长叙事治疗和家庭系统治疗。',
-					style: '探索反思型，引导来访者探索内心世界和家庭系统，促进自我认识和关系修复。'
-				}
-			],
+			counselors: [],
+			isLoadingCounselors: false,
 			
 			// 咨询预约
 			showCounselorDetailPopup: false,
 			currentCounselor: {},
 			selectedDateIndex: 0,
-			selectedTimeIndex: -1,
-			availableDates: [
-				{ day: '15', weekday: '周一' },
-				{ day: '16', weekday: '周二' },
-				{ day: '17', weekday: '周三' },
-				{ day: '18', weekday: '周四' },
-				{ day: '19', weekday: '周五' },
-			],
-			availableTimeSlots: [
-				{ time: '9:00', available: true },
-				{ time: '10:00', available: true },
-				{ time: '11:00', available: false },
-				{ time: '14:00', available: true },
-				{ time: '15:00', available: true },
-				{ time: '16:00', available: false },
-				{ time: '17:00', available: true },
-				{ time: '18:00', available: false }
-			]
+			selectedTime: {},
+			availableDates: [],
+			availableTimeSlots: [],
+			isLoadingSchedule: false,
+			
+			// 我的记录
+			recordsTab: 0,
+			myPsychReports: [],
+			isLoadingReports: false,
+			myAppointments: [],
+			isLoadingAppointments: false,
+		}
+	},
+	async onLoad(options) {
+		this.initAssessment();
+		// 等待咨询师列表加载完毕
+		await this.fetchCounselors();
+
+		if (options) {
+			// 处理tab切换
+			if (options.tab) {
+				const tabIndex = parseInt(options.tab, 10);
+				if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < this.tabs.length) {
+					// 在切换到“我的记录”前，先设置好内部的子tab
+					if (tabIndex === 2 && options.recordstab) {
+						const recordsTabIndex = parseInt(options.recordstab, 10);
+						if (!isNaN(recordsTabIndex) && [0, 1].includes(recordsTabIndex)) {
+							this.recordsTab = recordsTabIndex;
+						}
+					}
+					this.switchTab(tabIndex);
+				}
+			}
+
+			// 处理咨询师推荐
+			if (options.recommendCounselorId) {
+				const counselor = this.counselors.find(c => c.id === options.recommendCounselorId);
+				if (counselor) {
+					// 确保tab在咨询师列表页
+					if (this.currentTab !== 1) {
+						this.switchTab(1);
+					}
+					// 等待UI渲染完毕后，再弹出详情，增加稳定性
+					this.$nextTick(() => {
+						setTimeout(() => {
+							this.showCounselorDetail(counselor);
+						}, 100); 
+					});
+				} else {
+					console.warn(`Recommended counselor with ID ${options.recommendCounselorId} not found.`);
+					uni.showToast({
+						title: '未找到推荐的咨询师',
+						icon: 'none'
+					});
+				}
+			}
+		}
+	},
+	computed: {
+		// 是否所有问题都已回答
+		isAllQuestionsAnswered() {
+			if (!this.currentQuestionnaire || !this.currentQuestionnaire.questions) {
+				return false;
+			}
+			return this.currentQuestionnaire.questions.every(q => q.selected !== null);
+		},
+
+		processedAppointments() {
+			return this.myAppointments.map(apt => {
+				let statusClass = '';
+				switch (apt.lb77_appointment_status) {
+					case '已预约': statusClass = 'status-booked'; break;
+					case '已完成': statusClass = 'status-completed'; break;
+					case '已取消': statusClass = 'status-cancelled'; break;
+				}
+				return {
+					...apt,
+					statusClass: statusClass
+				};
+			});
 		}
 	},
 	methods: {
-		// 切换标签页
+		// 获取咨询师列表
+		async fetchCounselors() {
+			this.isLoadingCounselors = true;
+			try {
+				const res = await KingdeeAgentService.getCounselors(20);
+				if (res && res.data && Array.isArray(res.data.rows)) {
+					this.counselors = res.data.rows.map((c, index) => ({
+						...c,
+						id: c.number,
+						name: c.name,
+						title: c.lb77_title,
+						avatar: c.lb77_avatarURL || '/static/images/counselor' + ((index % 3) + 1) + '.png',
+						specialties: c.lb77_specialties ? c.lb77_specialties.split(',') : [],
+						background: c.lb77_background,
+						style: c.lb77_style,
+						rating: (4.7 + Math.random() * 0.3),
+						ratingCount: Math.floor(Math.random() * 150) + 50,
+					}));
+				}
+			} catch (error) {
+				console.error("获取咨询师列表失败:", error);
+				uni.showToast({ title: '咨询师加载失败', icon: 'none' });
+			} finally {
+				this.isLoadingCounselors = false;
+			}
+		},
+		
+		// 切换Tab
 		switchTab(index) {
 			this.currentTab = index;
+			if (index === 2) {
+				// 默认加载第一个子tab的内容
+				this.onRecordsTabClick({ currentIndex: this.recordsTab });
+			}
+		},
+
+		onRecordsTabClick(e) {
+			const index = e.currentIndex;
+			if (this.recordsTab !== index) {
+				this.recordsTab = index;
+			}
+			if (index === 0 && this.myPsychReports.length === 0) {
+				this.fetchMyReports();
+			} else if (index === 1 && this.myAppointments.length === 0) {
+				this.fetchMyAppointments();
+			}
 		},
 		
 		// 开始评估
@@ -381,9 +470,9 @@ export default {
 		// 显示咨询师详情
 		showCounselorDetail(counselor) {
 			this.currentCounselor = counselor;
+			this.generateAvailableDates();
+			this.updateCounselorSchedule();
 			this.showCounselorDetailPopup = true;
-			this.selectedDateIndex = 0;
-			this.selectedTimeIndex = -1;
 		},
 		
 		// 隐藏咨询师详情
@@ -391,56 +480,439 @@ export default {
 			this.showCounselorDetailPopup = false;
 		},
 		
-		// 日期选择器控制
-		previousDate() {
-			// 实际应用中应获取前一天的日期数据
-			uni.showToast({
-				title: '加载前一天日期',
-				icon: 'none'
-			});
+		// 动态生成可用日期
+		generateAvailableDates() {
+			const dates = [];
+			const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+			for (let i = 0; i < 7; i++) {
+				const date = new Date();
+				date.setDate(date.getDate() + i);
+				dates.push({
+					fullDate: this.formatDate(date, 'yyyy-MM-dd'),
+					day: this.formatDate(date, 'dd'),
+					weekday: weekdays[date.getDay()]
+				});
+			}
+			this.availableDates = dates;
+			this.selectedDateIndex = 0;
+			this.selectedTime = {};
+		},
+
+		// 更新咨询师排班
+		async updateCounselorSchedule() {
+			if (!this.currentCounselor.id || this.selectedDateIndex < 0) return;
+			
+			this.isLoadingSchedule = true;
+			this.availableTimeSlots = [];
+			this.selectedTime = {};
+
+			// 确保DOM更新完成后再执行后续操作
+			await this.$nextTick();
+
+			const selectedDate = this.availableDates[this.selectedDateIndex];
+
+			try {
+				const [scheduleRes, bookingsRes] = await Promise.all([
+					KingdeeAgentService.getCounselorWeeklySchedule(this.currentCounselor.id),
+					KingdeeAgentService.getCounselingAppointmentsByDate(this.currentCounselor.id, selectedDate.fullDate)
+				]);
+
+				let allSlots = [];
+				if (scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0].entryentity) {
+					allSlots = scheduleRes.data.rows[0].entryentity
+						.filter(slot => slot.lb77_day_of_week.trim() === selectedDate.weekday)
+						.map(slot => ({
+							startTime: slot.lb77_start_time,
+							endTime: slot.lb77_end_time,
+						}));
+				}
+
+				let bookedSlots = [];
+				if (bookingsRes.data && bookingsRes.data.rows) {
+					bookedSlots = bookingsRes.data.rows.map(booking => booking.lb77_starttime);
+				}
+
+				this.availableTimeSlots = allSlots
+					.filter(slot => !bookedSlots.includes(slot.startTime))
+					.map(slot => ({
+						time: this.secondsToTime(slot.startTime),
+						startTime: slot.startTime,
+						endTime: slot.endTime,
+						available: true
+					}))
+					.sort((a, b) => a.startTime - b.startTime);
+
+			} catch (error) {
+				console.error("获取咨询师排班失败:", error);
+				uni.showToast({ title: '号源加载失败', icon: 'none' });
+			} finally {
+				this.isLoadingSchedule = false;
+			}
 		},
 		
+		// 日期选择器控制 - 已废弃
+		previousDate() {
+			uni.showToast({ title: '功能开发中', icon: 'none' });
+		},
 		nextDate() {
-			// 实际应用中应获取后一天的日期数据
-			uni.showToast({
-				title: '加载后一天日期',
-				icon: 'none'
-			});
+			uni.showToast({ title: '功能开发中', icon: 'none' });
 		},
 		
 		// 选择日期
 		selectDate(index) {
 			this.selectedDateIndex = index;
-			this.selectedTimeIndex = -1;
-			// 实际应用中应根据选择的日期加载可用时间段
+			this.updateCounselorSchedule();
 		},
 		
 		// 选择时间
-		selectTime(index, time) {
+		selectTime(time) {
 			if (time.available) {
-				this.selectedTimeIndex = index;
+				this.selectedTime = time;
 			}
 		},
 		
 		// 预约咨询
 		bookAppointment() {
-			if (this.selectedTimeIndex >= 0) {
+			if (this.selectedTime && this.selectedTime.startTime) {
 				const date = this.availableDates[this.selectedDateIndex];
-				const time = this.availableTimeSlots[this.selectedTimeIndex];
+				const time = this.selectedTime;
 				
 				uni.showModal({
 					title: '预约确认',
-					content: `您确定要预约${this.currentCounselor.name}咨询师在5月${date.day}日 ${time.time}的咨询吗？`,
-					success: (res) => {
+					content: `您确定要预约${this.currentCounselor.name}咨询师在 ${date.fullDate} ${time.time} 的咨询吗？`,
+					success: async (res) => {
 						if (res.confirm) {
-							uni.showToast({
-								title: '预约成功',
-								icon: 'success'
-							});
-							this.hideCounselorDetail();
+							// TODO: 后续应从用户登录状态中获取真实学生ID
+							const studentId = "645730151"; 
+							
+							try {
+								uni.showLoading({ title: '正在预约...' });
+								
+								await KingdeeAgentService.createCounselingAppointment(
+									studentId,
+									this.currentCounselor.id,
+									date.fullDate,
+									time.startTime,
+									time.endTime
+								);
+								
+								uni.hideLoading();
+								uni.showToast({
+									title: '预约成功',
+									icon: 'success',
+									duration: 1500
+								});
+								this.hideCounselorDetail();
+
+								// 预约成功后，延时跳转到我的记录-咨询预约列表
+								setTimeout(() => {
+									uni.redirectTo({
+										url: '/pages/features/psychological-assessment?tab=2&recordstab=1'
+									});
+								}, 1500);
+
+							} catch (error) {
+								uni.hideLoading();
+								console.error("创建心理咨询预约失败:", error);
+								uni.showToast({
+									title: '预约失败，请稍后再试或检查网络',
+									icon: 'none',
+									duration: 2000
+								});
+							}
 						}
 					}
 				});
+			}
+		},
+		
+		// 时间格式化工具
+		secondsToTime(seconds) {
+			if (isNaN(seconds)) return '';
+			const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+			const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+			return `${h}:${m}`;
+		},
+		formatDate(date, fmt) {
+			if (!date || isNaN(new Date(date))) {
+				return '';
+			}
+			date = new Date(date);
+			const o = {
+				"M+": date.getMonth() + 1,
+				"d+": date.getDate(),
+				"h+": date.getHours(),
+				"m+": date.getMinutes(),
+				"s+": date.getSeconds(),
+			};
+			if (/(y+)/.test(fmt)) {
+				fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+			}
+			for (let k in o) {
+				if (new RegExp("(" + k + ")").test(fmt)) {
+					fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+				}
+			}
+			return fmt;
+		},
+
+		// -------- 心理评估方法 --------
+		initAssessment() {
+			this.questionnaireList = [
+				{
+					id: 'GeneralV1',
+					title: '通用心理健康评估',
+					description: '快速评估您近期的整体心理状态。',
+					icon: '/static/images/assessment-icon-1.png',
+					questions: [
+						{
+							text: "最近一周，我感到精力充沛。",
+							options: [{ text: "完全同意", score: 1 }, { text: "比较同意", score: 2 }, { text: "不确定", score: 3 }, { text: "比较不同意", score: 4 }, { text: "完全不同意", score: 5 }],
+							selected: null
+						},
+						{
+							text: "最近一周，我对未来感到乐观。",
+							options: [{ text: "完全同意", score: 1 }, { text: "比较同意", score: 2 }, { text: "不确定", score: 3 }, { text: "比较不同意", score: 4 }, { text: "完全不同意", score: 5 }],
+							selected: null
+						},
+						{
+							text: "最近一周，我能很好地处理日常压力。",
+							options: [{ text: "完全同意", score: 1 }, { text: "比较同意", score: 2 }, { text: "不确定", score: 3 }, { text: "比较不同意", score: 4 }, { text: "完全不同意", score: 5 }],
+							selected: null
+						},
+						{
+							text: "最近一周，我对自己的能力有信心。",
+							options: [{ text: "完全同意", score: 1 }, { text: "比较同意", score: 2 }, { text: "不确定", score: 3 }, { text: "比较不同意", score: 4 }, { text: "完全不同意", score: 5 }],
+							selected: null
+						},
+						{
+							text: "最近一周，我对参与各种活动兴趣盎然。",
+							options: [{ text: "完全同意", score: 1 }, { text: "比较同意", score: 2 }, { text: "不确定", score: 3 }, { text: "比较不同意", score: 4 }, { text: "完全不同意", score: 5 }],
+							selected: null
+						}
+					]
+				},
+				{
+					id: 'SAS',
+					title: '焦虑自评量表 (SAS)',
+					description: '评估您过去一周内焦虑情绪的严重程度。',
+					icon: '/static/images/assessment-icon-2.png',
+					questions: [
+						{
+							text: "我感到比平常更容易紧张和着急。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我无缘无故地感到害怕或恐惧。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我容易心里烦乱或感到惊恐。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+					]
+				},
+				{
+					id: 'SDS',
+					title: '抑郁自评量表 (SDS)',
+					description: '评估您近期抑郁情绪的体验和严重程度。',
+					icon: '/static/images/assessment-icon-3.png',
+					questions: [
+						{
+							text: "我觉得闷闷不乐，情绪低沉。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我感到前景非常暗淡。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我对以前感兴趣的事情失去了兴趣。",
+							options: [{ text: "没有或很少时间", score: 1 }, { text: "小部分时间", score: 2 }, { text: "相当多时间", score: 3 }, { text: "绝大部分或全部时间", score: 4 }],
+							selected: null
+						},
+					]
+				},
+				{
+					id: 'SAD',
+					title: '社交回避及苦恼量表 (SAD)',
+					description: '评估您在社交场合中的回避倾向和感受到的苦恼。',
+					icon: '/static/images/assessment-icon-4.png',
+					questions: [
+						{
+							text: "参加聚会时，我感到不自在。",
+							options: [{ text: "完全不符合", score: 1 }, { text: "不太符合", score: 2 }, { text: "有点符合", score: 3 }, { text: "非常符合", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我尽量避免成为别人注意的中心。",
+							options: [{ text: "完全不符合", score: 1 }, { text: "不太符合", score: 2 }, { text: "有点符合", score: 3 }, { text: "非常符合", score: 4 }],
+							selected: null
+						},
+						{
+							text: "我对和陌生人交谈感到紧张。",
+							options: [{ text: "完全不符合", score: 1 }, { text: "不太符合", score: 2 }, { text: "有点符合", score: 3 }, { text: "非常符合", score: 4 }],
+							selected: null
+						},
+					]
+				}
+			];
+			this.currentQuestionnaire = null;
+			this.assessmentReport = null;
+			this.assessmentStep = 'list';
+		},
+		
+		startAssessment(questionnaire) {
+			// 重置问题的选中状态
+			questionnaire.questions.forEach(q => q.selected = null);
+			this.currentQuestionnaire = questionnaire;
+			this.assessmentStep = 'answering';
+		},
+
+		handleRadioChange(event, questionIndex) {
+			const selectedOptionIndex = parseInt(event.detail.value);
+			this.currentQuestionnaire.questions[questionIndex].selected = selectedOptionIndex;
+		},
+
+		async submitAssessment() {
+			if (!this.isAllQuestionsAnswered) {
+				uni.showToast({ title: '请回答所有问题', icon: 'none' });
+				return;
+			}
+			
+			const totalScore = this.currentQuestionnaire.questions.reduce((sum, question) => {
+				return sum + question.options[question.selected].score;
+			}, 0);
+			
+			let level = '';
+			let suggestion = '';
+			// Note: 这里的评分标准是通用的，实际应用中不同问卷应有不同标准
+			if (totalScore <= (this.currentQuestionnaire.questions.length * 2)) {
+				level = '心理状态良好';
+				suggestion = '您的心理状态比较健康，能够较好地应对生活中的挑战。建议继续保持，并适当进行放松活动。';
+			} else if (totalScore <= (this.currentQuestionnaire.questions.length * 3.5)) {
+				level = '轻度心理困扰';
+				suggestion = '您可能正面临一些压力或情绪困扰。建议主动与朋友、家人沟通，或考虑寻求专业心理咨询。';
+			} else {
+				level = '需要关注';
+				suggestion = '您的心理状态需要引起重视。强力建议您预约专业心理咨询师进行深入沟通，以获得及时有效的帮助。';
+			}
+			
+			uni.showLoading({ title: '正在生成报告...' });
+
+			try {
+				// TODO: 后续应从用户登录状态中获取真实学生ID
+				const studentId = "645730151";
+				const entries = this.currentQuestionnaire.questions.map((q, index) => ({
+					lb77_questionindex: index + 1,
+					lb77_selecttext: q.options[q.selected].text,
+					lb77_score: q.options[q.selected].score,
+				}));
+				
+				await KingdeeAgentService.createPsychReport(
+					studentId,
+					totalScore, 
+					level, // 使用 level 作为 ResultSummary
+					entries,
+					this.currentQuestionnaire.id,
+					this.currentQuestionnaire.title
+				);
+				
+				this.assessmentReport = {
+					score: totalScore,
+					level: level,
+					suggestion: suggestion
+				};
+				
+				this.assessmentStep = 'report';
+
+				uni.hideLoading();
+				uni.showToast({ title: '报告生成成功', icon: 'success' });
+				
+			} catch (error) {
+				uni.hideLoading();
+				console.error("创建心理评估报告失败:", error);
+				uni.showToast({ title: '报告提交失败，请重试', icon: 'none' });
+			}
+		},
+
+		resetAssessment() {
+			this.initAssessment();
+			this.myPsychReports = []; 
+		},
+
+		// -------- 咨询预约方法 --------
+		
+		// -------- 我的记录方法 --------
+		async fetchMyReports() {
+			this.isLoadingReports = true;
+			// 确保DOM更新完成后再执行后续操作，防止uni-load-more组件报错
+			await this.$nextTick(); 
+			try {
+				// TODO: 后续应从用户登录状态中获取真实学生ID
+				const studentId = "645730151";
+				const res = await KingdeeAgentService.getMyPsychReports(studentId);
+				if (res.data && res.data.rows) {
+					this.myPsychReports = res.data.rows.sort((a, b) => new Date(b.createtime) - new Date(a.createtime));
+				} else {
+					this.myPsychReports = [];
+				}
+			} catch (error) {
+				console.error("获取心理评估报告列表失败:", error);
+				uni.showToast({ title: '报告加载失败', icon: 'none' });
+			} finally {
+				this.isLoadingReports = false;
+			}
+		},
+		async fetchMyAppointments() {
+			this.isLoadingAppointments = true;
+			await this.$nextTick();
+			try {
+				// TODO: 后续应从用户登录状态中获取真实学生ID
+				const studentId = "645730151";
+				const res = await KingdeeAgentService.getMyCounselingAppointments(studentId);
+				if (res.data && res.data.rows) {
+					this.myAppointments = res.data.rows.sort((a, b) => new Date(b.lb77_appointment_date) - new Date(a.lb77_appointment_date));
+				} else {
+					this.myAppointments = [];
+				}
+			} catch (error) {
+				console.error("获取我的咨询预约列表失败:", error);
+				uni.showToast({ title: '预约记录加载失败', icon: 'none' });
+			} finally {
+				this.isLoadingAppointments = false;
+			}
+		},
+
+		confirmCancelAppointment(appointmentId) {
+			uni.showModal({
+				title: '确认取消',
+				content: '您确定要取消本次预约吗？',
+				success: async (res) => {
+					if (res.confirm) {
+						this.cancelAppointment(appointmentId);
+					}
+				}
+			});
+		},
+		
+		async cancelAppointment(appointmentId) {
+			uni.showLoading({ title: '正在取消...' });
+			try {
+				await KingdeeAgentService.cancelCounselingAppointment(appointmentId);
+				uni.hideLoading();
+				uni.showToast({ title: '取消成功', icon: 'success' });
+				// 刷新列表
+				this.fetchMyAppointments();
+			} catch (error) {
+				uni.hideLoading();
+				console.error("取消预约失败:", error);
+				uni.showToast({ title: '取消失败，请稍后再试', icon: 'none' });
 			}
 		}
 	}
@@ -631,6 +1103,11 @@ export default {
 	font-size: 28rpx;
 	padding: 10rpx 40rpx;
 	border-radius: 30rpx;
+}
+
+.loading-state {
+	padding: 60rpx 0;
+	text-align: center;
 }
 
 /* 报告卡片 */
@@ -923,7 +1400,8 @@ export default {
 .dates {
 	flex: 1;
 	display: flex;
-	justify-content: space-between;
+	justify-content: space-around;
+	overflow-x: auto;
 }
 
 .date-item {
@@ -931,13 +1409,17 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	padding: 10rpx 0;
-	width: 80rpx;
+	width: 110rpx;
+	flex-shrink: 0;
+	border-radius: 10rpx;
 }
 
 .date-item.active {
 	background-color: #007AFF;
+}
+.date-item.active .date-day,
+.date-item.active .date-weekday {
 	color: #fff;
-	border-radius: 10rpx;
 }
 
 .date-day {
@@ -971,14 +1453,22 @@ export default {
 	font-size: 26rpx;
 }
 
+.empty-slots {
+	text-align: center;
+	padding: 40rpx 0;
+	color: #999;
+	font-size: 26rpx;
+}
+
 .time-block.available text {
-	background-color: #f0f0f0;
-	color: #333;
+	background-color: #eef5ff;
+	color: #007aff;
 }
 
 .time-block.selected text {
 	background-color: #007AFF;
 	color: #fff;
+	font-weight: bold;
 }
 
 .book-button {
@@ -993,5 +1483,613 @@ export default {
 
 .book-button.disabled {
 	background-color: #cccccc;
+}
+
+.assessment-content {
+	padding: 30rpx;
+}
+
+.question-list {
+	margin-bottom: 40rpx;
+}
+
+.question-item {
+	margin-bottom: 30rpx;
+	background-color: #fff;
+	padding: 20rpx;
+	border-radius: 10rpx;
+}
+
+.question-title {
+	font-size: 30rpx;
+	font-weight: bold;
+	margin-bottom: 20rpx;
+	color: #333;
+}
+
+.option-item {
+	display: block;
+	padding: 15rpx 0;
+	font-size: 28rpx;
+	color: #555;
+}
+
+.option-text {
+	display: flex;
+	align-items: center;
+}
+
+.option-text radio {
+	transform: scale(0.8);
+	margin-right: 10rpx;
+}
+
+.submit-button, .retest-button {
+	background-color: #007AFF;
+	color: white;
+	border-radius: 50rpx;
+}
+
+.submit-button[disabled] {
+	background-color: #a0cfff;
+}
+
+.report-card {
+	background-color: #fff;
+	padding: 40rpx;
+	border-radius: 20rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.report-title {
+	font-size: 36rpx;
+	font-weight: bold;
+	text-align: center;
+	margin-bottom: 40rpx;
+}
+
+.report-item {
+	display: flex;
+	font-size: 30rpx;
+	margin-bottom: 20rpx;
+}
+
+.report-label {
+	width: 180rpx;
+	color: #666;
+	flex-shrink: 0;
+}
+
+.report-value {
+	color: #333;
+}
+
+.result-level {
+	font-weight: bold;
+	color: #007AFF;
+}
+
+/* 我的记录 */
+.my-records-section {
+	padding-bottom: 30rpx;
+}
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-top: 100rpx;
+}
+
+.empty-image {
+	width: 250rpx;
+	height: 250rpx;
+	margin-bottom: 20rpx;
+}
+
+.empty-text {
+	color: #999;
+	font-size: 28rpx;
+	margin-bottom: 40rpx;
+}
+
+.primary-btn {
+	background-color: #007AFF;
+	color: white;
+	border-radius: 50rpx;
+	font-size: 30rpx;
+	padding: 0 50rpx;
+}
+
+.report-list {
+	padding: 0 30rpx;
+	display: flex;
+	flex-direction: column;
+	gap: 20rpx;
+}
+
+.my-report-card {
+	background-color: #fff;
+	border-radius: 16rpx;
+	padding: 30rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.05);
+}
+
+.my-report-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1rpx solid #f0f0f0;
+	padding-bottom: 20rpx;
+	margin-bottom: 20rpx;
+}
+
+.my-report-title {
+	font-size: 30rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.my-report-date {
+	font-size: 24rpx;
+	color: #999;
+}
+
+.my-report-body {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.my-report-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.my-report-item:first-child {
+	align-items: flex-start;
+}
+.my-report-item:last-child {
+	align-items: flex-end;
+}
+
+.my-report-label {
+	font-size: 24rpx;
+	color: #999;
+	margin-bottom: 10rpx;
+}
+
+.my-report-value {
+	font-size: 32rpx;
+	font-weight: bold;
+}
+
+.my-report-value.result {
+	color: #007aff;
+}
+
+.my-report-value.score {
+	color: #ff9500;
+}
+
+.records-content {
+	padding-top: 20rpx;
+}
+
+.appointment-list {
+	padding: 0 30rpx;
+	display: flex;
+	flex-direction: column;
+	gap: 20rpx;
+}
+
+.appointment-card {
+	background-color: #fff;
+	border-radius: 16rpx;
+	padding: 30rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.05);
+}
+
+.apt-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+
+.apt-counselor {
+	font-size: 30rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.apt-status {
+	font-size: 26rpx;
+	padding: 4rpx 12rpx;
+	border-radius: 8rpx;
+	font-weight: bold;
+}
+
+.status-booked {
+	background-color: #eef5ff;
+	color: #007aff;
+}
+.status-completed {
+	background-color: #e8f5e9;
+	color: #4caf50;
+}
+.status-cancelled {
+	background-color: #f5f5f5;
+	color: #999;
+}
+
+.apt-body {
+	margin-bottom: 20rpx;
+}
+
+.apt-time {
+	font-size: 28rpx;
+	color: #666;
+}
+
+.apt-footer {
+	display: flex;
+	justify-content: flex-end;
+	border-top: 1rpx solid #f0f0f0;
+	padding-top: 20rpx;
+}
+
+.cancel-btn {
+	background-color: #fff;
+	color: #ff3b30;
+	border: 1rpx solid #ff3b30;
+	border-radius: 30rpx;
+	padding: 8rpx 24rpx;
+	font-size: 26rpx;
+	line-height: 1;
+	margin: 0;
+}
+
+/* 咨询师弹窗样式 */
+.counselor-detail-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 999;
+}
+
+.popup-mask {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0,0,0,0.5);
+}
+
+.popup-content {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	background-color: #ffffff;
+	border-top-left-radius: 20rpx;
+	border-top-right-radius: 20rpx;
+	padding-bottom: 40rpx;
+	max-height: 80vh;
+	overflow-y: auto;
+}
+
+.popup-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 30rpx;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.popup-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.popup-close image {
+	width: 40rpx;
+	height: 40rpx;
+}
+
+.popup-body {
+	padding: 30rpx;
+}
+
+.counselor-profile {
+	display: flex;
+	margin-bottom: 40rpx;
+}
+
+.profile-avatar {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 60rpx;
+	margin-right: 30rpx;
+}
+
+.profile-basic {
+	flex: 1;
+}
+
+.profile-name {
+	font-size: 36rpx;
+	color: #333;
+	font-weight: bold;
+	margin-bottom: 6rpx;
+}
+
+.profile-title {
+	font-size: 28rpx;
+	color: #666;
+	margin-bottom: 10rpx;
+}
+
+.profile-detail .detail-item {
+	margin-bottom: 30rpx;
+}
+
+.detail-label {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: bold;
+	margin-bottom: 10rpx;
+	display: block;
+}
+
+.detail-value {
+	font-size: 26rpx;
+	color: #666;
+	line-height: 1.5;
+}
+
+.date-selector {
+	display: flex;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+
+.date-arrow {
+	width: 60rpx;
+	display: flex;
+	justify-content: center;
+}
+
+.date-arrow image {
+	width: 40rpx;
+	height: 40rpx;
+}
+
+.dates {
+	flex: 1;
+	display: flex;
+	justify-content: space-around;
+	overflow-x: auto;
+}
+
+.date-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 10rpx 0;
+	width: 110rpx;
+	flex-shrink: 0;
+	border-radius: 10rpx;
+}
+
+.date-item.active {
+	background-color: #007AFF;
+}
+.date-item.active .date-day,
+.date-item.active .date-weekday {
+	color: #fff;
+}
+
+.date-day {
+	font-size: 32rpx;
+	font-weight: bold;
+}
+
+.date-weekday {
+	font-size: 22rpx;
+}
+
+.time-grid {
+	display: flex;
+	flex-wrap: wrap;
+	margin: 0 -10rpx;
+}
+
+.time-block {
+	width: 25%;
+	box-sizing: border-box;
+	padding: 10rpx;
+}
+
+.time-block text {
+	display: block;
+	text-align: center;
+	padding: 16rpx 0;
+	background-color: #f5f5f5;
+	color: #999;
+	border-radius: 8rpx;
+	font-size: 26rpx;
+}
+
+.empty-slots {
+	text-align: center;
+	padding: 40rpx 0;
+	color: #999;
+	font-size: 26rpx;
+}
+
+.time-block.available text {
+	background-color: #eef5ff;
+	color: #007aff;
+}
+
+.time-block.selected text {
+	background-color: #007AFF;
+	color: #fff;
+	font-weight: bold;
+}
+
+.book-button {
+	margin-top: 40rpx;
+	background-color: #007AFF;
+	color: #fff;
+	padding: 20rpx 0;
+	text-align: center;
+	border-radius: 10rpx;
+	font-size: 32rpx;
+}
+
+.book-button.disabled {
+	background-color: #cccccc;
+}
+
+.assessment-content {
+	padding: 30rpx;
+}
+
+.question-list {
+	margin-bottom: 40rpx;
+}
+
+.question-item {
+	margin-bottom: 30rpx;
+	background-color: #fff;
+	padding: 20rpx;
+	border-radius: 10rpx;
+}
+
+.question-title {
+	font-size: 30rpx;
+	font-weight: bold;
+	margin-bottom: 20rpx;
+	color: #333;
+}
+
+.option-item {
+	display: block;
+	padding: 15rpx 0;
+	font-size: 28rpx;
+	color: #555;
+}
+
+.option-text {
+	display: flex;
+	align-items: center;
+}
+
+.option-text radio {
+	transform: scale(0.8);
+	margin-right: 10rpx;
+}
+
+.submit-button, .retest-button {
+	background-color: #007AFF;
+	color: white;
+	border-radius: 50rpx;
+}
+
+.submit-button[disabled] {
+	background-color: #a0cfff;
+}
+
+.report-card {
+	background-color: #fff;
+	padding: 40rpx;
+	border-radius: 20rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.report-title {
+	font-size: 36rpx;
+	font-weight: bold;
+	text-align: center;
+	margin-bottom: 40rpx;
+}
+
+.report-item {
+	display: flex;
+	font-size: 30rpx;
+	margin-bottom: 20rpx;
+}
+
+.report-label {
+	width: 180rpx;
+	color: #666;
+	flex-shrink: 0;
+}
+
+.report-value {
+	color: #333;
+}
+
+.result-level {
+	font-weight: bold;
+	color: #007AFF;
+}
+
+.questionnaire-list {
+	display: flex;
+	flex-direction: column;
+	gap: 30rpx;
+}
+
+.questionnaire-card {
+	display: flex;
+	align-items: center;
+	background-color: #fff;
+	padding: 30rpx;
+	border-radius: 20rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.05);
+}
+
+.q-card-icon {
+	width: 80rpx;
+	height: 80rpx;
+	margin-right: 30rpx;
+}
+
+.q-card-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.q-card-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 10rpx;
+}
+
+.q-card-desc {
+	font-size: 26rpx;
+	color: #999;
+}
+
+.start-btn {
+	background-color: #eef5ff;
+	color: #007aff;
+	font-size: 26rpx;
+	border-radius: 30rpx;
+	padding: 10rpx 24rpx;
+	line-height: 1;
+	margin: 0;
+	margin-left: 20rpx;
+	flex-shrink: 0;
 }
 </style> 

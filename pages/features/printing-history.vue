@@ -6,13 +6,16 @@
 
 		<!-- 筛选标签 -->
 		<view class="filter-tabs">
-			<view class="tab-item" :class="{ 'active': filter === 'all' }" @tap="filter = 'all'">全部</view>
-			<view class="tab-item" :class="{ 'active': filter === 'completed' }" @tap="filter = 'completed'">已完成</view>
-			<view class="tab-item" :class="{ 'active': filter === 'pending' }" @tap="filter = 'pending'">待取件</view>
+			<view class="tab-item" :class="{ 'active': filter === 'all' }" @tap="setFilter('all')">全部</view>
+			<view class="tab-item" :class="{ 'active': filter === 'completed' }" @tap="setFilter('completed')">已完成</view>
+			<view class="tab-item" :class="{ 'active': filter === 'pending' }" @tap="setFilter('pending')">待取件</view>
 		</view>
 
 		<!-- 打印记录列表 -->
-		<scroll-view scroll-y class="record-list">
+		<scroll-view scroll-y class="record-list" @scrolltolower="loadMore" lower-threshold="50">
+			<view v-if="isLoading" class="loading-state">
+				<uni-load-more status="loading"></uni-load-more>
+			</view>
 			<view v-for="record in filteredRecords" :key="record.id" class="record-card">
 				<view class="card-header">
 					<text class="file-name">{{ record.fileName }}</text>
@@ -41,61 +44,31 @@
 					<button class="footer-btn" @tap="printAgain(record)">再次打印</button>
 				</view>
 			</view>
-			<view v-if="filteredRecords.length === 0" class="empty-state">
+			<view v-if="!isLoading && records.length === 0" class="empty-state">
 				<image src="/static/images/empty-box.png" mode="aspectFit" class="empty-icon"></image>
 				<text class="empty-text">暂无相关记录</text>
+			</view>
+			<view v-if="!isLoading && records.length > 0">
+				<uni-load-more :status="loadMoreStatus"></uni-load-more>
 			</view>
 		</scroll-view>
 	</view>
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
 			filter: 'all',
-			records: [
-				{
-					id: 1,
-					fileName: '毕业论文_v3.pdf',
-					status: 'completed',
-					statusText: '已取件',
-					location: '图书馆二楼',
-					printer: 'A-01',
-					time: '2024-05-15 10:20',
-					pages: 25,
-					copies: 1,
-					color: '黑白',
-					cost: '2.50'
-				},
-				{
-					id: 2,
-					fileName: '软件杯参赛文档.docx',
-					status: 'pending',
-					statusText: '待取件',
-					location: '图书馆二楼',
-					printer: 'A-03',
-					time: '2024-05-21 11:05',
-					pages: 10,
-					copies: 2,
-					color: '彩色',
-					cost: '4.00',
-					pickupCode: '5278'
-				},
-				{
-					id: 3,
-					fileName: '考研英语资料.zip',
-					status: 'completed',
-					statusText: '已取件',
-					location: '文印中心',
-					printer: 'B-02',
-					time: '2024-05-10 16:45',
-					pages: 50,
-					copies: 1,
-					color: '黑白',
-					cost: '5.00'
-				}
-			]
+			records: [],
+			isLoading: true,
+			pageNo: 1,
+			pageSize: 10,
+			hasMore: true,
+			loadMoreStatus: 'more',
+			studentId: '645730151',
 		}
 	},
 	computed: {
@@ -106,7 +79,77 @@ export default {
 			return this.records.filter(record => record.status === this.filter);
 		}
 	},
+	onLoad(options) {
+		if (options.filter) {
+			this.filter = options.filter;
+		}
+		this.loadRecords(true);
+	},
 	methods: {
+		async loadRecords(isRefresh = false) {
+			if (isRefresh) {
+				this.pageNo = 1;
+				this.records = [];
+				this.hasMore = true;
+				this.loadMoreStatus = 'more';
+				this.isLoading = true;
+			}
+			
+			if (!this.hasMore) {
+				this.loadMoreStatus = 'noMore';
+				return;
+			}
+
+			this.loadMoreStatus = 'loading';
+			
+			try {
+				const res = await KingdeeAgentService.getMyPrintJobs(this.studentId, this.pageSize, this.pageNo);
+				const fetchedRecords = res?.data?.rows ?? [];
+
+				if (fetchedRecords.length < this.pageSize) {
+					this.hasMore = false;
+					this.loadMoreStatus = 'noMore';
+				}
+
+				const formattedRecords = fetchedRecords.map(r => {
+					// 模拟状态：5分钟内的订单视为"待取件"
+					const createTime = new Date(r.createtime);
+					const now = new Date();
+					const isPending = (now - createTime) < 5 * 60 * 1000;
+
+					return {
+						id: r.billno,
+						fileName: `打印任务-${r.billno}`, // API未返回文件名，使用订单号代替
+						status: isPending ? 'pending' : 'completed',
+						statusText: isPending ? '待取件' : '已完成',
+						location: r.lb77_device_lb77_location,
+						printer: r.lb77_device_name,
+						time: r.createtime,
+						pages: r.lb77_pages,
+						copies: 1, // API未返回份数，默认为1
+						color: r.lb77_laundry_mode_name, // 使用打印类型名称
+						cost: r.lb77_cost.toFixed(2),
+						pickupCode: r.billno.slice(-4) // 使用订单号后4位做为模拟取件码
+					};
+				});
+
+				this.records = [...this.records, ...formattedRecords];
+				this.pageNo++;
+
+			} catch (error) {
+				console.error("获取打印记录失败:", error);
+				uni.showToast({ title: '加载失败', icon: 'error' });
+				this.loadMoreStatus = 'more';
+			} finally {
+				this.isLoading = false;
+			}
+		},
+		loadMore() {
+			this.loadRecords();
+		},
+		setFilter(newFilter) {
+			this.filter = newFilter;
+		},
 		showPickupCode(record) {
 			uni.showModal({
 				title: '取件码',
@@ -117,7 +160,7 @@ export default {
 		},
 		printAgain(record) {
 			uni.showToast({
-				title: '正在重新发起打印...',
+				title: '正在准备重新打印...',
 				icon: 'loading'
 			});
 			setTimeout(() => {
@@ -161,6 +204,7 @@ export default {
 	border-radius: 30rpx;
 	margin-right: 20rpx;
 	background-color: #fff;
+	transition: all 0.3s;
 }
 
 .tab-item.active {
@@ -220,6 +264,7 @@ export default {
 .detail-label {
 	color: #999;
 	width: 120rpx;
+	flex-shrink: 0;
 }
 
 .detail-value {
@@ -270,5 +315,9 @@ export default {
 .empty-text {
 	font-size: 28rpx;
 	color: #999;
+}
+
+.loading-state {
+	padding: 40rpx 0;
 }
 </style> 

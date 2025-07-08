@@ -104,7 +104,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://rewards-pas-features-consulting.trycloudflare.com", 
+			tunnelUrl: "https://incoming-offline-rd-inventory.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -249,11 +249,11 @@ export default {
 					console.log('已选择助手:', JSON.parse(JSON.stringify(this.selectedAssistant)));
 
 					// 更新欢迎消息等
-					this.chatMessages.unshift({
+					/* this.chatMessages.unshift({
 						type: 'system',
 						content: this.selectedAssistant.openingSpeech || `您好，我是您的助手 ${this.selectedAssistant.name}，有什么可以帮助您的吗？`,
 						timestamp: Date.now()
-					});
+					}); */
 
 					uni.showLoading({ title: '正在创建新会话...' });
 					
@@ -778,7 +778,7 @@ export default {
 					clearInterval(this.reconnectInterval);
 					this.reconnectInterval = null;
 				}
-				this.addSystemMessage("智能助手连接成功！");
+				// this.addSystemMessage("智能助手连接成功！");
 
 				// 新增：开启心跳
 				this.startHeartbeat();

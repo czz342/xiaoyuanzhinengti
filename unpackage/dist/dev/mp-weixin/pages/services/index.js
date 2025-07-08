@@ -101,7 +101,7 @@ var components
 try {
   components = {
     qiunDataCharts: function () {
-      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 223))
+      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 239))
     },
   }
 } catch (e) {
@@ -387,14 +387,39 @@ var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/ki
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var qiunDataCharts = function qiunDataCharts() {
   Promise.all(/*! require.ensure | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then((function () {
-    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 223));
+    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 239));
   }).bind(null, __webpack_require__)).catch(__webpack_require__.oe);
 };
 var _default = {
   components: {
     qiunDataCharts: qiunDataCharts
+  },
+  onLoad: function onLoad(options) {
+    // 页面加载时可以根据当前时间判断显示哪些推荐卡片
+    this.getCurrentTimeInfo();
+
+    // 检查URL中是否有滚动到指定位置的指令
+    if (options && options.scrollTo === 'canteenTraffic') {
+      this.scrollTarget = 'canteenTrafficCard';
+    }
+  },
+  onReady: function onReady() {
+    // 如果有滚动目标，则执行滚动。onReady确保DOM渲染完毕
+    if (this.scrollTarget) {
+      this.scrollToView(this.scrollTarget);
+      this.scrollTarget = null; // 执行后重置，避免重复滚动
+    }
   },
   data: function data() {
     return {
@@ -408,6 +433,14 @@ var _default = {
       psychologyCount: 0,
       medicalCount: 0,
       studyRoomCount: 8,
+      clubActivityCount: 9,
+      // 社团活动角标
+
+      pageScrollTop: 0,
+      // 页面滚动位置
+      scrollTarget: null,
+      // 深度链接滚动目标
+
       // 场景判断
       isBeforeClass: true,
       isLunchTime: true,
@@ -479,20 +512,18 @@ var _default = {
       }]
     };
   },
-  onLoad: function onLoad() {
-    // 页面加载时可以根据当前时间判断显示哪些推荐卡片
-    this.getCurrentTimeInfo();
-  },
   onShow: function onShow() {
     this.updateTime();
     this.fetchCanteenTraffic();
   },
   methods: {
+    // 页面跳转
     navigateTo: function navigateTo(url) {
       uni.navigateTo({
         url: url
       });
     },
+    // 筛选选项
     showFilterOptions: function showFilterOptions() {
       uni.showActionSheet({
         itemList: ['全部', '学业相关', '生活服务', '健康服务'],
@@ -635,6 +666,49 @@ var _default = {
       var minutes = String(date.getMinutes()).padStart(2, '0');
       var seconds = String(date.getSeconds()).padStart(2, '0');
       return "".concat(year, "-").concat(month, "-").concat(day, " ").concat(hours, ":").concat(minutes, ":").concat(seconds);
+    },
+    scrollToView: function scrollToView(selectorId) {
+      var _this2 = this;
+      // 使用nextTick确保视图更新完毕
+      this.$nextTick(function () {
+        var query = uni.createSelectorQuery().in(_this2);
+        query.select('#' + selectorId).boundingClientRect(function (data) {
+          if (data) {
+            // 计算使其居中显示的滚动距离
+            // 目标滚动位置 = 目标元素顶部相对于视口的位置 + 已滚动的距离 - 屏幕高度的一半 + 目标元素高度的一半
+            var scrollTop = data.top + _this2.pageScrollTop - uni.getSystemInfoSync().windowHeight / 2 + data.height / 2;
+            uni.pageScrollTo({
+              scrollTop: scrollTop,
+              duration: 300
+            });
+          }
+        }).exec();
+      });
+    },
+    // 记录页面滚动位置，用于后续精确计算
+    onPageScroll: function onPageScroll(e) {
+      this.pageScrollTop = e.scrollTop;
+    },
+    // 模拟从API获取食堂数据
+    fetchCanteenData: function fetchCanteenData() {
+      // 模拟API返回的数据
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          resolve([{
+            name: '食堂A',
+            traffic: 300
+          }, {
+            name: '食堂B',
+            traffic: 500
+          }, {
+            name: '食堂C',
+            traffic: 200
+          }, {
+            name: '食堂D',
+            traffic: 400
+          }]);
+        }, 1000);
+      });
     }
   }
 };

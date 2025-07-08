@@ -9,7 +9,8 @@
 		{
 			"path": "pages/services/index",
 			"style": {
-				"navigationBarTitleText": "服务大厅"
+				"navigationBarTitleText": "服务大厅",
+				"enablePullDownRefresh": false
 			}
 		},
 		{
@@ -136,6 +137,19 @@
 			"path": "pages/personal/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/features/club-activities",
+			"style": {
+				"navigationBarTitleText": "社团活动",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/features/canteen-traffic",
+			"style": {
+				"navigationBarTitleText": "食堂人流量"
 			}
 		}
 	],

@@ -101,7 +101,7 @@ var components
 try {
   components = {
     uniNumberBox: function () {
-      return __webpack_require__.e(/*! import() | uni_modules/uni-number-box/components/uni-number-box/uni-number-box */ "uni_modules/uni-number-box/components/uni-number-box/uni-number-box").then(__webpack_require__.bind(null, /*! @/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue */ 273))
+      return __webpack_require__.e(/*! import() | uni_modules/uni-number-box/components/uni-number-box/uni-number-box */ "uni_modules/uni-number-box/components/uni-number-box/uni-number-box").then(__webpack_require__.bind(null, /*! @/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue */ 289))
     },
   }
 } catch (e) {
@@ -471,8 +471,14 @@ var _default = {
       selectedBorrowing: {} // 选中的借阅记录
     };
   },
-  onLoad: function onLoad() {
-    this.fetchBooks();
+  onLoad: function onLoad(options) {
+    if (options && options.billno) {
+      // 来自借阅成功后的跳转链接，需要打开指定借阅记录的详情
+      this.handleBorrowingDeepLink(options.billno);
+    } else {
+      // 正常加载
+      this.fetchBooks();
+    }
   },
   computed: {
     // 根据当前标签页显示不同的图书列表
@@ -491,26 +497,59 @@ var _default = {
     }
   },
   methods: {
-    // 获取图书列表
-    fetchBooks: function fetchBooks() {
+    handleBorrowingDeepLink: function handleBorrowingDeepLink(billno) {
       var _this = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
-        var response;
+        var targetBorrowing;
         return _regenerator.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
+                _context.next = 2;
+                return _this.switchTab('history');
+              case 2:
+                // 2. 在加载完成的数据中查找对应的记录
+                targetBorrowing = _this.myBorrowings.find(function (item) {
+                  return item.billno === billno;
+                }); // 3. 如果找到，则显示详情弹窗
+                if (targetBorrowing) {
+                  _this.viewBorrowingDetail(targetBorrowing);
+                } else {
+                  // 如果因为数据延迟等原因没找到，给个提示
+                  uni.showToast({
+                    title: '未找到单号为 ' + billno + ' 的借阅记录',
+                    icon: 'none',
+                    duration: 3000
+                  });
+                }
+              case 4:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee);
+      }))();
+    },
+    // 获取图书列表
+    fetchBooks: function fetchBooks() {
+      var _this2 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+        var response;
+        return _regenerator.default.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
                 uni.showLoading({
                   title: '加载中...'
                 });
-                _context.prev = 1;
-                _context.next = 4;
+                _context2.prev = 1;
+                _context2.next = 4;
                 return _kingdeeAgent.default.getBooksList();
               case 4:
-                response = _context.sent;
+                response = _context2.sent;
                 if (response && response.status && response.data && Array.isArray(response.data.rows)) {
                   // 映射API数据到页面格式
-                  _this.recommendedBooks = response.data.rows.map(function (book) {
+                  _this2.recommendedBooks = response.data.rows.map(function (book) {
                     // 从完整路径中提取文件名
                     var fullPath = book.lb77_picturefield || '';
                     var fileName = fullPath.split('\\').pop();
@@ -536,49 +575,49 @@ var _default = {
                     icon: 'none'
                   });
                 }
-                _context.next = 12;
+                _context2.next = 12;
                 break;
               case 8:
-                _context.prev = 8;
-                _context.t0 = _context["catch"](1);
-                console.error("获取图书列表失败:", _context.t0);
+                _context2.prev = 8;
+                _context2.t0 = _context2["catch"](1);
+                console.error("获取图书列表失败:", _context2.t0);
                 uni.showToast({
                   title: '网络请求失败，请稍后重试',
                   icon: 'none'
                 });
               case 12:
-                _context.prev = 12;
+                _context2.prev = 12;
                 uni.hideLoading();
-                return _context.finish(12);
+                return _context2.finish(12);
               case 15:
               case "end":
-                return _context.stop();
+                return _context2.stop();
             }
           }
-        }, _callee, null, [[1, 8, 12, 15]]);
+        }, _callee2, null, [[1, 8, 12, 15]]);
       }))();
     },
     // 获取我的借阅记录
     fetchMyBorrowings: function fetchMyBorrowings() {
-      var _this2 = this;
-      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+      var _this3 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
         var studentId, response;
-        return _regenerator.default.wrap(function _callee2$(_context2) {
+        return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
-            switch (_context2.prev = _context2.next) {
+            switch (_context3.prev = _context3.next) {
               case 0:
-                _this2.isLoading = true;
+                _this3.isLoading = true;
                 uni.showLoading({
                   title: '加载中...'
                 });
-                _context2.prev = 2;
+                _context3.prev = 2;
                 studentId = '645730151'; // 根据约定使用硬编码ID
-                _context2.next = 6;
+                _context3.next = 6;
                 return _kingdeeAgent.default.getPersonalBookBorrowings(studentId);
               case 6:
-                response = _context2.sent;
+                response = _context3.sent;
                 if (response && response.status && response.data && Array.isArray(response.data.rows)) {
-                  _this2.myBorrowings = response.data.rows.map(function (item) {
+                  _this3.myBorrowings = response.data.rows.map(function (item) {
                     var dueDate = new Date(item.lb77_endtime);
                     var now = new Date();
                     // 注意：API未返回实际归还日期，这里的状态是基于应还日期的推测
@@ -601,66 +640,66 @@ var _default = {
                     title: response.message || '获取借阅记录失败',
                     icon: 'none'
                   });
-                  _this2.myBorrowings = [];
+                  _this3.myBorrowings = [];
                 }
-                _context2.next = 14;
+                _context3.next = 14;
                 break;
               case 10:
-                _context2.prev = 10;
-                _context2.t0 = _context2["catch"](2);
-                console.error("获取借阅记录失败:", _context2.t0);
+                _context3.prev = 10;
+                _context3.t0 = _context3["catch"](2);
+                console.error("获取借阅记录失败:", _context3.t0);
                 uni.showToast({
                   title: '网络请求失败',
                   icon: 'none'
                 });
               case 14:
-                _context2.prev = 14;
-                _this2.isLoading = false;
+                _context3.prev = 14;
+                _this3.isLoading = false;
                 uni.hideLoading();
-                return _context2.finish(14);
+                return _context3.finish(14);
               case 18:
               case "end":
-                return _context2.stop();
+                return _context3.stop();
             }
           }
-        }, _callee2, null, [[2, 10, 14, 18]]);
+        }, _callee3, null, [[2, 10, 14, 18]]);
       }))();
     },
     // 借阅图书
     borrowBook: function borrowBook() {
-      var _this3 = this;
-      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
+      var _this4 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee4() {
         var studentId, billno, borrowingData, response, _response$data, _response$data$result, _response$data$result2, _response$data$result3, _response$data$result4, errorMsg;
-        return _regenerator.default.wrap(function _callee3$(_context3) {
+        return _regenerator.default.wrap(function _callee4$(_context4) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context4.prev = _context4.next) {
               case 0:
                 uni.showLoading({
                   title: '正在提交...'
                 });
-                _context3.prev = 1;
+                _context4.prev = 1;
                 // 注意：学生ID应从登录信息中动态获取，此处为测试用例
                 studentId = '645730151'; // 自动生成一个唯一的单据编号
                 billno = "borrow-".concat(Date.now());
                 borrowingData = {
                   billno: billno,
-                  lb77_day: _this3.borrowingDays,
+                  lb77_day: _this4.borrowingDays,
                   // 使用v-model绑定的天数
-                  lb77_books_number: _this3.selectedBook.isbn,
+                  lb77_books_number: _this4.selectedBook.isbn,
                   lb77_students_number: studentId
                 };
-                _context3.next = 7;
+                _context4.next = 7;
                 return _kingdeeAgent.default.createBookBorrowingRequest(borrowingData);
               case 7:
-                response = _context3.sent;
+                response = _context4.sent;
                 if (response && response.status && response.data && response.data.successCount > 0) {
                   uni.showToast({
                     title: '借阅成功!',
                     icon: 'success'
                   });
-                  _this3.hideBookDetail();
+                  _this4.hideBookDetail();
                   // 借阅成功后刷新列表
-                  _this3.fetchBooks();
+                  _this4.fetchBooks();
                 } else {
                   // 尝试获取更详细的错误信息
                   errorMsg = (response === null || response === void 0 ? void 0 : (_response$data = response.data) === null || _response$data === void 0 ? void 0 : (_response$data$result = _response$data.result) === null || _response$data$result === void 0 ? void 0 : (_response$data$result2 = _response$data$result[0]) === null || _response$data$result2 === void 0 ? void 0 : (_response$data$result3 = _response$data$result2.errors) === null || _response$data$result3 === void 0 ? void 0 : (_response$data$result4 = _response$data$result3[0]) === null || _response$data$result4 === void 0 ? void 0 : _response$data$result4.msg) || response.message || '借阅失败';
@@ -670,31 +709,31 @@ var _default = {
                     duration: 3000
                   });
                 }
-                _context3.next = 15;
+                _context4.next = 15;
                 break;
               case 11:
-                _context3.prev = 11;
-                _context3.t0 = _context3["catch"](1);
-                console.error('借阅请求失败:', _context3.t0);
+                _context4.prev = 11;
+                _context4.t0 = _context4["catch"](1);
+                console.error('借阅请求失败:', _context4.t0);
                 uni.showToast({
                   title: '请求异常，请稍后重试',
                   icon: 'none'
                 });
               case 15:
-                _context3.prev = 15;
+                _context4.prev = 15;
                 uni.hideLoading();
-                return _context3.finish(15);
+                return _context4.finish(15);
               case 18:
               case "end":
-                return _context3.stop();
+                return _context4.stop();
             }
           }
-        }, _callee3, null, [[1, 11, 15, 18]]);
+        }, _callee4, null, [[1, 11, 15, 18]]);
       }))();
     },
     // 搜索图书
     searchBooks: function searchBooks() {
-      var _this4 = this;
+      var _this5 = this;
       if (!this.searchKeyword.trim()) {
         this.isSearchMode = false;
         return;
@@ -706,8 +745,8 @@ var _default = {
       });
       setTimeout(function () {
         // 模拟搜索结果
-        _this4.searchResults = _this4.mockSearchResults(_this4.searchKeyword);
-        _this4.isSearchMode = true;
+        _this5.searchResults = _this5.mockSearchResults(_this5.searchKeyword);
+        _this5.isSearchMode = true;
         uni.hideLoading();
       }, 1000);
     },
@@ -725,7 +764,7 @@ var _default = {
     },
     // 扫描图书
     scanBook: function scanBook() {
-      var _this5 = this;
+      var _this6 = this;
       uni.scanCode({
         scanType: ['qrCode', 'barCode'],
         success: function success(res) {
@@ -734,26 +773,50 @@ var _default = {
           // 判断是ISBN还是QR码
           if (res.result.length >= 10 && /^\d+$/.test(res.result)) {
             // 当作ISBN处理
-            _this5.searchKeyword = res.result;
-            _this5.searchBooks();
+            _this6.searchKeyword = res.result;
+            _this6.searchBooks();
           } else {
             // 当作书架二维码处理
-            _this5.startARNavigation();
+            _this6.startARNavigation();
           }
         }
       });
     },
     // 切换标签页
     switchTab: function switchTab(tab) {
-      this.currentTab = tab;
-      this.isSearchMode = false;
-      this.searchKeyword = '';
-      // 切换时按需加载数据
-      if (tab === 'search' && this.recommendedBooks.length === 0) {
-        this.fetchBooks();
-      } else if (tab === 'history') {
-        this.fetchMyBorrowings();
-      }
+      var _this7 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5() {
+        return _regenerator.default.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _this7.currentTab = tab;
+                _this7.isSearchMode = false;
+                _this7.searchKeyword = '';
+                // 切换时按需加载数据
+                if (!(tab === 'search' && _this7.recommendedBooks.length === 0)) {
+                  _context5.next = 8;
+                  break;
+                }
+                _context5.next = 6;
+                return _this7.fetchBooks();
+              case 6:
+                _context5.next = 11;
+                break;
+              case 8:
+                if (!(tab === 'history')) {
+                  _context5.next = 11;
+                  break;
+                }
+                _context5.next = 11;
+                return _this7.fetchMyBorrowings();
+              case 11:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5);
+      }))();
     },
     // 查看图书详情
     viewBookDetail: function viewBookDetail(book) {
@@ -775,7 +838,7 @@ var _default = {
     },
     // 预约图书
     reserveBook: function reserveBook() {
-      var _this6 = this;
+      var _this8 = this;
       uni.showLoading({
         title: '处理中...'
       });
@@ -783,11 +846,11 @@ var _default = {
         uni.hideLoading();
         uni.showModal({
           title: '预约成功',
-          content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6\u300A".concat(_this6.selectedBook.title, "\u300B\uFF0C\u56FE\u4E66\u5F52\u8FD8\u540E\u5C06\u901A\u77E5\u60A8\u3002"),
+          content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6\u300A".concat(_this8.selectedBook.title, "\u300B\uFF0C\u56FE\u4E66\u5F52\u8FD8\u540E\u5C06\u901A\u77E5\u60A8\u3002"),
           showCancel: false,
           success: function success(res) {
             if (res.confirm) {
-              _this6.hideBookDetail();
+              _this8.hideBookDetail();
             }
           }
         });

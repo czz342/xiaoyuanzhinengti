@@ -287,8 +287,14 @@ export default {
 			selectedBorrowing: {} // 选中的借阅记录
 		}
 	},
-	onLoad() {
+	onLoad(options) {
+		if (options && options.billno) {
+			// 来自借阅成功后的跳转链接，需要打开指定借阅记录的详情
+			this.handleBorrowingDeepLink(options.billno);
+		} else {
+			// 正常加载
 		this.fetchBooks();
+		}
 	},
 	computed: {
 		// 根据当前标签页显示不同的图书列表
@@ -307,6 +313,25 @@ export default {
 		}
 	},
 	methods: {
+		async handleBorrowingDeepLink(billno) {
+			// 1. 切换到历史记录标签页并等待数据加载
+			await this.switchTab('history');
+			
+			// 2. 在加载完成的数据中查找对应的记录
+			const targetBorrowing = this.myBorrowings.find(item => item.billno === billno);
+			
+			// 3. 如果找到，则显示详情弹窗
+			if (targetBorrowing) {
+				this.viewBorrowingDetail(targetBorrowing);
+			} else {
+				// 如果因为数据延迟等原因没找到，给个提示
+				uni.showToast({
+					title: '未找到单号为 ' + billno + ' 的借阅记录',
+					icon: 'none',
+					duration: 3000
+				});
+			}
+		},
 		// 获取图书列表
 		async fetchBooks() {
 			uni.showLoading({
@@ -492,15 +517,15 @@ export default {
 		},
 		
 		// 切换标签页
-		switchTab(tab) {
+		async switchTab(tab) {
 			this.currentTab = tab;
 			this.isSearchMode = false;
 			this.searchKeyword = '';
 			// 切换时按需加载数据
 			if (tab === 'search' && this.recommendedBooks.length === 0) {
-				this.fetchBooks();
+				await this.fetchBooks();
 			} else if (tab === 'history') {
-				this.fetchMyBorrowings();
+				await this.fetchMyBorrowings();
 			}
 		},
 		

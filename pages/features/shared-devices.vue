@@ -3,15 +3,15 @@
 		<!-- 顶部状态栏 -->
 		<view class="status-bar">
 			<view class="status-item">
-				<text class="status-number">12</text>
+				<text class="status-number">{{ stats.availableLaundry }}</text>
 				<text class="status-label">空闲洗衣机</text>
 			</view>
 			<view class="status-item">
-				<text class="status-number">8</text>
+				<text class="status-number">{{ stats.availablePrinters }}</text>
 				<text class="status-label">空闲打印机</text>
 			</view>
 			<view class="status-item">
-				<text class="status-number">95%</text>
+				<text class="status-number">{{ stats.deviceIntegrity }}</text>
 				<text class="status-label">设备完好率</text>
 			</view>
 		</view>
@@ -26,7 +26,7 @@
 						<text class="service-title">智能洗衣</text>
 					</view>
 					<view class="header-right">
-						<text class="status-tag available">12台可用</text>
+						<text class="status-tag available">{{ stats.availableLaundry }}台可用</text>
 					</view>
 				</view>
 				<view class="card-content">
@@ -59,7 +59,7 @@
 						<text class="service-title">自助打印</text>
 					</view>
 					<view class="header-right">
-						<text class="status-tag available">8台可用</text>
+						<text class="status-tag available">{{ stats.availablePrinters }}台可用</text>
 					</view>
 				</view>
 				<view class="card-content">
@@ -101,7 +101,6 @@
 						<image :src="device.icon" mode="aspectFit" class="device-icon"></image>
 						<text class="device-name">{{device.name}}</text>
 						<text class="device-location">{{device.location}}</text>
-						<text class="device-distance">{{device.distance}}</text>
 						<text class="device-status" :class="device.statusClass">{{device.status}}</text>
 					</view>
 				</view>
@@ -132,51 +131,25 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
-			nearbyDevices: [
-				{
-					icon: '/static/images/washer-icon.png',
-					name: '洗衣机 W001',
-					location: '图书馆一楼',
-					distance: '50m',
-					status: '空闲中',
-					statusClass: 'status-available'
-				},
-				{
-					icon: '/static/images/washer-icon.png',
-					name: '洗衣机 W002',
-					location: '图书馆一楼',
-					distance: '50m',
-					status: '使用中',
-					statusClass: 'status-busy'
-				},
-				{
-					icon: '/static/images/printer-icon.png',
-					name: '打印机 P001',
-					location: '图书馆一楼',
-					distance: '30m',
-					status: '空闲中',
-					statusClass: 'status-available'
-				},
-				{
-					icon: '/static/images/printer-icon.png',
-					name: '打印机 P002',
-					location: '图书馆一楼',
-					distance: '30m',
-					status: '空闲中',
-					statusClass: 'status-available'
-				}
-			],
+			stats: {
+				availableLaundry: 0,
+				availablePrinters: 0,
+				deviceIntegrity: '0%',
+			},
+			nearbyDevices: [],
 			usageGuides: [
 				{
-					cover: '/static/images/guide-laundry.png',
+					cover: '/static/images/guide-laundry.jpg',
 					title: '如何使用智能洗衣服务',
 					description: '3分钟快速了解智能洗衣全流程'
 				},
 				{
-					cover: '/static/images/guide-printing.png',
+					cover: '/static/images/guide-printing.jpg',
 					title: '自助打印使用指南',
 					description: '远程打印全攻略'
 				},
@@ -188,7 +161,103 @@ export default {
 			]
 		}
 	},
+	onShow() {
+		this.loadPageData();
+	},
 	methods: {
+		async loadPageData() {
+			uni.showLoading({ title: '加载中...' });
+			try {
+				// 1. 获取所有设备
+				const allDevicesRes = await KingdeeAgentService.getAllSharedDevices(200);
+				const allDevices = allDevicesRes?.data?.rows ?? [];
+
+				// 2. 获取当前时间用于查询繁忙设备
+				const queryTime = this.formatDate(new Date());
+
+				// 3. 并行获取繁忙的洗衣机和打印机
+				const [busyLaundryRes, busyPrinterRes] = await Promise.all([
+					KingdeeAgentService.getBusyLaundryDeviceIds(queryTime),
+					KingdeeAgentService.getBusyPrinterDeviceIds(queryTime)
+				]);
+
+				const busyLaundryIds = new Set((busyLaundryRes?.data?.rows ?? []).map(d => d.lb77_device_number));
+				const busyPrinterIds = new Set((busyPrinterRes?.data?.rows ?? []).map(d => d.lb77_device_number));
+
+				// 4. 计算统计数据和设备列表
+				let totalLaundry = 0;
+				let availableLaundry = 0;
+				let totalPrinters = 0;
+				let availablePrinters = 0;
+				let normalDevices = 0;
+				
+				const processedDevices = allDevices.map(device => {
+					let status = '';
+					let statusClass = '';
+
+					const isLaundry = device.lb77_device_type === '洗衣机';
+					const isPrinter = device.lb77_device_type === '打印机';
+
+					if (isLaundry) totalLaundry++;
+					if (isPrinter) totalPrinters++;
+
+					if (device.lb77_status !== '正常') {
+						status = '故障';
+						statusClass = 'status-fault'; // 需要定义这个新class
+					} else {
+						normalDevices++;
+						let isBusy = false;
+						if (isLaundry) isBusy = busyLaundryIds.has(device.number);
+						if (isPrinter) isBusy = busyPrinterIds.has(device.number);
+
+						if (isBusy) {
+							status = '使用中';
+							statusClass = 'status-busy';
+						} else {
+							status = '空闲中';
+							statusClass = 'status-available';
+							if (isLaundry) availableLaundry++;
+							if (isPrinter) availablePrinters++;
+						}
+					}
+
+					return {
+						id: device.number,
+						icon: isLaundry ? '/static/images/washer-icon.png' : '/static/images/printer-icon.png',
+						name: device.name,
+						location: device.lb77_location,
+						status: status,
+						statusClass: statusClass,
+					};
+				});
+
+				this.stats.availableLaundry = availableLaundry;
+				this.stats.availablePrinters = availablePrinters;
+				this.stats.deviceIntegrity = allDevices.length > 0
+					? `${Math.round((normalDevices / allDevices.length) * 100)}%`
+					: '100%';
+
+				this.nearbyDevices = processedDevices;
+
+			} catch (error) {
+				console.error("加载共享设备页面数据失败:", error);
+				uni.showToast({
+					title: '数据加载失败',
+					icon: 'error'
+				});
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		formatDate(date) {
+			const y = date.getFullYear();
+			const m = (date.getMonth() + 1).toString().padStart(2, '0');
+			const d = date.getDate().toString().padStart(2, '0');
+			const h = date.getHours().toString().padStart(2, '0');
+			const i = date.getMinutes().toString().padStart(2, '0');
+			const s = date.getSeconds().toString().padStart(2, '0');
+			return `${y}-${m}-${d} ${h}:${i}:${s}`;
+		},
 		navigateToLaundry() {
 			uni.navigateTo({
 				url: '/pages/features/laundry'
@@ -408,12 +477,6 @@ export default {
 	margin-bottom: 8rpx;
 }
 
-.device-distance {
-	font-size: 22rpx;
-	color: #999;
-	margin-bottom: 8rpx;
-}
-
 .device-status {
 	font-size: 24rpx;
 	padding: 4rpx 16rpx;
@@ -428,6 +491,11 @@ export default {
 .status-busy {
 	background-color: #fff2e6;
 	color: #FF9500;
+}
+
+.status-fault {
+	background-color: #ffe6e6;
+	color: #ff3b30;
 }
 
 /* 使用教程样式 */

@@ -2,93 +2,74 @@
 	<view class="medical-page">
 		<!-- 顶部banner -->
 		<view class="medical-banner">
-			<image src="/static/images/medical-banner.png" mode="aspectFill" class="banner-image"></image>
 			<view class="banner-content">
 				<text class="banner-title">校医预约</text>
 				<text class="banner-subtitle">方便快捷的校园医疗服务</text>
 			</view>
 		</view>
-		
+
 		<!-- 主导航栏 -->
 		<view class="nav-tabs">
-			<view 
-				class="tab-item" 
-				v-for="(tab, index) in tabs" 
-				:key="index" 
-				:class="{ active: currentTab === index }"
-				@tap="switchTab(index)"
-			>
+			<view class="tab-item" v-for="(tab, index) in tabs" :key="index" :class="{ active: currentTab === index }"
+				@tap="switchTab(index)">
 				<text>{{tab}}</text>
 			</view>
 		</view>
-		
+
 		<!-- 预约挂号内容 -->
 		<view class="tab-content" v-if="currentTab === 0">
 			<!-- 科室选择 -->
-			<view class="section section-departments">
+			<view class="section-departments">
 				<view class="section-title">
 					<text>选择科室</text>
 				</view>
 				<view class="departments-list">
-					<view 
-						class="department-item" 
-						v-for="(dept, index) in departments" 
-						:key="index"
-						:class="{ active: selectedDepartment === index }"
-						@tap="selectDepartment(index)"
-					>
-						<image :src="dept.icon" mode="aspectFit" class="dept-icon"></image>
-						<text class="dept-name">{{dept.name}}</text>
+					<view class="department-item" v-for="dept in departments" :key="dept.number"
+						:class="{ active: selectedDepartment && selectedDepartment.number === dept.number }"
+						@tap="selectDepartment(dept)">
+						<text>{{dept.name}}</text>
 					</view>
 				</view>
 			</view>
-			
+
 			<!-- 日期选择 -->
-			<view class="section section-date" v-if="selectedDepartment !== null">
+			<view class="section-date" v-if="selectedDepartment">
 				<view class="section-title">
 					<text>选择日期</text>
 				</view>
 				<view class="date-selector">
-					<view class="date-arrow" @tap="prevDate">
-						<image src="/static/images/arrow-left.png" mode="aspectFit"></image>
-					</view>
 					<view class="dates">
-						<view 
-							class="date-item" 
-							v-for="(date, dateIndex) in availableDates" 
-							:key="dateIndex"
-							:class="{ active: selectedDate === dateIndex }"
-							@tap="selectDate(dateIndex)"
-						>
+						<view class="date-item" v-for="(date, dateIndex) in availableDates" :key="dateIndex"
+							:class="{ active: selectedDate && selectedDate.fullDate === date.fullDate }" @tap="selectDate(date)">
 							<text class="date-day">{{date.day}}</text>
 							<text class="date-weekday">{{date.weekday}}</text>
 						</view>
 					</view>
-					<view class="date-arrow" @tap="nextDate">
-						<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-					</view>
 				</view>
 			</view>
-			
+
 			<!-- 医生列表 -->
-			<view class="section section-doctors" v-if="selectedDate !== null">
+			<view class="section-doctors" v-if="selectedDate">
 				<view class="section-title">
 					<text>选择医生</text>
 				</view>
-				<view class="doctors-list">
-					<view 
-						class="doctor-card" 
-						v-for="(doctor, index) in doctorsList" 
-						:key="index"
-						@tap="selectDoctor(doctor)"
-					>
+				<view v-if="isLoadingDoctors" class="loading-state">
+					<uni-load-more status="loading" contentText=""></uni-load-more>
+				</view>
+				<view v-else-if="doctorsList.length === 0" class="empty-state small">
+					<text class="empty-text">该科室今日无排班医生</text>
+				</view>
+				<view v-else class="doctors-list">
+					<view class="doctor-card" v-for="doctor in doctorsList" :key="doctor.id">
 						<image :src="doctor.avatar" mode="aspectFill" class="doctor-avatar"></image>
 						<view class="doctor-info">
 							<view class="doctor-header">
 								<text class="doctor-name">{{doctor.name}}</text>
 								<text class="doctor-title">{{doctor.title}}</text>
 							</view>
-							<text class="doctor-specialty">{{doctor.specialty}}</text>
+							<view class="doctor-specialty-list">
+								<text>擅长：{{doctor.specialty}}</text>
+							</view>
 							<view class="doctor-rating">
 								<view class="stars">
 									<text class="star" v-for="n in 5" :key="n" :class="{ active: n <= doctor.rating }">★</text>
@@ -96,52 +77,28 @@
 								<text class="rating-text">{{doctor.ratingCount}}人评价</text>
 							</view>
 						</view>
-						<view class="doctor-schedule">
-							<view class="schedule-label">可预约：</view>
-							<view class="available-slots">
-								<text 
-									class="time-slot" 
-									v-for="(slot, slotIndex) in doctor.availableSlots" 
-									:key="slotIndex"
-									@tap.stop="selectTimeSlot(doctor, slot, slotIndex)"
-									:class="{ selected: isSelectedTimeSlot(doctor, slotIndex) }"
-								>
-									{{slot}}
-								</text>
-							</view>
-						</view>
+						<button class="book-btn-list" @tap="showDoctorDetail(doctor)">预约</button>
 					</view>
 				</view>
 			</view>
-			
-			<!-- 提交按钮 -->
-			<view class="submit-section" v-if="selectedDoctor && selectedTimeSlot !== null">
-				<button class="submit-btn" @tap="submitAppointment">确认预约</button>
-			</view>
 		</view>
-		
+
 		<!-- 我的预约内容 -->
 		<view class="tab-content" v-if="currentTab === 1">
 			<view class="my-appointments">
 				<view class="appointment-status-tabs">
-					<view 
-						class="status-tab" 
-						v-for="(status, index) in appointmentStatusList" 
-						:key="index"
-						:class="{ active: currentStatusTab === index }"
-						@tap="switchStatusTab(index)"
-					>
+					<view class="status-tab" v-for="(status, index) in appointmentStatusList" :key="index"
+						:class="{ active: currentStatusTab === index }" @tap="switchStatusTab(index)">
 						<text>{{status}}</text>
 					</view>
 				</view>
-				
-				<view class="appointment-list" v-if="myAppointments.length > 0">
-					<view 
-						class="appointment-card" 
-						v-for="(appointment, index) in filteredAppointments" 
-						:key="index"
-						@tap="viewAppointmentDetail(appointment)"
-					>
+
+				<view v-if="isLoadingAppointments" class="loading-state">
+					<uni-load-more status="loading" contentText=""></uni-load-more>
+				</view>
+				<view class="appointment-list" v-else-if="filteredAppointments.length > 0">
+					<view class="appointment-card" v-for="(appointment, index) in filteredAppointments" :key="index"
+						@tap="viewAppointmentDetail(appointment)">
 						<view class="appointment-info">
 							<text class="appointment-dept">{{appointment.department}}</text>
 							<text class="appointment-doctor">{{appointment.doctorName}} {{appointment.doctorTitle}}</text>
@@ -155,173 +112,202 @@
 							</view>
 						</view>
 						<view class="appointment-action">
-							<view 
-								class="appointment-status" 
-								:class="appointment.statusClass"
-							>
+							<view class="appointment-status" :class="appointment.statusClass">
 								<text>{{appointment.status}}</text>
 							</view>
-							<button 
-								class="action-btn" 
-								v-if="appointment.status === '待就诊'"
-								@tap.stop="cancelAppointment(appointment)"
-							>
+							<button class="action-btn" v-if="appointment.status === '待就诊'"
+								@tap.stop="cancelAppointment(appointment)">
 								取消预约
-							</button>
-							<button 
-								class="action-btn primary" 
-								v-if="appointment.status === '待就诊'"
-								@tap.stop="navigateToClinic(appointment)"
-							>
-								前往就诊
-							</button>
-							<button 
-								class="action-btn" 
-								v-if="appointment.status === '已完成'"
-								@tap.stop="viewMedicalRecord(appointment)"
-							>
-								查看病历
 							</button>
 						</view>
 					</view>
 				</view>
-				
+
 				<view class="empty-state" v-else>
 					<image src="/static/images/empty-appointments.png" mode="aspectFit" class="empty-image"></image>
 					<text class="empty-text">暂无{{appointmentStatusList[currentStatusTab]}}的预约记录</text>
 				</view>
 			</view>
 		</view>
-		
+
 		<!-- 健康档案内容 -->
 		<view class="tab-content" v-if="currentTab === 2">
 			<view class="health-records">
 				<view class="records-type-tabs">
-					<view 
-						class="record-type" 
-						v-for="(type, index) in healthRecordTypes" 
-						:key="index"
-						:class="{ active: currentRecordType === index }"
-						@tap="switchRecordType(index)"
-					>
+					<view class="record-type" v-for="(type, index) in healthRecordTypes" :key="index"
+						:class="{ active: currentRecordType === index }" @tap="switchRecordType(index)">
 						<image :src="type.icon" mode="aspectFit"></image>
 						<text>{{type.name}}</text>
 					</view>
 				</view>
-				
+
 				<!-- 就诊记录 -->
 				<view class="records-list" v-if="currentRecordType === 0">
-					<view class="timeline">
-						<view 
-							class="timeline-item" 
-							v-for="(record, index) in medicalRecords" 
-							:key="index"
-							@tap="viewRecordDetail(record)"
-						>
+					<view v-if="isLoadingMedicalRecords" class="loading-state">
+						<uni-load-more status="loading" contentText=""></uni-load-more>
+					</view>
+					<view class="timeline" v-else-if="medicalRecords.length > 0">
+						<view class="timeline-item" v-for="(record, index) in medicalRecords" :key="index"
+							@tap="viewRecordDetail(record)">
 							<view class="timeline-dot"></view>
 							<view class="timeline-content">
 								<view class="record-header">
-									<text class="record-title">{{record.department}} - {{record.disease}}</text>
+									<text class="record-title">{{record.disease}}</text>
 									<text class="record-date">{{record.date}}</text>
 								</view>
 								<text class="record-doctor">{{record.doctorName}} {{record.doctorTitle}}</text>
 								<text class="record-desc">{{record.description}}</text>
-								<view class="record-tags">
-									<text class="tag" v-for="(tag, tagIndex) in record.tags" :key="tagIndex">{{tag}}</text>
-								</view>
 							</view>
 						</view>
+					</view>
+					<view v-else class="empty-state">
+						<image src="/static/images/empty-reports.png" mode="aspectFit" class="empty-image"></image>
+						<text class="empty-text">暂无就诊记录</text>
 					</view>
 				</view>
 				
 				<!-- 体检报告 -->
 				<view class="records-list" v-if="currentRecordType === 1">
-					<view 
-						class="report-card" 
-						v-for="(report, index) in examReports" 
-						:key="index"
-						@tap="viewExamReport(report)"
-					>
-						<view class="report-header">
-							<text class="report-title">{{report.title}}</text>
-							<text class="report-date">{{report.date}}</text>
-						</view>
-						<view class="report-summary">
-							<text class="summary-label">体检结论：</text>
-							<text class="summary-content">{{report.summary}}</text>
-						</view>
-						<view class="report-footer">
-							<text class="report-location">{{report.location}}</text>
-							<view class="report-status" :class="report.statusClass">
-								<text>{{report.status}}</text>
+					<view v-if="examReports.length > 0">
+						<view 
+							class="report-card" 
+							v-for="(report, index) in examReports" 
+							:key="index"
+							@tap="viewExamReport(report)"
+						>
+							<view class="report-header">
+								<text class="report-title">{{report.title}}</text>
+								<text class="report-date">{{report.date}}</text>
+							</view>
+							<view class="report-summary">
+								<text class="summary-label">体检结论：</text>
+								<text class="summary-content">{{report.summary}}</text>
+							</view>
+							<view class="report-footer">
+								<text class="report-location">{{report.location}}</text>
+								<view class="report-status" :class="report.statusClass">
+									<text>{{report.status}}</text>
+								</view>
 							</view>
 						</view>
+					</view>
+					<view v-else class="empty-state">
+						<image src="/static/images/empty-reports.png" mode="aspectFit" class="empty-image"></image>
+						<text class="empty-text">暂无体检报告</text>
 					</view>
 				</view>
 				
 				<!-- 疫苗接种 -->
 				<view class="records-list" v-if="currentRecordType === 2">
-					<view 
-						class="vaccine-card" 
-						v-for="(vaccine, index) in vaccineRecords" 
-						:key="index"
-					>
-						<view class="vaccine-header">
-							<text class="vaccine-name">{{vaccine.name}}</text>
-							<view class="vaccine-status" :class="vaccine.statusClass">
-								<text>{{vaccine.status}}</text>
-							</view>
-						</view>
-						<view class="vaccine-info">
-							<view class="vaccine-item">
-								<text class="item-label">接种日期：</text>
-								<text class="item-value">{{vaccine.date || '未接种'}}</text>
-							</view>
-							<view class="vaccine-item">
-								<text class="item-label">接种地点：</text>
-								<text class="item-value">{{vaccine.location || '未接种'}}</text>
-							</view>
-							<view class="vaccine-item">
-								<text class="item-label">疫苗批次：</text>
-								<text class="item-value">{{vaccine.batch || '未接种'}}</text>
-							</view>
-						</view>
-						<button 
-							class="vaccine-btn" 
-							v-if="vaccine.status === '未接种'"
-							@tap="reserveVaccine(vaccine)"
-						>
-							预约接种
-						</button>
-					</view>
-				</view>
-				
-				<!-- 药品清单 -->
-				<view class="records-list" v-if="currentRecordType === 3">
-					<view class="medication-list">
+					<view v-if="vaccineRecords.length > 0">
 						<view 
-							class="medication-item" 
-							v-for="(medicine, index) in medications" 
+							class="vaccine-card" 
+							v-for="(vaccine, index) in vaccineRecords" 
 							:key="index"
 						>
-							<image :src="medicine.image" mode="aspectFit" class="medicine-image"></image>
-							<view class="medicine-info">
-								<text class="medicine-name">{{medicine.name}}</text>
-								<text class="medicine-usage">{{medicine.usage}}</text>
-								<view class="medicine-prescription">
-									<text class="prescription-date">处方日期：{{medicine.prescriptionDate}}</text>
-									<text class="prescription-doctor">{{medicine.doctorName}}</text>
+							<view class="vaccine-header">
+								<text class="vaccine-name">{{vaccine.name}}</text>
+								<view class="vaccine-status" :class="vaccine.statusClass">
+									<text>{{vaccine.status}}</text>
 								</view>
 							</view>
-							<view class="medicine-actions">
-								<button class="medicine-btn" @tap="viewMedicationDetail(medicine)">详情</button>
+							<view class="vaccine-info">
+								<view class="vaccine-item">
+									<text class="item-label">接种日期：</text>
+									<text class="item-value">{{vaccine.date || '未接种'}}</text>
+								</view>
+								<view class="vaccine-item">
+									<text class="item-label">接种地点：</text>
+									<text class="item-value">{{vaccine.location || '未接种'}}</text>
+								</view>
+								<view class="vaccine-item">
+									<text class="item-label">疫苗批次：</text>
+									<text class="item-value">{{vaccine.batch || '未接种'}}</text>
+								</view>
 							</view>
+							<button 
+								class="vaccine-btn" 
+								v-if="vaccine.status === '未接种'"
+								@tap="reserveVaccine(vaccine)"
+							>
+								预约接种
+							</button>
 						</view>
+					</view>
+					<view v-else class="empty-state">
+						<image src="/static/images/empty-reports.png" mode="aspectFit" class="empty-image"></image>
+						<text class="empty-text">暂无疫苗接种记录</text>
 					</view>
 				</view>
 			</view>
 		</view>
-		
+
+		<!-- 医生详情与预约弹窗 -->
+		<view class="doctor-detail-popup" v-if="showDoctorDetailPopup">
+			<view class="popup-mask" @tap="hideDoctorDetail"></view>
+			<view class="popup-content">
+				<view class="popup-header">
+					<text class="popup-title">预约详情</text>
+					<view class="popup-close" @tap="hideDoctorDetail">
+						<image src="/static/images/close.png" mode="aspectFit"></image>
+					</view>
+				</view>
+				
+				<scroll-view scroll-y="true" class="popup-body">
+					<view class="doctor-profile-popup">
+						<image :src="currentDoctor.avatar" mode="aspectFill" class="profile-avatar"></image>
+						<view class="profile-basic">
+							<text class="profile-name">{{currentDoctor.name}}</text>
+							<text class="profile-title">{{currentDoctor.title}}</text>
+							<view class="profile-rating">
+								<view class="stars">
+									<text class="star" v-for="n in 5" :key="n" :class="{active: n <= currentDoctor.rating}">★</text>
+								</view>
+								<text class="rating-value">{{currentDoctor.rating}}</text>
+							</view>
+						</view>
+					</view>
+					
+					<view class="profile-detail">
+						<view class="detail-item">
+							<text class="detail-label">专业擅长</text>
+							<text class="detail-value">{{currentDoctor.specialty}}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">可预约时段 ({{ selectedDate ? selectedDate.fullDate : '' }})</text>
+							<view class="time-grid">
+								<view v-if="currentDoctor.isLoadingSlots" class="loading-state mini">
+									<text class="loading-text">号源加载中...</text>
+								</view>
+								<view v-else-if="currentDoctor.availableSlots && currentDoctor.availableSlots.length > 0" class="slots-wrapper">
+									<view 
+										class="time-block" 
+										v-for="(slot, slotIndex) in currentDoctor.availableSlots" 
+										:key="slotIndex"
+										@tap="selectSlotInPopup(slot)"
+									>
+										<text :class="{ selected: isSlotSelectedInPopup(slot) }">{{slot}}</text>
+									</view>
+								</view>
+								<view v-else class="no-slots">
+									<text>暂无号源</text>
+								</view>
+							</view>
+						</view>
+					</view>
+					
+					<button 
+						class="book-button" 
+						:disabled="!selectedTimeInPopup"
+						:class="{disabled: !selectedTimeInPopup}"
+						@tap="submitAppointment"
+					>
+						确认预约
+					</button>
+				</scroll-view>
+			</view>
+		</view>
+
 		<!-- 预约成功弹窗 -->
 		<view class="modal appointment-success" v-if="showAppointmentSuccess">
 			<view class="modal-mask" @tap="hideAppointmentSuccess"></view>
@@ -346,17 +332,15 @@
 						<text class="info-value">{{appointmentResult.location}}</text>
 					</view>
 				</view>
-				<view class="success-notes">
-					<text class="notes-title">就诊须知：</text>
-					<text class="notes-content">请提前10分钟到达就诊地点，携带学生证和校园卡。如需取消预约，请提前4小时操作。</text>
+				<view class="success-reminder">
+					<text>请于预约时间前十分钟左右，携带校园卡或身份证到诊室门口等待叫号。</text>
 				</view>
 				<view class="success-actions">
-					<button class="action-btn" @tap="addToCalendar">添加到日历</button>
-					<button class="action-btn primary" @tap="hideAppointmentSuccess">完成</button>
+					<view class="action-btn primary" @tap="hideAppointmentSuccess">完成</view>
 				</view>
 			</view>
 		</view>
-		
+
 		<!-- 预约详情弹窗 -->
 		<view class="modal appointment-detail" v-if="showAppointmentDetail">
 			<view class="modal-mask" @tap="hideAppointmentDetail"></view>
@@ -387,1529 +371,1694 @@
 						<text class="detail-label">就诊地点：</text>
 						<text class="detail-value">{{currentAppointment.location}}</text>
 					</view>
-					<view class="detail-item" v-if="currentAppointment.notes">
-						<text class="detail-label">备注信息：</text>
-						<text class="detail-value">{{currentAppointment.notes}}</text>
-					</view>
-					
 					<view class="detail-actions" v-if="currentAppointment.status === '待就诊'">
-						<button class="action-btn" @tap="rescheduleAppointment">改期</button>
 						<button class="action-btn" @tap="confirmCancelAppointment">取消预约</button>
-						<button class="action-btn primary" @tap="navigateToClinic(currentAppointment)">前往就诊</button>
 					</view>
 				</view>
+			</view>
+		</view>
+
+		<!-- 就诊记录详情弹窗 -->
+		<view class="modal medical-record-detail" v-if="showMedicalRecordDetail">
+			<view class="modal-mask" @tap="hideMedicalRecordDetail"></view>
+			<view class="modal-content">
+				<view class="modal-header">
+					<text class="modal-title">就诊记录详情</text>
+					<view class="modal-close" @tap="hideMedicalRecordDetail">
+						<image src="/static/images/close.png" mode="aspectFit"></image>
+					</view>
+				</view>
+				<view class="detail-content" v-if="isLoadingRecordDetail">
+					<view class="loading-state">
+						<uni-load-more status="loading"></uni-load-more>
+					</view>
+				</view>
+				<scroll-view scroll-y="true" class="detail-scroll-view" v-else-if="currentMedicalRecord.billno">
+					<view class="detail-content">
+						<view class="detail-item">
+							<text class="detail-label">诊断结果：</text>
+							<text class="detail-value bold">{{currentMedicalRecord.lb77_diagnosis}}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">就诊医生：</text>
+							<text class="detail-value">{{currentMedicalRecord.lb77_doctor_name}}
+								{{currentMedicalRecord.lb77_doctor_lb77_title}}</text>
+						</view>
+						<view class="detail-item">
+							<text class="detail-label">就诊日期：</text>
+							<text class="detail-value">{{(currentMedicalRecord.lb77_fdate || '').split(' ')[0]}}</text>
+						</view>
+						<view class="detail-item advice-item">
+							<text class="detail-label">医嘱：</text>
+							<text class="detail-value advice">{{currentMedicalRecord.lb77_advice || '无'}}</text>
+						</view>
+
+						<!-- 药品处方 -->
+						<view class="prescription-section">
+							<view class="section-title">
+								<text>药品处方</text>
+							</view>
+							<view v-if="currentMedicalRecord.entryentity && currentMedicalRecord.entryentity.length > 0"
+								class="prescription-list">
+								<view class="prescription-item" v-for="(med, index) in currentMedicalRecord.entryentity"
+									:key="index">
+									<view class="med-header">
+										<text class="med-name">{{med.lb77_medicine_name}}</text>
+										<text class="med-spec">{{med.lb77_medicine_lb77_specification}}
+											({{med.lb77_medicine_lb77_dosage_form}})</text>
+									</view>
+									<text class="med-usage">用法：{{med.lb77_usage}}</text>
+									<text class="med-quantity">数量：{{med.lb77_quantity}} {{med.lb77_unit_name}}</text>
+								</view>
+							</view>
+							<view v-else class="empty-prescription">
+								<text>本次就诊无处方药品</text>
+							</view>
+						</view>
+					</view>
+				</scroll-view>
 			</view>
 		</view>
 	</view>
 </template>
 
 <script>
-export default {
-	data() {
-		return {
-			// 标签页管理
-			tabs: ['预约挂号', '我的预约', '健康档案'],
-			currentTab: 0,
-			
-			// 预约挂号数据
-			departments: [
-				{ name: '内科', icon: '/static/images/dept-internal.png' },
-				{ name: '外科', icon: '/static/images/dept-surgery.png' },
-				{ name: '口腔科', icon: '/static/images/dept-dental.png' },
-				{ name: '眼科', icon: '/static/images/dept-eye.png' },
-				{ name: '耳鼻喉科', icon: '/static/images/dept-ent.png' },
-				{ name: '皮肤科', icon: '/static/images/dept-derma.png' },
-				{ name: '心理咨询', icon: '/static/images/dept-psychology.png' },
-				{ name: '中医科', icon: '/static/images/dept-chinese.png' },
-			],
-			selectedDepartment: null,
-			selectedDate: null,
-			selectedDoctor: null,
-			selectedTimeSlot: null,
-			selectedTimeSlotIndex: null,
-			
-			// 日期选择
-			availableDates: [
-				{ day: '15', weekday: '周一' },
-				{ day: '16', weekday: '周二' },
-				{ day: '17', weekday: '周三' },
-				{ day: '18', weekday: '周四' },
-				{ day: '19', weekday: '周五' },
-			],
-			
-			// 医生列表（示例数据）
-			doctorsList: [
-				{
-					id: 1,
-					name: '张医生',
-					title: '主任医师',
-					specialty: '高血压、感冒、发热',
-					avatar: '/static/images/doctor1.png',
-					rating: 4.8,
-					ratingCount: 126,
-					availableSlots: ['08:30', '09:00', '10:30', '15:30']
-				},
-				{
-					id: 2,
-					name: '李医生',
-					title: '副主任医师',
-					specialty: '咳嗽、支气管炎、哮喘',
-					avatar: '/static/images/doctor2.png',
-					rating: 4.7,
-					ratingCount: 85,
-					availableSlots: ['09:30', '10:00', '14:00', '16:30']
-				},
-				{
-					id: 3,
-					name: '王医生',
-					title: '主治医师',
-					specialty: '消化系统疾病',
-					avatar: '/static/images/doctor3.png',
-					rating: 4.9,
-					ratingCount: 203,
-					availableSlots: ['08:00', '11:30', '14:30', '15:00']
-				}
-			],
-			
-			// 我的预约数据
-			appointmentStatusList: ['全部', '待就诊', '已完成', '已取消'],
-			currentStatusTab: 0,
-			myAppointments: [
-				{
-					id: 1,
-					department: '内科',
-					doctorName: '张医生',
-					doctorTitle: '主任医师',
-					date: '2023-05-20',
-					time: '09:00',
-					location: '校医院 302诊室',
-					status: '待就诊',
-					notes: '请携带学生证和校园卡'
-				},
-				{
-					id: 2,
-					department: '眼科',
-					doctorName: '刘医生',
-					doctorTitle: '副主任医师',
-					date: '2023-05-15',
-					time: '14:30',
-					location: '校医院 205诊室',
-					status: '已完成',
-					notes: ''
-				},
-				{
-					id: 3,
-					department: '口腔科',
-					doctorName: '陈医生',
-					doctorTitle: '主治医师',
-					date: '2023-04-28',
-					time: '11:00',
-					location: '校医院 108诊室',
-					status: '已取消',
-					notes: ''
-				}
-			],
-			
-			// 健康档案数据
-			healthRecordTypes: [
-				{ name: '就诊记录', icon: '/static/images/record-visit.png' },
-				{ name: '体检报告', icon: '/static/images/record-exam.png' },
-				{ name: '疫苗接种', icon: '/static/images/record-vaccine.png' },
-				{ name: '药品清单', icon: '/static/images/record-medicine.png' },
-			],
-			currentRecordType: 0,
-			
-			// 就诊记录
-			medicalRecords: [
-				{
-					id: 1,
-					department: '内科',
-					disease: '上呼吸道感染',
-					date: '2023-05-15',
-					doctorName: '张医生',
-					doctorTitle: '主任医师',
-					description: '症状为发热、咳嗽、咽痛，予以抗病毒及对症治疗',
-					tags: ['发热', '咳嗽', '用药']
-				},
-				{
-					id: 2,
-					department: '眼科',
-					disease: '结膜炎',
-					date: '2023-04-10',
-					doctorName: '刘医生',
-					doctorTitle: '副主任医师',
-					description: '双眼结膜充血，分泌物较多，给予抗菌滴眼液治疗',
-					tags: ['眼部', '炎症', '用药']
-				},
-				{
-					id: 3,
-					department: '口腔科',
-					disease: '牙周炎',
-					date: '2023-03-22',
-					doctorName: '陈医生',
-					doctorTitle: '主治医师',
-					description: '牙龈红肿出血，洗牙后给予漱口水',
-					tags: ['口腔', '炎症', '治疗']
-				}
-			],
-			
-			// 体检报告
-			examReports: [
-				{
-					id: 1,
-					title: '2023学年入学体检',
-					date: '2023-09-01',
-					summary: '体检各项指标正常，无异常发现',
-					location: '校医院体检中心',
-					status: '正常'
-				},
-				{
-					id: 2,
-					title: '2022学年常规体检',
-					date: '2022-09-05',
-					summary: '血压偏高，建议定期复查，注意作息',
-					location: '校医院体检中心',
-					status: '异常'
-				}
-			],
-			
-			// 疫苗接种记录
-			vaccineRecords: [
-				{
-					id: 1,
-					name: '流感疫苗',
-					status: '已接种',
-					date: '2023-10-15',
-					location: '校医院预防接种门诊',
-					batch: 'FL202310A'
-				},
-				{
-					id: 2,
-					name: '新冠疫苗加强针',
-					status: '已接种',
-					date: '2023-08-20',
-					location: '校医院预防接种门诊',
-					batch: 'CV202308B'
-				},
-				{
-					id: 3,
-					name: '乙肝疫苗',
-					status: '未接种',
-					date: '',
-					location: '',
-					batch: ''
-				}
-			],
-			
-			// 药品清单
-			medications: [
-				{
-					id: 1,
-					name: '布洛芬缓释胶囊',
-					usage: '头痛、发热时，一次1粒，一日3次',
-					image: '/static/images/med1.png',
-					prescriptionDate: '2023-05-15',
-					doctorName: '张医生（内科）'
-				},
-				{
-					id: 2,
-					name: '氯雷他定片',
-					usage: '过敏症状时，一次1片，一日1次',
-					image: '/static/images/med2.png',
-					prescriptionDate: '2023-04-20',
-					doctorName: '王医生（内科）'
-				},
-				{
-					id: 3,
-					name: '红霉素眼膏',
-					usage: '结膜炎治疗，每日3-4次，少量涂于下眼睑内侧',
-					image: '/static/images/med3.png',
-					prescriptionDate: '2023-04-10',
-					doctorName: '刘医生（眼科）'
-				}
-			],
-			
-			// 弹窗控制
-			showAppointmentSuccess: false,
-			showAppointmentDetail: false,
-			currentAppointment: {},
-			appointmentResult: {}
-		}
-	},
-	computed: {
-		filteredAppointments() {
-			let appointmentsToFilter = this.myAppointments;
-			if (this.currentStatusTab !== 0) {
-				const statusMap = {
-					1: '待就诊',
-					2: '已完成', 
-					3: '已取消'
-				};
-				const statusFilter = statusMap[this.currentStatusTab];
-				appointmentsToFilter = this.myAppointments.filter(item => item.status === statusFilter);
-			}
-			return appointmentsToFilter.map(appointment => ({
-				...appointment,
-				statusClass: this.getStatusClass(appointment.status)
-			}));
-		},
-		currentAppointmentStatusClass() {
-			if (this.currentAppointment && this.currentAppointment.status) {
-				return this.getStatusClass(this.currentAppointment.status);
-			}
-			return '';
-		}
-	},
-	created() {
-		// 为 examReports 添加 statusClass
-		this.examReports = this.examReports.map(report => ({
-			...report,
-			statusClass: this.getReportStatusClass(report.status)
-		}));
+	// 导入金蝶API服务
+	import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
-		// 为 vaccineRecords 添加 statusClass
-		this.vaccineRecords = this.vaccineRecords.map(vaccine => ({
-			...vaccine,
-			statusClass: this.getVaccineStatusClass(vaccine.status)
-		}));
-	},
-	methods: {
-		// 标签切换
-		switchTab(index) {
-			this.currentTab = index;
-		},
-		
-		// 科室选择
-		selectDepartment(index) {
-			this.selectedDepartment = index;
-			this.selectedDate = null;
-			this.selectedDoctor = null;
-			this.selectedTimeSlot = null;
-			this.selectedTimeSlotIndex = null;
-			
-			// 实际应用中，这里应该根据选择的科室获取可预约的日期
-		},
-		
-		// 日期导航
-		prevDate() {
-			uni.showToast({
-				title: '已是最早日期',
-				icon: 'none'
-			});
-		},
-		
-		nextDate() {
-			uni.showToast({
-				title: '已是最晚日期',
-				icon: 'none'
-			});
-		},
-		
-		// 选择日期
-		selectDate(index) {
-			this.selectedDate = index;
-			this.selectedDoctor = null;
-			this.selectedTimeSlot = null;
-			this.selectedTimeSlotIndex = null;
-			
-			// 实际应用中，这里应该根据选择的科室和日期获取可预约的医生
-		},
-		
-		// 选择医生
-		selectDoctor(doctor) {
-			this.selectedDoctor = doctor;
-			this.selectedTimeSlot = null;
-			this.selectedTimeSlotIndex = null;
-		},
-		
-		// 选择时间
-		selectTimeSlot(doctor, slot, index) {
-			this.selectedTimeSlot = slot;
-			this.selectedTimeSlotIndex = index;
-		},
-		
-		// 判断时间是否被选中
-		isSelectedTimeSlot(doctor, index) {
-			return this.selectedDoctor && this.selectedDoctor.id === doctor.id && this.selectedTimeSlotIndex === index;
-		},
-		
-		// 提交预约
-		submitAppointment() {
-			if (!this.selectedDoctor || this.selectedTimeSlot === null) {
-				uni.showToast({
-					title: '请选择医生和时间',
-					icon: 'none'
-				});
-				return;
+	// 科室图标映射
+	const departmentIconMap = {
+		'内科': '/static/images/dept-internal.png',
+		'外科': '/static/images/dept-surgery.png',
+		'口腔科': '/static/images/dept-dental.png',
+		'眼科': '/static/images/dept-eye.png',
+		'耳鼻喉科': '/static/images/dept-ent.png',
+		'皮肤科': '/static/images/dept-derma.png',
+		'心理咨询': '/static/images/dept-psychology.png',
+		'中医科': '/static/images/dept-chinese.png',
+	};
+	// 医生默认头像列表
+	const doctorAvatars = [
+		'/static/images/doctor1.png',
+		'/static/images/doctor2.png',
+		'/static/images/doctor3.png',
+	];
+
+	export default {
+		data() {
+			return {
+				tabs: ['预约挂号', '我的预约', '健康档案'],
+				currentTab: 0,
+				departments: [],
+				doctorsList: [],
+				availableDates: [],
+				selectedDepartment: null,
+				selectedDate: null,
+				
+				// 弹窗相关
+				showDoctorDetailPopup: false,
+				currentDoctor: {},
+				selectedTimeInPopup: null,
+				
+				isLoadingDepartments: true,
+				isLoadingDoctors: false,
+				appointmentStatusList: ['全部', '待就诊', '已完成', '已取消'],
+				currentStatusTab: 0,
+				myAppointments: [],
+				isLoadingAppointments: true,
+				currentUser: {
+					studentId: '645730151',
+					name: '张三'
+				},
+				healthRecordTypes: [
+					{ name: '就诊记录', icon: '/static/images/record-visit.png' },
+					{ name: '体检报告', icon: '/static/images/record-exam.png' },
+					{ name: '疫苗接种', icon: '/static/images/record-vaccine.png' },
+				],
+				currentRecordType: 0,
+				medicalRecords: [],
+				isLoadingMedicalRecords: false,
+				examReports: [
+					{
+						id: 1,
+						title: '2023学年入学体检',
+						date: '2023-09-01',
+						summary: '体检各项指标正常，无异常发现',
+						location: '校医院体检中心',
+						status: '正常'
+					},
+				],
+				vaccineRecords: [
+					{
+						id: 1,
+						name: '流感疫苗',
+						status: '已接种',
+						date: '2023-10-15',
+						location: '校医院预防接种门诊',
+						batch: 'FL202310A'
+					},
+				],
+				showAppointmentSuccess: false,
+				showAppointmentDetail: false,
+				showMedicalRecordDetail: false,
+				currentAppointment: {},
+				currentMedicalRecord: {},
+				isLoadingRecordDetail: false,
+				appointmentResult: {}
 			}
-			
-			// 构建预约结果
-			const dept = this.departments[this.selectedDepartment];
-			const date = this.availableDates[this.selectedDate];
-			
-			this.appointmentResult = {
-				department: dept.name,
-				doctorName: this.selectedDoctor.name,
-				date: `2023-05-${date.day}`,
-				time: this.selectedTimeSlot,
-				location: `校医院 ${Math.floor(Math.random() * 5) + 1}楼 ${Math.floor(Math.random() * 20) + 1}诊室`
-			};
-			
-			// 添加到我的预约列表
-			const newAppointment = {
-				id: this.myAppointments.length + 1,
-				department: this.appointmentResult.department,
-				doctorName: this.appointmentResult.doctorName,
-				doctorTitle: this.selectedDoctor.title,
-				date: this.appointmentResult.date,
-				time: this.appointmentResult.time,
-				location: this.appointmentResult.location,
-				status: '待就诊',
-				notes: '请携带学生证和校园卡'
-			};
-			
-			this.myAppointments.unshift(newAppointment);
-			
-			// 显示成功弹窗
-			this.showAppointmentSuccess = true;
-			
-			// 重置选择
-			// this.resetSelection();
 		},
-		
-		// 重置选择
-		resetSelection() {
-			this.selectedDepartment = null;
-			this.selectedDate = null;
-			this.selectedDoctor = null;
-			this.selectedTimeSlot = null;
-			this.selectedTimeSlotIndex = null;
+		computed: {
+			filteredAppointments() {
+				let appointmentsToFilter = this.myAppointments;
+				if (this.currentStatusTab !== 0) {
+					const statusMap = {
+						1: '已预约',
+						2: '已完成',
+						3: '已取消'
+					};
+					const statusFilter = statusMap[this.currentStatusTab];
+					appointmentsToFilter = this.myAppointments.filter(item => item.lb77_appointment_status ===
+						statusFilter);
+				}
+				return appointmentsToFilter.map(appointment => ({
+					...appointment,
+					department: appointment.lb77_doctor_lb77_department_name,
+					doctorName: appointment.lb77_doctor_name,
+					doctorTitle: appointment.lb77_doctor_lb77_title,
+					date: appointment.lb77_appointment_date.split(' ')[0],
+					time: this.secondsToTime(appointment.lb77_starttime),
+					location: '校医院 ' + appointment.lb77_doctor_lb77_department_name,
+					status: appointment.lb77_appointment_status === '已预约' ? '待就诊' : appointment
+					.lb77_appointment_status,
+					statusClass: this.getStatusClass(appointment.lb77_appointment_status)
+				}));
+			},
+			currentAppointmentStatusClass() {
+				if (this.currentAppointment && this.currentAppointment.status) {
+					return this.getStatusClass(this.currentAppointment.status);
+				}
+				return '';
+			}
 		},
-		
-		// 添加到日历
-		addToCalendar() {
-			uni.showToast({
-				title: '已添加到日历',
-				icon: 'success'
-			});
+		async onLoad(options) {
+			this.generateAvailableDates();
+			this.fetchMyAppointments();
+			this.fetchMedicalRecords();
+
+			this.examReports = this.examReports.map(report => ({
+				...report,
+				statusClass: this.getReportStatusClass(report.status)
+			}));
+			this.vaccineRecords = this.vaccineRecords.map(vaccine => ({
+				...vaccine,
+				statusClass: this.getVaccineStatusClass(vaccine.status)
+			}));
+
+			// 默认加载，会选中第一个科室并加载其医生列表
+			await this.fetchDepartments();
+
+			// 在默认数据加载后处理深度链接
+			if (options && options.departmentId && options.recommendDoctorId) {
+				const department = this.departments.find(d => d.number === options.departmentId);
+				if (department) {
+					// 如果目标科室不是当前已选中的科室，则切换科室并等待医生列表加载
+					if (!this.selectedDepartment || this.selectedDepartment.number !== department.number) {
+						await this.selectDepartment(department);
+					}
+
+					// 现在正确的医生列表已加载，查找推荐的医生
+					const doctor = this.doctorsList.find(doc => doc.id === options.recommendDoctorId);
+					if (doctor) {
+						this.$nextTick(() => {
+							this.showDoctorDetail(doctor);
+						});
+					} else {
+						console.warn(`在科室 ${department.name} 未找到ID为 ${options.recommendDoctorId} 的医生`);
+						uni.showToast({
+							title: '未在该科室找到推荐医生',
+							icon: 'none'
+						});
+					}
+				} else {
+					console.warn(`未找到ID为 ${options.departmentId} 的科室`);
+					uni.showToast({
+						title: '未找到推荐的科室',
+						icon: 'none'
+					});
+				}
+			}
 		},
-		
-		// 隐藏成功弹窗
-		hideAppointmentSuccess() {
-			this.showAppointmentSuccess = false;
-			// 跳转到我的预约标签页
-			this.currentTab = 1;
-			this.currentStatusTab = 1; // 待就诊
-		},
-		
-		// 切换预约状态标签
-		switchStatusTab(index) {
-			this.currentStatusTab = index;
-		},
-		
-		// 查看预约详情
-		viewAppointmentDetail(appointment) {
-			this.currentAppointment = appointment;
-			this.showAppointmentDetail = true;
-		},
-		
-		// 隐藏预约详情
-		hideAppointmentDetail() {
-			this.showAppointmentDetail = false;
-		},
-		
-		// 取消预约确认
-		confirmCancelAppointment() {
-			uni.showModal({
-				title: '取消预约',
-				content: '确定要取消此次预约吗？',
-				success: (res) => {
-					if (res.confirm) {
-						this.cancelAppointment(this.currentAppointment);
+		methods: {
+			// ===================================================================
+			// ========================== 数据获取与处理 ==========================
+			// ===================================================================
+			generateAvailableDates() {
+				const dates = [];
+				const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+				for (let i = 0; i < 7; i++) {
+					const date = new Date();
+					date.setDate(date.getDate() + i);
+					dates.push({
+						fullDate: this.formatDate(date, 'yyyy-MM-dd'),
+						day: this.formatDate(date, 'dd'),
+						weekday: weekdays[date.getDay()]
+					});
+				}
+				this.availableDates = dates;
+				// 默认选中今天
+				if(this.availableDates.length > 0) {
+					this.selectDate(this.availableDates[0]);
+				}
+			},
+			async fetchDepartments() {
+				this.isLoadingDepartments = true;
+				try {
+					const res = await KingdeeAgentService.getHospitalDepartments(20);
+					if (res && res.data && res.data.rows) {
+						this.departments = res.data.rows;
+						// 默认选中第一个科室
+						if (this.departments.length > 0) {
+							await this.selectDepartment(this.departments[0]);
+						}
+					}
+				} catch (error) {
+					console.error("获取科室列表失败:", error);
+					uni.showToast({
+						title: '科室加载失败',
+						icon: 'none'
+					});
+				} finally {
+					this.isLoadingDepartments = false;
+				}
+			},
+			async fetchDoctors(departmentNumber) {
+				this.isLoadingDoctors = true;
+				this.doctorsList = [];
+				try {
+					const res = await KingdeeAgentService.getDoctorsByDepartment(departmentNumber);
+					if (res && res.data && res.data.rows) {
+						this.doctorsList = res.data.rows.map((doc, index) => ({
+							...doc,
+							id: doc.number,
+							avatar: doctorAvatars[index % doctorAvatars.length],
+							title: doc.lb77_title,
+							specialty: doc.lb77_specialty,
+							rating: (4.5 + Math.random() * 0.5).toFixed(1),
+							ratingCount: Math.floor(Math.random() * 200) + 50,
+							availableSlots: [],
+							isLoadingSlots: true 
+						}));
+						this.updateAllDoctorSchedules(); 
+					}
+				} catch (error) {
+					console.error("获取医生列表失败:", error);
+					uni.showToast({
+						title: '医生加载失败',
+						icon: 'none'
+					});
+				} finally {
+					this.isLoadingDoctors = false;
+				}
+			},
+			async updateAllDoctorSchedules() {
+				if (!this.selectedDate) return;
+				const schedulePromises = this.doctorsList.map(doctor => this.updateDoctorSchedule(doctor));
+				await Promise.all(schedulePromises);
+			},
+			async updateDoctorSchedule(doctor) {
+				this.$set(doctor, 'isLoadingSlots', true);
+				this.$set(doctor, 'availableSlots', []);
+				try {
+					const scheduleRes = await KingdeeAgentService.getDoctorWeeklySchedule(doctor.number);
+					const bookingsRes = await KingdeeAgentService.getAppointmentsByDate(doctor.number, this.selectedDate
+						.fullDate);
+
+					let allSlots = [];
+					if (scheduleRes && scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0]
+						.lb77_weekschedule) {
+						const weeklySchedule = scheduleRes.data.rows[0].lb77_weekschedule;
+						allSlots = weeklySchedule
+							.filter(slot => slot.lb77_day_of_week.trim() === this.selectedDate.weekday)
+							.map(slot => ({
+								start: slot.lb77_start_time,
+								end: slot.lb77_end_time
+							}));
+					}
+
+					let bookedSlots = [];
+					if (bookingsRes && bookingsRes.data && bookingsRes.data.rows) {
+						bookedSlots = bookingsRes.data.rows.map(booking => booking.lb77_starttime);
+					}
+
+					const availableSlots = allSlots
+						.filter(slot => !bookedSlots.includes(slot.start))
+						.map(slot => this.secondsToTime(slot.start));
+
+					this.$set(doctor, 'availableSlots', availableSlots);
+				} catch (error) {
+					console.error(`获取医生 ${doctor.name} 的排班失败:`, error);
+					this.$set(doctor, 'availableSlots', []);
+				} finally {
+					this.$set(doctor, 'isLoadingSlots', false);
+				}
+			},
+
+			// ===================================================================
+			// ========================= 预约挂号页面事件 ========================
+			// ===================================================================
+			async selectDepartment(dept) {
+				if (this.selectedDepartment && this.selectedDepartment.number === dept.number) return;
+				this.selectedDepartment = dept;
+				await this.fetchDoctors(dept.number);
+			},
+			selectDate(date) {
+				if (this.selectedDate && this.selectedDate.fullDate === date.fullDate) return;
+				this.selectedDate = date;
+				if (this.doctorsList.length > 0) {
+					this.updateAllDoctorSchedules();
+				}
+			},
+			showDoctorDetail(doctor) {
+				this.currentDoctor = doctor;
+				this.selectedTimeInPopup = null; // 重置时间选择
+				this.showDoctorDetailPopup = true;
+			},
+			hideDoctorDetail() {
+				this.showDoctorDetailPopup = false;
+			},
+			selectSlotInPopup(time) {
+				this.selectedTimeInPopup = time;
+			},
+			isSlotSelectedInPopup(time) {
+				return this.selectedTimeInPopup === time;
+			},
+			async submitAppointment() {
+				if (!this.currentDoctor.number || !this.selectedTimeInPopup) {
+					uni.showToast({
+						title: '请选择预约时间',
+						icon: 'none'
+					});
+					return;
+				}
+				uni.showLoading({
+					title: '正在提交...'
+				});
+				try {
+					const timeParts = this.selectedTimeInPopup.split(':');
+					const startTimeInSeconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60;
+					const endTimeInSeconds = startTimeInSeconds + 15 * 60;
+
+					const appointmentData = {
+						billno: `YUYUE-${this.currentUser.studentId}-${Date.now()}`,
+						lb77_appointment_date: this.selectedDate.fullDate,
+						lb77_starttime: startTimeInSeconds,
+						lb77_endtime: endTimeInSeconds,
+						lb77_symptoms: "用户自助预约",
+						lb77_appointment_status: '已预约',
+						lb77_student_number: this.currentUser.studentId,
+						lb77_doctor_number: this.currentDoctor.number
+					};
+					const res = await KingdeeAgentService.createMedicalAppointment(appointmentData);
+					if (res && res.data && res.data.successCount > 0) {
+						uni.hideLoading();
+						this.hideDoctorDetail();
+						this.appointmentResult = {
+							department: this.selectedDepartment.name,
+							doctorName: this.currentDoctor.name,
+							date: this.selectedDate.fullDate,
+							time: this.selectedTimeInPopup,
+							location: `校医院 ${this.selectedDepartment.name}`
+						};
+						this.showAppointmentSuccess = true;
+						this.fetchMyAppointments();
+						this.updateAllDoctorSchedules();
+					} else {
+						throw new Error(res.message || '预约失败');
+					}
+				} catch (error) {
+					uni.hideLoading();
+					console.error("创建预约失败:", error);
+					uni.showToast({
+						title: error.message || '预约失败，该时段可能已被预约',
+						icon: 'none'
+					});
+					this.updateAllDoctorSchedules();
+				}
+			},
+
+			// ===================================================================
+			// ========================= 其他页面和通用事件 ========================
+			// ===================================================================
+			switchTab(index) {
+				this.currentTab = index;
+			},
+			async fetchMyAppointments() {
+				this.isLoadingAppointments = true;
+				try {
+					const res = await KingdeeAgentService.getPersonalAppointments(this.currentUser.studentId, 50);
+					if (res && res.data && res.data.rows) {
+						this.myAppointments = res.data.rows.sort((a, b) => {
+							const dateA = new Date(a.lb77_appointment_date).getTime();
+							const dateB = new Date(b.lb77_appointment_date).getTime();
+							if (dateB !== dateA) return dateB - dateA;
+							return b.lb77_starttime - a.lb77_starttime;
+						});
+					} else {
+						this.myAppointments = [];
+					}
+				} catch (error) {
+					console.error("获取我的预约记录失败:", error);
+					uni.showToast({
+						title: '预约记录加载失败',
+						icon: 'none'
+					});
+				} finally {
+					this.isLoadingAppointments = false;
+				}
+			},
+			async fetchMedicalRecords() {
+				if (!this.currentUser || !this.currentUser.studentId) return;
+				this.isLoadingMedicalRecords = true;
+				try {
+					const res = await KingdeeAgentService.getMedicalRecords(this.currentUser.studentId);
+					if (res && res.data && Array.isArray(res.data.rows)) {
+						this.medicalRecords = res.data.rows.map(record => ({
+							...record,
+							disease: record.lb77_diagnosis,
+							date: (record.lb77_fdate || '').split(' ')[0],
+							doctorName: record.lb77_doctor_name,
+							doctorTitle: record.lb77_doctor_lb77_title,
+							description: record.lb77_advice || '暂无医嘱详情',
+						}));
+					}
+				} catch (error) {
+					console.error("获取就诊记录失败:", error);
+					uni.showToast({
+						title: '就诊记录加载失败',
+						icon: 'none'
+					});
+				} finally {
+					this.isLoadingMedicalRecords = false;
+				}
+			},
+			async cancelAppointment(appointment) {
+				uni.showModal({
+					title: '取消预约',
+					content: '确定要取消此次预约吗？',
+					success: async (res) => {
+						if (res.confirm) {
+							uni.showLoading({
+								title: '正在取消...'
+							});
+							try {
+								const apiRes = await KingdeeAgentService.cancelMedicalAppointment(appointment
+									.billno);
+								if (apiRes && apiRes.data && apiRes.data.successCount > 0) {
+									uni.hideLoading();
+									uni.showToast({
+										title: '预约已取消',
+										icon: 'success'
+									});
+									this.fetchMyAppointments();
+									if (this.showAppointmentDetail) {
+										this.hideAppointmentDetail();
+									}
+								} else {
+									throw new Error(apiRes.message || '取消失败');
+								}
+							} catch (error) {
+								uni.hideLoading();
+								console.error('取消预约失败:', error);
+								uni.showToast({
+									title: error.message || '取消操作失败',
+									icon: 'none'
+								});
+							}
+						}
+					}
+				});
+			},
+			hideAppointmentSuccess() {
+				this.showAppointmentSuccess = false;
+				this.currentTab = 1;
+				this.currentStatusTab = 1;
+			},
+			switchStatusTab(index) {
+				this.currentStatusTab = index;
+			},
+			viewAppointmentDetail(appointment) {
+				this.currentAppointment = appointment;
+				this.showAppointmentDetail = true;
+			},
+			hideAppointmentDetail() {
+				this.showAppointmentDetail = false;
+			},
+			confirmCancelAppointment() {
+				this.cancelAppointment(this.currentAppointment);
+			},
+			secondsToTime(seconds) {
+				if (isNaN(seconds)) return '';
+				const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+				const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+				return `${h}:${m}`;
+			},
+			formatDate(date, fmt) {
+				const o = {
+					"M+": date.getMonth() + 1,
+					"d+": date.getDate(),
+				};
+				if (/(y+)/.test(fmt)) {
+					fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+				}
+				for (let k in o) {
+					if (new RegExp("(" + k + ")").test(fmt)) {
+						fmt = fmt.replace(RegExp.$1, (("00" + o[k]).substr(("" + o[k]).length)));
 					}
 				}
-			});
-		},
-		
-		// 取消预约
-		cancelAppointment(appointment) {
-			// 修改预约状态
-			const index = this.myAppointments.findIndex(item => item.id === appointment.id);
-			if (index !== -1) {
-				this.myAppointments[index].status = '已取消';
-				
-				uni.showToast({
-					title: '预约已取消',
-					icon: 'success'
-				});
-				
-				this.hideAppointmentDetail();
-			}
-		},
-		
-		// 预约改期
-		rescheduleAppointment() {
-			uni.showToast({
-				title: '改期功能开发中',
-				icon: 'none'
-			});
-		},
-		
-		// 导航到就诊地点
-		navigateToClinic(appointment) {
-			uni.showToast({
-				title: '正在导航至' + appointment.location,
-				icon: 'none'
-			});
+				return fmt;
+			},
+			getStatusClass(status) {
+				switch (status) {
+					case '已预约':
+					case '待就诊':
+						return 'status-pending';
+					case '已完成':
+						return 'status-completed';
+					case '已取消':
+						return 'status-canceled';
+					default:
+						return '';
+				}
+			},
+			switchRecordType(index) {
+				this.currentRecordType = index;
+			},
+			async viewRecordDetail(record) {
+				this.isLoadingRecordDetail = true;
+				this.showMedicalRecordDetail = true;
+				this.currentMedicalRecord = {};
+				try {
+					const res = await KingdeeAgentService.getMedicalRecordDetails(record.billno);
+					if (res && res.data && res.data.rows && res.data.rows.length > 0) {
+						this.currentMedicalRecord = res.data.rows[0];
+					} else {
+						throw new Error('未找到该条记录的详细信息');
+					}
+				} catch (error) {
+					console.error("获取就诊记录详情失败:", error);
+					uni.showToast({
+						title: error.message || '加载详情失败',
+						icon: 'none'
+					});
+					this.hideMedicalRecordDetail();
+				} finally {
+					this.isLoadingRecordDetail = false;
+				}
+			},
+			hideMedicalRecordDetail() {
+				this.showMedicalRecordDetail = false;
+				this.currentMedicalRecord = {};
+			},
 			
-			// 实际应用中应该调用地图API进行导航
-			setTimeout(() => {
-				uni.showModal({
-					title: '导航信息',
-					content: `从当前位置到${appointment.location}大约需要5分钟，路线已生成`,
-					showCancel: false
-				});
-			}, 1500);
-			
-			this.hideAppointmentDetail();
-		},
-		
-		// 获取预约状态样式类
-		getStatusClass(status) {
-			switch(status) {
-				case '待就诊':
-					return 'status-pending';
-				case '已完成':
-					return 'status-completed';
-				case '已取消':
-					return 'status-canceled';
-				default:
-					return '';
-			}
-		},
-		
-		// 切换健康记录类型
-		switchRecordType(index) {
-			this.currentRecordType = index;
-		},
-		
-		// 查看就诊记录详情
-		viewRecordDetail(record) {
-			uni.showToast({
-				title: '查看记录: ' + record.disease,
-				icon: 'none'
-			});
-		},
-		
-		// 查看体检报告
-		viewExamReport(report) {
-			uni.showToast({
-				title: '查看报告: ' + report.title,
-				icon: 'none'
-			});
-		},
-		
-		// 获取体检报告状态样式类
-		getReportStatusClass(status) {
-			switch(status) {
-				case '正常':
-					return 'status-normal';
-				case '异常':
-					return 'status-abnormal';
-				default:
-					return '';
-			}
-		},
-		
-		// 预约疫苗接种
-		reserveVaccine(vaccine) {
-			uni.showToast({
-				title: '预约接种: ' + vaccine.name,
-				icon: 'none'
-			});
-		},
-		
-		// 获取疫苗状态样式类
-		getVaccineStatusClass(status) {
-			switch(status) {
-				case '已接种':
-					return 'status-vaccinated';
-				case '未接种':
-					return 'status-unvaccinated';
-				default:
-					return '';
-			}
-		},
-		
-		// 查看药品详情
-		viewMedicationDetail(medicine) {
-			uni.showToast({
-				title: '查看药品: ' + medicine.name,
-				icon: 'none'
-			});
-		},
-		
-		// 查看电子病历
-		viewMedicalRecord(appointment) {
-			uni.showToast({
-				title: '查看病历: ' + appointment.department,
-				icon: 'none'
-			});
+			viewExamReport(report) {
+				uni.showToast({ title: '查看报告: ' + report.title, icon: 'none' });
+			},
+			getReportStatusClass(status) {
+				switch(status) {
+					case '正常': return 'status-normal';
+					case '异常': return 'status-abnormal';
+					default: return '';
+				}
+			},
+			reserveVaccine(vaccine) {
+				uni.showToast({ title: '预约接种: ' + vaccine.name, icon: 'none' });
+			},
+			getVaccineStatusClass(status) {
+				switch(status) {
+					case '已接种': return 'status-vaccinated';
+					case '未接种': return 'status-unvaccinated';
+					default: return '';
+				}
+			},
 		}
 	}
-}
 </script>
 
 <style>
-.medical-page {
-	background-color: #f5f5f5;
-	min-height: 100vh;
-	padding-bottom: 40rpx;
-}
-
-/* 顶部banner样式 */
-.medical-banner {
-	position: relative;
-	height: 300rpx;
-	overflow: hidden;
-}
-
-.banner-image {
-	width: 100%;
-	height: 100%;
-}
-
-.banner-content {
-	position: absolute;
-	left: 40rpx;
-	bottom: 40rpx;
-	color: #FFFFFF;
-	z-index: 1;
-}
-
-.banner-title {
-	font-size: 40rpx;
-	font-weight: bold;
-	margin-bottom: 10rpx;
-	display: block;
-	text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.3);
-}
-
-.banner-subtitle {
-	font-size: 28rpx;
-	display: block;
-	text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.3);
-}
-
-/* 导航标签栏样式 */
-.nav-tabs {
-	display: flex;
-	background-color: #FFFFFF;
-	padding: 0 20rpx;
-	box-shadow: 0 4rpx 8rpx rgba(0,0,0,0.05);
-	position: relative;
-	z-index: 2;
-}
-
-.tab-item {
-	flex: 1;
-	text-align: center;
-	padding: 30rpx 0;
-	font-size: 28rpx;
-	color: #666;
-	position: relative;
-}
-
-.tab-item.active {
-	color: #007AFF;
-	font-weight: bold;
-}
-
-.tab-item.active::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 40rpx;
-	height: 4rpx;
-	background-color: #007AFF;
-	border-radius: 2rpx;
-}
-
-/* 内容区样式 */
-.tab-content {
-	padding: 20rpx;
-}
-
-/* 预约挂号页样式 */
-.section {
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	margin-bottom: 20rpx;
-	padding: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.section-title {
-	font-size: 30rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 20rpx;
-	padding-left: 10rpx;
-	border-left: 4rpx solid #007AFF;
-}
-
-/* 科室选择样式 */
-.departments-list {
-	display: flex;
-	flex-wrap: wrap;
-}
-
-.department-item {
-	width: 25%;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 20rpx 0;
-	transition: all 0.2s;
-}
-
-.department-item.active {
-	background-color: #f0f7ff;
-}
-
-.dept-icon {
-	width: 80rpx;
-	height: 80rpx;
-	margin-bottom: 10rpx;
-}
-
-.dept-name {
-	font-size: 24rpx;
-	color: #333;
-}
-
-/* 日期选择器样式 */
-.date-selector {
-	display: flex;
-	align-items: center;
-}
-
-.date-arrow {
-	width: 60rpx;
-	height: 60rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-
-.date-arrow image {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-.dates {
-	flex: 1;
-	display: flex;
-	justify-content: space-around;
-}
-
-.date-item {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 15rpx 0;
-	border-radius: 10rpx;
-	width: 100rpx;
-}
-
-.date-item.active {
-	background-color: #007AFF;
-	color: #FFFFFF;
-}
-
-.date-day {
-	font-size: 32rpx;
-	font-weight: bold;
-}
-
-.date-weekday {
-	font-size: 24rpx;
-	margin-top: 6rpx;
-}
-
-/* 医生列表样式 */
-.doctors-list {
-	display: flex;
-	flex-direction: column;
-}
-
-.doctor-card {
-	display: flex;
-	padding: 20rpx;
-	border-bottom: 1rpx solid #f0f0f0;
-}
-
-.doctor-card:last-child {
-	border-bottom: none;
-}
-
-.doctor-avatar {
-	width: 100rpx;
-	height: 100rpx;
-	border-radius: 50%;
-	margin-right: 20rpx;
-}
-
-.doctor-info {
-	flex: 1;
-}
-
-.doctor-header {
-	display: flex;
-	align-items: center;
-	margin-bottom: 10rpx;
-}
-
-.doctor-name {
-	font-size: 30rpx;
-	color: #333;
-	font-weight: bold;
-	margin-right: 10rpx;
-}
-
-.doctor-title {
-	font-size: 24rpx;
-	color: #666;
-	background-color: #f5f5f5;
-	padding: 4rpx 12rpx;
-	border-radius: 6rpx;
-}
-
-.doctor-specialty {
-	font-size: 24rpx;
-	color: #666;
-	margin-bottom: 10rpx;
-}
-
-.doctor-rating {
-	display: flex;
-	align-items: center;
-}
-
-.stars {
-	display: flex;
-	margin-right: 10rpx;
-}
-
-.star {
-	color: #e0e0e0;
-	font-size: 24rpx;
-}
-
-.star.active {
-	color: #FFCC00;
-}
-
-.rating-text {
-	font-size: 22rpx;
-	color: #999;
-}
-
-.doctor-schedule {
-	padding-top: 10rpx;
-}
-
-.schedule-label {
-	font-size: 24rpx;
-	color: #666;
-	margin-bottom: 10rpx;
-}
-
-.available-slots {
-	display: flex;
-	flex-wrap: wrap;
-}
-
-.time-slot {
-	background-color: #f5f5f5;
-	color: #333;
-	font-size: 24rpx;
-	padding: 6rpx 16rpx;
-	border-radius: 6rpx;
-	margin-right: 10rpx;
-	margin-bottom: 10rpx;
-}
-
-.time-slot.selected {
-	background-color: #007AFF;
-	color: #FFFFFF;
-}
-
-/* 提交按钮样式 */
-.submit-section {
-	padding: 30rpx 20rpx;
-}
-
-.submit-btn {
-	background-color: #007AFF;
-	color: #FFFFFF;
-	font-size: 32rpx;
-	padding: 20rpx 0;
-	border-radius: 10rpx;
-}
-
-/* 我的预约页样式 */
-.appointment-status-tabs {
-	display: flex;
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	overflow: hidden;
-	margin-bottom: 20rpx;
-}
-
-.status-tab {
-	flex: 1;
-	text-align: center;
-	padding: 20rpx 0;
-	font-size: 28rpx;
-	color: #666;
-	position: relative;
-}
-
-.status-tab.active {
-	color: #007AFF;
-	font-weight: bold;
-}
-
-.status-tab.active::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 40rpx;
-	height: 4rpx;
-	background-color: #007AFF;
-	border-radius: 2rpx;
-}
-
-.appointment-list {
-	display: flex;
-	flex-direction: column;
-}
-
-.appointment-card {
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.appointment-info {
-	margin-bottom: 20rpx;
-}
-
-.appointment-dept {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 10rpx;
-	display: block;
-}
-
-.appointment-doctor {
-	font-size: 28rpx;
-	color: #666;
-	margin-bottom: 15rpx;
-	display: block;
-}
-
-.appointment-time, .appointment-location {
-	display: flex;
-	align-items: center;
-	margin-top: 10rpx;
-	font-size: 26rpx;
-	color: #666;
-}
-
-.appointment-time image, .appointment-location image {
-	width: 28rpx;
-	height: 28rpx;
-	margin-right: 10rpx;
-}
-
-.appointment-action {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	border-top: 1rpx solid #f0f0f0;
-	padding-top: 20rpx;
-}
-
-.appointment-status {
-	font-size: 24rpx;
-	padding: 6rpx 16rpx;
-	border-radius: 6rpx;
-}
-
-.status-pending {
-	background-color: #e6f2ff;
-	color: #007AFF;
-}
-
-.status-completed {
-	background-color: #e6fff2;
-	color: #00B578;
-}
-
-.status-canceled {
-	background-color: #f5f5f5;
-	color: #999;
-}
-
-.status-normal {
-	background-color: #e6fff2;
-	color: #00B578;
-}
-
-.status-abnormal {
-	background-color: #fff1f0;
-	color: #FF3B30;
-}
-
-.status-vaccinated {
-	background-color: #e6fff2;
-	color: #00B578;
-}
-
-.status-unvaccinated {
-	background-color: #fff9e6;
-	color: #FF9500;
-}
-
-.action-btn {
-	background-color: #f5f5f5;
-	font-size: 24rpx;
-	color: #666;
-	padding: 10rpx 20rpx;
-	margin-left: 10rpx;
-	border-radius: 6rpx;
-}
-
-.action-btn.primary {
-	background-color: #007AFF;
-	color: #FFFFFF;
-}
-
-/* 健康档案页样式 */
-.records-type-tabs {
-	display: flex;
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	margin-bottom: 20rpx;
-}
-
-.record-type {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 10rpx 0;
-	position: relative;
-}
-
-.record-type.active {
-	color: #007AFF;
-	font-weight: bold;
-}
-
-.record-type.active::after {
-	content: '';
-	position: absolute;
-	bottom: -10rpx;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 40rpx;
-	height: 4rpx;
-	background-color: #007AFF;
-	border-radius: 2rpx;
-}
-
-.record-type image {
-	width: 60rpx;
-	height: 60rpx;
-	margin-bottom: 10rpx;
-}
-
-.record-type text {
-	font-size: 24rpx;
-	color: #666;
-}
-
-/* 就诊记录样式 */
-.timeline {
-	padding: 20rpx 0;
-}
-
-.timeline-item {
-	position: relative;
-	padding-left: 30rpx;
-	padding-bottom: 40rpx;
-}
-
-.timeline-item:last-child {
-	padding-bottom: 0;
-}
-
-.timeline-item:before {
-	content: '';
-	position: absolute;
-	top: 20rpx;
-	left: 10rpx;
-	width: 2rpx;
-	height: calc(100% - 20rpx);
-	background-color: #e0e0e0;
-}
-
-.timeline-item:last-child:before {
-	display: none;
-}
-
-.timeline-dot {
-	position: absolute;
-	left: 0;
-	top: 16rpx;
-	width: 20rpx;
-	height: 20rpx;
-	border-radius: 50%;
-	background-color: #007AFF;
-	z-index: 1;
-}
-
-.timeline-content {
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.record-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 10rpx;
-}
-
-.record-title {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
-}
-
-.record-date {
-	font-size: 24rpx;
-	color: #999;
-}
-
-.record-doctor {
-	font-size: 26rpx;
-	color: #666;
-	margin-bottom: 10rpx;
-}
-
-.record-desc {
-	font-size: 26rpx;
-	color: #333;
-	margin-bottom: 15rpx;
-	line-height: 1.5;
-}
-
-.record-tags {
-	display: flex;
-	flex-wrap: wrap;
-}
-
-.tag {
-	background-color: #f5f5f5;
-	color: #666;
-	font-size: 22rpx;
-	padding: 4rpx 12rpx;
-	border-radius: 6rpx;
-	margin-right: 10rpx;
-	margin-bottom: 6rpx;
-}
-
-/* 体检报告样式 */
-.report-card {
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.report-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 15rpx;
-}
-
-.report-title {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
-}
-
-.report-date {
-	font-size: 24rpx;
-	color: #999;
-}
-
-.report-summary {
-	display: flex;
-	margin-bottom: 15rpx;
-}
-
-.summary-label {
-	font-size: 26rpx;
-	color: #666;
-	margin-right: 10rpx;
-}
-
-.summary-content {
-	font-size: 26rpx;
-	color: #333;
-	flex: 1;
-}
-
-.report-footer {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	border-top: 1rpx solid #f0f0f0;
-	padding-top: 15rpx;
-}
-
-.report-location {
-	font-size: 24rpx;
-	color: #999;
-}
-
-.report-status {
-	font-size: 24rpx;
-	padding: 6rpx 16rpx;
-	border-radius: 6rpx;
-}
-
-/* 疫苗接种样式 */
-.vaccine-card {
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.vaccine-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 15rpx;
-}
-
-.vaccine-name {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
-}
-
-.vaccine-status {
-	font-size: 24rpx;
-	padding: 6rpx 16rpx;
-	border-radius: 6rpx;
-}
-
-.vaccine-info {
-	margin-bottom: 20rpx;
-}
-
-.vaccine-item {
-	display: flex;
-	margin-bottom: 10rpx;
-}
-
-.item-label {
-	font-size: 26rpx;
-	color: #666;
-	width: 160rpx;
-}
-
-.item-value {
-	font-size: 26rpx;
-	color: #333;
-	flex: 1;
-}
-
-.vaccine-btn {
-	background-color: #007AFF;
-	color: #FFFFFF;
-	font-size: 26rpx;
-	padding: 10rpx 30rpx;
-	border-radius: 30rpx;
-	display: inline-block;
-}
-
-/* 药品清单样式 */
-.medication-item {
-	display: flex;
-	background-color: #FFFFFF;
-	border-radius: 10rpx;
-	padding: 20rpx;
-	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
-}
-
-.medicine-image {
-	width: 120rpx;
-	height: 120rpx;
-	margin-right: 20rpx;
-}
-
-.medicine-info {
-	flex: 1;
-}
-
-.medicine-name {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 10rpx;
-}
-
-.medicine-usage {
-	font-size: 26rpx;
-	color: #666;
-	margin-bottom: 20rpx;
-	line-height: 1.4;
-}
-
-.medicine-prescription {
-	display: flex;
-	justify-content: space-between;
-	font-size: 24rpx;
-	color: #999;
-}
-
-.medicine-actions {
-	display: flex;
-	align-items: flex-end;
-}
-
-.medicine-btn {
-	background-color: #f5f5f5;
-	font-size: 24rpx;
-	color: #666;
-	padding: 10rpx 20rpx;
-	border-radius: 6rpx;
-}
-
-/* 空状态样式 */
-.empty-state {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 60rpx 0;
-}
-
-.empty-image {
-	width: 200rpx;
-	height: 200rpx;
-	margin-bottom: 20rpx;
-}
-
-.empty-text {
-	font-size: 28rpx;
-	color: #999;
-}
-
-/* 弹窗样式 */
-.modal {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 999;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.modal-mask {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-	position: relative;
-	z-index: 1000;
-	background-color: #FFFFFF;
-	border-radius: 20rpx;
-	width: 80%;
-	padding: 30rpx;
-}
-
-/* 预约成功弹窗样式 */
-.appointment-success .modal-content {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.success-icon {
-	width: 120rpx;
-	height: 120rpx;
-	margin-bottom: 20rpx;
-}
-
-.success-title {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 30rpx;
-}
-
-.success-info {
-	width: 100%;
-	margin-bottom: 30rpx;
-}
-
-.info-item {
-	display: flex;
-	margin-bottom: 15rpx;
-}
-
-.info-label {
-	font-size: 28rpx;
-	color: #666;
-	width: 160rpx;
-}
-
-.info-value {
-	font-size: 28rpx;
-	color: #333;
-	flex: 1;
-	font-weight: bold;
-}
-
-.success-notes {
-	width: 100%;
-	background-color: #f9f9f9;
-	padding: 15rpx;
-	border-radius: 10rpx;
-	margin-bottom: 30rpx;
-}
-
-.notes-title {
-	font-size: 26rpx;
-	color: #666;
-	font-weight: bold;
-	margin-bottom: 10rpx;
-	display: block;
-}
-
-.notes-content {
-	font-size: 24rpx;
-	color: #666;
-	line-height: 1.5;
-}
-
-.success-actions {
-	width: 100%;
-	display: flex;
-	justify-content: space-between;
-}
-
-.success-actions .action-btn {
-	width: 48%;
-	text-align: center;
-	padding: 20rpx 0;
-}
-
-/* 预约详情弹窗样式 */
-.appointment-detail .modal-content {
-	padding: 0;
-	overflow: hidden;
-}
-
-.modal-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 20rpx 30rpx;
-	border-bottom: 1rpx solid #f0f0f0;
-}
-
-.modal-title {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333;
-}
-
-.modal-close {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-.modal-close image {
-	width: 100%;
-	height: 100%;
-}
-
-.detail-content {
-	padding: 30rpx;
-}
-
-.detail-status {
-	display: inline-block;
-	font-size: 26rpx;
-	padding: 6rpx 16rpx;
-	border-radius: 6rpx;
-	margin-bottom: 20rpx;
-}
-
-.detail-item {
-	margin-bottom: 20rpx;
-}
-
-.detail-label {
-	font-size: 28rpx;
-	color: #666;
-	margin-bottom: 6rpx;
-	display: block;
-}
-
-.detail-value {
-	font-size: 28rpx;
-	color: #333;
-}
-
-.detail-actions {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 30rpx;
-}
-
-.detail-actions .action-btn {
-	margin-left: 20rpx;
-}
+	/* 全局背景和基础布局 */
+	.medical-page {
+		background-color: #f7f8fa;
+		min-height: 100vh;
+	}
+
+	.tab-content {
+		padding: 20rpx;
+	}
+	
+	.loading-state {
+		padding: 40rpx 0;
+	}
+	
+	.loading-state.mini {
+		padding: 20rpx 0;
+	}
+	
+	.loading-text {
+		font-size: 24rpx;
+		color: #999;
+	}
+	
+	.empty-state.small {
+		padding: 40rpx 0;
+		text-align: center;
+	}
+	.empty-state.small .empty-text {
+		font-size: 26rpx;
+	}
+
+	/* 顶部Banner */
+	.medical-banner {
+		position: relative;
+		height: 280rpx;
+		background: linear-gradient(to right, #4c87e8, #6d9eeb);
+		display: flex;
+		align-items: center;
+		padding: 0 40rpx;
+	}
+
+	.banner-content {
+		color: #ffffff;
+	}
+
+	.banner-title {
+		font-size: 44rpx;
+		font-weight: bold;
+		margin-bottom: 15rpx;
+		display: block;
+		text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+	}
+
+	.banner-subtitle {
+		font-size: 28rpx;
+		display: block;
+		opacity: 0.9;
+	}
+
+	/* 主导航栏 */
+	.nav-tabs {
+		display: flex;
+		background-color: #ffffff;
+		box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.04);
+	}
+
+	.tab-item {
+		flex: 1;
+		text-align: center;
+		padding: 25rpx 0;
+		font-size: 30rpx;
+		color: #666;
+		position: relative;
+		transition: color 0.2s;
+	}
+
+	.tab-item.active {
+		color: #007aff;
+		font-weight: bold;
+	}
+
+	.tab-item.active::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60rpx;
+		height: 6rpx;
+		background-color: #007aff;
+		border-radius: 3rpx;
+	}
+
+	/* 通用Section标题 */
+	.section-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 20rpx;
+		padding-left: 16rpx;
+		border-left: 6rpx solid #007aff;
+	}
+	
+	/* 科室选择 */
+	.section-departments {
+		background-color: #fff;
+		padding: 20rpx;
+		border-radius: 16rpx;
+		margin-bottom: 20rpx;
+	}
+	.departments-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20rpx;
+	}
+	.department-item {
+		padding: 12rpx 24rpx;
+		border-radius: 30rpx;
+		background-color: #f5f5f5;
+		color: #555;
+		font-size: 26rpx;
+		transition: all 0.2s ease;
+	}
+	.department-item.active {
+		background-color: #007aff;
+		color: #fff;
+		font-weight: bold;
+	}
+
+	/* 日期选择 */
+	.section-date {
+		background-color: #fff;
+		padding: 20rpx;
+		border-radius: 16rpx;
+		margin-bottom: 20rpx;
+	}
+	.date-selector {
+		display: flex;
+		align-items: center;
+	}
+	.dates {
+		flex: 1;
+		display: flex;
+		justify-content: space-around;
+		overflow-x: auto;
+	}
+	.date-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 16rpx 0;
+		border-radius: 10rpx;
+		width: 110rpx;
+		flex-shrink: 0;
+	}
+	.date-item.active {
+		background-color: #e6f2ff;
+	}
+	.date-item.active .date-day,
+	.date-item.active .date-weekday {
+		color: #007aff;
+		font-weight: bold;
+	}
+	.date-day {
+		font-size: 34rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	.date-weekday {
+		font-size: 24rpx;
+		color: #666;
+		margin-top: 8rpx;
+	}
+	
+	/* 医生列表 */
+	.doctors-list {
+		display: flex;
+		flex-direction: column;
+		gap: 20rpx;
+	}
+	.doctor-card {
+		background-color: #fff;
+		border-radius: 16rpx;
+		padding: 24rpx;
+		box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.06);
+		display: flex;
+		align-items: center;
+	}
+	.doctor-avatar {
+		width: 100rpx;
+		height: 100rpx;
+		border-radius: 50%;
+		margin-right: 20rpx;
+		flex-shrink: 0;
+	}
+	.doctor-info {
+		flex: 1;
+		min-width: 0;
+	}
+	.doctor-header {
+		display: flex;
+		align-items: baseline;
+		margin-bottom: 8rpx;
+	}
+	.doctor-name {
+		font-size: 34rpx;
+		font-weight: bold;
+		color: #333;
+		margin-right: 12rpx;
+	}
+	.doctor-title {
+		font-size: 26rpx;
+		color: #666;
+	}
+	.doctor-specialty-list {
+		font-size: 26rpx;
+		color: #666;
+		margin-bottom: 8rpx;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.doctor-rating {
+		display: flex;
+		align-items: center;
+	}
+	.stars {
+		display: flex;
+		margin-right: 10rpx;
+	}
+	.star {
+		color: #e0e0e0;
+		font-size: 24rpx;
+	}
+	.star.active {
+		color: #FFCC00;
+	}
+	.rating-text {
+		font-size: 22rpx;
+		color: #999;
+	}
+	.book-btn-list {
+		background-color: #007aff;
+		color: #fff;
+		font-size: 26rpx;
+		padding: 10rpx 30rpx;
+		border-radius: 30rpx;
+		margin-left: 20rpx;
+		white-space: nowrap;
+	}
+	
+	/* 弹窗 */
+	.doctor-detail-popup {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 999;
+	}
+	.popup-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0,0,0,0.5);
+	}
+	.popup-content {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		background-color: #ffffff;
+		border-top-left-radius: 20rpx;
+		border-top-right-radius: 20rpx;
+		max-height: 85vh;
+		display: flex;
+		flex-direction: column;
+	}
+	.popup-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 30rpx;
+		border-bottom: 1px solid #f0f0f0;
+		flex-shrink: 0;
+	}
+	.popup-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	.popup-close image {
+		width: 40rpx;
+		height: 40rpx;
+	}
+	.popup-body {
+		padding: 30rpx;
+		overflow-y: auto;
+		flex: 1;
+	}
+	.doctor-profile-popup {
+		display: flex;
+		margin-bottom: 40rpx;
+	}
+	.profile-avatar {
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 60rpx;
+		margin-right: 30rpx;
+	}
+	.profile-basic {
+		flex: 1;
+	}
+	.profile-name {
+		font-size: 36rpx;
+		color: #333;
+		font-weight: bold;
+		margin-bottom: 6rpx;
+	}
+	.profile-title {
+		font-size: 28rpx;
+		color: #666;
+		margin-bottom: 10rpx;
+	}
+	.profile-rating {
+		display: flex;
+		align-items: center;
+	}
+	.profile-rating .rating-value {
+		font-size: 24rpx;
+		color: #333;
+		margin-left: 10rpx;
+	}
+	.profile-detail .detail-item {
+		margin-bottom: 30rpx;
+	}
+	.detail-label {
+		font-size: 28rpx;
+		color: #333;
+		font-weight: bold;
+		margin-bottom: 15rpx;
+		display: block;
+	}
+	.detail-value {
+		font-size: 26rpx;
+		color: #666;
+		line-height: 1.5;
+	}
+
+	/* 弹窗内时间网格 */
+	.time-grid {
+		display: flex;
+		flex-wrap: wrap;
+		margin: 0 -8rpx;
+	}
+	.slots-wrapper {
+		display: contents; 
+	}
+	.time-block {
+		width: 25%;
+		box-sizing: border-box;
+		padding: 8rpx;
+	}
+	.time-block text {
+		display: block;
+		text-align: center;
+		padding: 16rpx 0;
+		background-color: #f5f5f5;
+		color: #333;
+		border-radius: 8rpx;
+		font-size: 28rpx;
+		transition: all 0.2s ease;
+	}
+	.time-block text.selected {
+		background-color: #007aff;
+		color: #fff;
+		font-weight: bold;
+	}
+	.no-slots, .loading-state.mini {
+		width: 100%;
+		text-align: center;
+		padding: 20rpx 0;
+		font-size: 24rpx;
+		color: #999;
+	}
+	.book-button {
+		background-color: #007aff;
+		color: #fff;
+		padding: 24rpx 0;
+		text-align: center;
+		border-radius: 40rpx;
+		font-size: 32rpx;
+		font-weight: bold;
+		margin-top: 40rpx;
+		box-shadow: 0 8rpx 16rpx rgba(0,122,255,0.2);
+	}
+	.book-button.disabled {
+		background-color: #cccccc;
+		box-shadow: none;
+	}
+	
+	/* 我的预约页样式 (部分调整) */
+	.appointment-status-tabs {
+		display: flex;
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		overflow: hidden;
+		margin-bottom: 20rpx;
+	}
+	
+	.status-tab {
+		flex: 1;
+		text-align: center;
+		padding: 20rpx 0;
+		font-size: 28rpx;
+		color: #666;
+		position: relative;
+	}
+	
+	.status-tab.active {
+		color: #007AFF;
+		font-weight: bold;
+	}
+	
+	.status-tab.active::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 40rpx;
+		height: 4rpx;
+		background-color: #007AFF;
+		border-radius: 2rpx;
+	}
+	
+	.appointment-list {
+		display: flex;
+		flex-direction: column;
+		gap: 20rpx;
+	}
+	
+	.appointment-card {
+		background-color: #FFFFFF;
+		border-radius: 16rpx;
+		padding: 24rpx;
+	}
+	
+	.appointment-info {
+		margin-bottom: 20rpx;
+	}
+	
+	.appointment-dept {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 10rpx;
+		display: block;
+	}
+	
+	.appointment-doctor {
+		font-size: 28rpx;
+		color: #666;
+		margin-bottom: 15rpx;
+		display: block;
+	}
+	
+	.appointment-time, .appointment-location {
+		display: flex;
+		align-items: center;
+		margin-top: 10rpx;
+		font-size: 26rpx;
+		color: #666;
+	}
+	
+	.appointment-time image, .appointment-location image {
+		width: 28rpx;
+		height: 28rpx;
+		margin-right: 10rpx;
+	}
+	
+	.appointment-action {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-top: 1rpx solid #f0f0f0;
+		padding-top: 20rpx;
+	}
+	
+	.appointment-status {
+		font-size: 24rpx;
+		padding: 6rpx 16rpx;
+		border-radius: 6rpx;
+	}
+	
+	.status-pending {
+		background-color: #e6f2ff;
+		color: #007AFF;
+	}
+	
+	.status-completed {
+		background-color: #e6fff2;
+		color: #00B578;
+	}
+	
+	.status-canceled {
+		background-color: #f5f5f5;
+		color: #999;
+	}
+	
+	.status-normal {
+		background-color: #e6fff2;
+		color: #00B578;
+	}
+	
+	.status-abnormal {
+		background-color: #fff1f0;
+		color: #FF3B30;
+	}
+	
+	.status-vaccinated {
+		background-color: #e6fff2;
+		color: #00B578;
+	}
+	
+	.status-unvaccinated {
+		background-color: #fff9e6;
+		color: #FF9500;
+	}
+	
+	.action-btn {
+		background-color: #f5f5f5;
+		font-size: 24rpx;
+		color: #666;
+		padding: 10rpx 20rpx;
+		margin-left: 10rpx;
+		border-radius: 6rpx;
+	}
+	
+	.action-btn.primary {
+		background-color: #007AFF;
+		color: #FFFFFF;
+	}
+	
+	/* 健康档案页样式 (部分调整) */
+	.records-type-tabs {
+		display: flex;
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		padding: 20rpx;
+		margin-bottom: 20rpx;
+		justify-content: space-around;
+	}
+	
+	.record-type {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 10rpx 0;
+		position: relative;
+	}
+	
+	.record-type.active {
+		color: #007AFF;
+		font-weight: bold;
+	}
+	
+	.record-type.active::after {
+		content: '';
+		position: absolute;
+		bottom: -10rpx;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 40rpx;
+		height: 4rpx;
+		background-color: #007AFF;
+		border-radius: 2rpx;
+	}
+	
+	.record-type image {
+		width: 60rpx;
+		height: 60rpx;
+		margin-bottom: 10rpx;
+	}
+	
+	.record-type text {
+		font-size: 24rpx;
+		color: #666;
+	}
+	
+	.timeline {
+		padding: 20rpx 0;
+	}
+	
+	.timeline-item {
+		position: relative;
+		padding-left: 30rpx;
+		padding-bottom: 40rpx;
+	}
+	
+	.timeline-item:last-child {
+		padding-bottom: 0;
+	}
+	
+	.timeline-item:before {
+		content: '';
+		position: absolute;
+		top: 20rpx;
+		left: 10rpx;
+		width: 2rpx;
+		height: calc(100% - 20rpx);
+		background-color: #e0e0e0;
+	}
+	
+	.timeline-item:last-child:before {
+		display: none;
+	}
+	
+	.timeline-dot {
+		position: absolute;
+		left: 0;
+		top: 16rpx;
+		width: 20rpx;
+		height: 20rpx;
+		border-radius: 50%;
+		background-color: #007AFF;
+		z-index: 1;
+	}
+	
+	.timeline-content {
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		padding: 20rpx;
+	}
+	
+	.record-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 10rpx;
+	}
+	
+	.record-title {
+		font-size: 28rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.record-date {
+		font-size: 24rpx;
+		color: #999;
+	}
+	
+	.record-doctor {
+		font-size: 26rpx;
+		color: #666;
+		margin-bottom: 10rpx;
+	}
+	
+	.record-desc {
+		font-size: 26rpx;
+		color: #333;
+		margin-bottom: 15rpx;
+		line-height: 1.5;
+	}
+	
+	/* 体检报告样式 */
+	.report-card {
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		padding: 20rpx;
+		margin-bottom: 20rpx;
+		box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
+	}
+	
+	.report-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 15rpx;
+	}
+	
+	.report-title {
+		font-size: 28rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.report-date {
+		font-size: 24rpx;
+		color: #999;
+	}
+	
+	.report-summary {
+		display: flex;
+		margin-bottom: 15rpx;
+	}
+	
+	.summary-label {
+		font-size: 26rpx;
+		color: #666;
+		margin-right: 10rpx;
+	}
+	
+	.summary-content {
+		font-size: 26rpx;
+		color: #333;
+		flex: 1;
+	}
+	
+	.report-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-top: 1rpx solid #f0f0f0;
+		padding-top: 15rpx;
+	}
+	
+	.report-location {
+		font-size: 24rpx;
+		color: #999;
+	}
+	
+	.report-status {
+		font-size: 24rpx;
+		padding: 6rpx 16rpx;
+		border-radius: 6rpx;
+	}
+	
+	/* 疫苗接种样式 */
+	.vaccine-card {
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		padding: 20rpx;
+		margin-bottom: 20rpx;
+		box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.05);
+	}
+	
+	.vaccine-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 15rpx;
+	}
+	
+	.vaccine-name {
+		font-size: 28rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.vaccine-status {
+		font-size: 24rpx;
+		padding: 6rpx 16rpx;
+		border-radius: 6rpx;
+	}
+	
+	.vaccine-info {
+		margin-bottom: 20rpx;
+	}
+	
+	.vaccine-item {
+		display: flex;
+		margin-bottom: 10rpx;
+	}
+	
+	.item-label {
+		font-size: 26rpx;
+		color: #666;
+		width: 160rpx;
+	}
+	
+	.item-value {
+		font-size: 26rpx;
+		color: #333;
+		flex: 1;
+	}
+	
+	.vaccine-btn {
+		background-color: #007AFF;
+		color: #FFFFFF;
+		font-size: 26rpx;
+		padding: 10rpx 30rpx;
+		border-radius: 30rpx;
+		display: inline-block;
+	}
+
+	/* 空状态样式 */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 60rpx 0;
+	}
+	
+	.empty-image {
+		width: 200rpx;
+		height: 200rpx;
+		margin-bottom: 20rpx;
+	}
+	
+	.empty-text {
+		font-size: 28rpx;
+		color: #999;
+	}
+
+	/* 弹窗通用样式 */
+	.modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.modal-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0,0,0,0.5);
+	}
+	
+	.modal-content {
+		position: relative;
+		z-index: 1000;
+		background-color: #FFFFFF;
+		border-radius: 20rpx;
+		width: 85%;
+	}
+	
+	/* 预约成功弹窗 */
+	.appointment-success .modal-content {
+		padding: 30rpx 50rpx 40rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: 80%;
+	}
+	
+	.success-icon {
+		width: 120rpx;
+		height: 120rpx;
+		margin-bottom: 20rpx;
+	}
+	
+	.success-title {
+		font-size: 38rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 30rpx;
+	}
+	
+	.success-info {
+		width: 100%;
+		margin-bottom: 30rpx;
+		border-top: 1rpx solid #f0f0f0;
+		padding-top: 30rpx;
+	}
+	
+	.info-item {
+		display: flex;
+		margin-bottom: 20rpx;
+		align-items: baseline;
+	}
+	
+	.info-label {
+		font-size: 28rpx;
+		color: #888;
+		width: 160rpx;
+		flex-shrink: 0;
+	}
+	
+	.info-value {
+		font-size: 28rpx;
+		color: #333;
+		flex: 1;
+		font-weight: bold;
+	}
+	
+	.success-reminder {
+		font-size: 24rpx;
+		color: #888;
+		line-height: 1.5;
+		text-align: center;
+		margin-bottom: 40rpx;
+		padding: 0 10rpx;
+	}
+	
+	.success-actions {
+		width: 100%;
+	}
+	
+	.success-actions .action-btn.primary {
+		width: 100%;
+		text-align: center;
+		padding: 20rpx 0;
+		border-radius: 40rpx;
+		background-color: #007AFF;
+		color: #FFFFFF;
+		font-size: 30rpx;
+		font-weight: bold;
+		box-shadow: 0 6rpx 12rpx rgba(0, 122, 255, 0.2);
+		transition: background-color 0.2s;
+	}
+	
+	.success-actions .action-btn.primary:active {
+		background-color: #0056b3;
+	}
+	
+	/* 详情类弹窗 */
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20rpx 30rpx;
+		border-bottom: 1rpx solid #f0f0f0;
+	}
+	
+	.modal-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.modal-close {
+		width: 40rpx;
+		height: 40rpx;
+	}
+	
+	.modal-close image {
+		width: 100%;
+		height: 100%;
+	}
+	
+	.detail-content {
+		padding: 30rpx;
+	}
+	
+	.detail-status {
+		display: inline-block;
+		font-size: 26rpx;
+		padding: 6rpx 16rpx;
+		border-radius: 6rpx;
+		margin-bottom: 20rpx;
+	}
+	
+	.detail-item {
+		margin-bottom: 20rpx;
+	}
+	
+	.detail-label {
+		font-size: 28rpx;
+		color: #666;
+		margin-bottom: 6rpx;
+		display: block;
+	}
+	
+	.detail-value {
+		font-size: 28rpx;
+		color: #333;
+	}
+	
+	.detail-actions {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 30rpx;
+	}
+	
+	.detail-actions .action-btn {
+		margin-left: 20rpx;
+	}
+	
+	/* 就诊记录详情弹窗特定样式 */
+	.medical-record-detail .modal-content {
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.detail-scroll-view {
+		max-height: calc(80vh - 100rpx);
+		box-sizing: border-box;
+	}
+	
+	.medical-record-detail .detail-value.bold {
+		font-weight: bold;
+	}
+	
+	.medical-record-detail .advice {
+		background-color: #f9f9f9;
+		padding: 15rpx;
+		border-radius: 8rpx;
+		display: block;
+		line-height: 1.6;
+		white-space: pre-wrap;
+	}
+	
+	.medical-record-detail .advice-item {
+		margin-bottom: 25rpx;
+	}
+	
+	.prescription-section .section-title {
+		padding-left: 0;
+		border-left: none;
+		font-size: 28rpx;
+		margin-bottom: 15rpx;
+	}
+	
+	.prescription-list {
+		display: flex;
+		flex-direction: column;
+		gap: 20rpx;
+	}
+	
+	.prescription-item {
+		background-color: #f5f5f5;
+		border-radius: 10rpx;
+		padding: 15rpx;
+		font-size: 24rpx;
+	}
+	
+	.med-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8rpx;
+	}
+	
+	.med-name {
+		font-weight: bold;
+		color: #333;
+		font-size: 26rpx;
+	}
+	
+	.med-spec,
+	.med-usage,
+	.med-quantity,
+	.med-notes,
+	.med-manufacturer {
+		color: #666;
+		line-height: 1.5;
+		display: block;
+	}
+	.empty-prescription {
+		text-align: center;
+		color: #999;
+		padding: 30rpx 0;
+	}
 </style> 

@@ -98,35 +98,97 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "recyclableRender", function() { return recyclableRender; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "components", function() { return components; });
 var components
+try {
+  components = {
+    uniLoadMore: function () {
+      return Promise.all(/*! import() | uni_modules/uni-load-more/components/uni-load-more/uni-load-more */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/uni-load-more/components/uni-load-more/uni-load-more")]).then(__webpack_require__.bind(null, /*! @/uni_modules/uni-load-more/components/uni-load-more/uni-load-more.vue */ 304))
+    },
+  }
+} catch (e) {
+  if (
+    e.message.indexOf("Cannot find module") !== -1 &&
+    e.message.indexOf(".vue") !== -1
+  ) {
+    console.error(e.message)
+    console.error("1. 排查组件名称拼写是否正确")
+    console.error(
+      "2. 排查组件是否符合 easycom 规范，文档：https://uniapp.dcloud.net.cn/collocation/pages?id=easycom"
+    )
+    console.error(
+      "3. 若组件不符合 easycom 规范，需手动引入，并在 components 中注册该组件"
+    )
+  } else {
+    throw e
+  }
+}
 var render = function () {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  var l1 =
-    _vm.currentTab === 0 && _vm.selectedDate !== null
-      ? _vm.__map(_vm.doctorsList, function (doctor, index) {
-          var $orig = _vm.__get_orig(doctor)
-          var l0 = _vm.__map(doctor.availableSlots, function (slot, slotIndex) {
-            var $orig = _vm.__get_orig(slot)
-            var m0 = _vm.isSelectedTimeSlot(doctor, slotIndex)
-            return {
-              $orig: $orig,
-              m0: m0,
-            }
-          })
+  var g0 =
+    _vm.currentTab === 0 && _vm.selectedDate && !_vm.isLoadingDoctors
+      ? _vm.doctorsList.length
+      : null
+  var g1 =
+    _vm.currentTab === 1 && !_vm.isLoadingAppointments
+      ? _vm.filteredAppointments.length
+      : null
+  var g2 =
+    _vm.currentTab === 2 &&
+    _vm.currentRecordType === 0 &&
+    !_vm.isLoadingMedicalRecords
+      ? _vm.medicalRecords.length
+      : null
+  var g3 =
+    _vm.currentTab === 2 && _vm.currentRecordType === 1
+      ? _vm.examReports.length
+      : null
+  var g4 =
+    _vm.currentTab === 2 && _vm.currentRecordType === 2
+      ? _vm.vaccineRecords.length
+      : null
+  var g5 =
+    _vm.showDoctorDetailPopup && !_vm.currentDoctor.isLoadingSlots
+      ? _vm.currentDoctor.availableSlots &&
+        _vm.currentDoctor.availableSlots.length > 0
+      : null
+  var l0 =
+    _vm.showDoctorDetailPopup && !_vm.currentDoctor.isLoadingSlots && g5
+      ? _vm.__map(_vm.currentDoctor.availableSlots, function (slot, slotIndex) {
+          var $orig = _vm.__get_orig(slot)
+          var m0 = _vm.isSlotSelectedInPopup(slot)
           return {
             $orig: $orig,
-            l0: l0,
+            m0: m0,
           }
         })
       : null
-  var g0 = _vm.currentTab === 1 ? _vm.myAppointments.length : null
+  var g6 =
+    _vm.showMedicalRecordDetail &&
+    !_vm.isLoadingRecordDetail &&
+    _vm.currentMedicalRecord.billno
+      ? (_vm.currentMedicalRecord.lb77_fdate || "").split(" ")
+      : null
+  var g7 =
+    _vm.showMedicalRecordDetail &&
+    !_vm.isLoadingRecordDetail &&
+    _vm.currentMedicalRecord.billno
+      ? _vm.currentMedicalRecord.entryentity &&
+        _vm.currentMedicalRecord.entryentity.length > 0
+      : null
   _vm.$mp.data = Object.assign(
     {},
     {
       $root: {
-        l1: l1,
         g0: g0,
+        g1: g1,
+        g2: g2,
+        g3: g3,
+        g4: g4,
+        g5: g5,
+        l0: l0,
+        g6: g6,
+        g7: g7,
       },
     }
   )
@@ -170,532 +232,49 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
 var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
+var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+// 科室图标映射
+var departmentIconMap = {
+  '内科': '/static/images/dept-internal.png',
+  '外科': '/static/images/dept-surgery.png',
+  '口腔科': '/static/images/dept-dental.png',
+  '眼科': '/static/images/dept-eye.png',
+  '耳鼻喉科': '/static/images/dept-ent.png',
+  '皮肤科': '/static/images/dept-derma.png',
+  '心理咨询': '/static/images/dept-psychology.png',
+  '中医科': '/static/images/dept-chinese.png'
+};
+// 医生默认头像列表
+var doctorAvatars = ['/static/images/doctor1.png', '/static/images/doctor2.png', '/static/images/doctor3.png'];
 var _default = {
   data: function data() {
     return {
-      // 标签页管理
       tabs: ['预约挂号', '我的预约', '健康档案'],
       currentTab: 0,
-      // 预约挂号数据
-      departments: [{
-        name: '内科',
-        icon: '/static/images/dept-internal.png'
-      }, {
-        name: '外科',
-        icon: '/static/images/dept-surgery.png'
-      }, {
-        name: '口腔科',
-        icon: '/static/images/dept-dental.png'
-      }, {
-        name: '眼科',
-        icon: '/static/images/dept-eye.png'
-      }, {
-        name: '耳鼻喉科',
-        icon: '/static/images/dept-ent.png'
-      }, {
-        name: '皮肤科',
-        icon: '/static/images/dept-derma.png'
-      }, {
-        name: '心理咨询',
-        icon: '/static/images/dept-psychology.png'
-      }, {
-        name: '中医科',
-        icon: '/static/images/dept-chinese.png'
-      }],
+      departments: [],
+      doctorsList: [],
+      availableDates: [],
       selectedDepartment: null,
       selectedDate: null,
-      selectedDoctor: null,
-      selectedTimeSlot: null,
-      selectedTimeSlotIndex: null,
-      // 日期选择
-      availableDates: [{
-        day: '15',
-        weekday: '周一'
-      }, {
-        day: '16',
-        weekday: '周二'
-      }, {
-        day: '17',
-        weekday: '周三'
-      }, {
-        day: '18',
-        weekday: '周四'
-      }, {
-        day: '19',
-        weekday: '周五'
-      }],
-      // 医生列表（示例数据）
-      doctorsList: [{
-        id: 1,
-        name: '张医生',
-        title: '主任医师',
-        specialty: '高血压、感冒、发热',
-        avatar: '/static/images/doctor1.png',
-        rating: 4.8,
-        ratingCount: 126,
-        availableSlots: ['08:30', '09:00', '10:30', '15:30']
-      }, {
-        id: 2,
-        name: '李医生',
-        title: '副主任医师',
-        specialty: '咳嗽、支气管炎、哮喘',
-        avatar: '/static/images/doctor2.png',
-        rating: 4.7,
-        ratingCount: 85,
-        availableSlots: ['09:30', '10:00', '14:00', '16:30']
-      }, {
-        id: 3,
-        name: '王医生',
-        title: '主治医师',
-        specialty: '消化系统疾病',
-        avatar: '/static/images/doctor3.png',
-        rating: 4.9,
-        ratingCount: 203,
-        availableSlots: ['08:00', '11:30', '14:30', '15:00']
-      }],
-      // 我的预约数据
+      // 弹窗相关
+      showDoctorDetailPopup: false,
+      currentDoctor: {},
+      selectedTimeInPopup: null,
+      isLoadingDepartments: true,
+      isLoadingDoctors: false,
       appointmentStatusList: ['全部', '待就诊', '已完成', '已取消'],
       currentStatusTab: 0,
-      myAppointments: [{
-        id: 1,
-        department: '内科',
-        doctorName: '张医生',
-        doctorTitle: '主任医师',
-        date: '2023-05-20',
-        time: '09:00',
-        location: '校医院 302诊室',
-        status: '待就诊',
-        notes: '请携带学生证和校园卡'
-      }, {
-        id: 2,
-        department: '眼科',
-        doctorName: '刘医生',
-        doctorTitle: '副主任医师',
-        date: '2023-05-15',
-        time: '14:30',
-        location: '校医院 205诊室',
-        status: '已完成',
-        notes: ''
-      }, {
-        id: 3,
-        department: '口腔科',
-        doctorName: '陈医生',
-        doctorTitle: '主治医师',
-        date: '2023-04-28',
-        time: '11:00',
-        location: '校医院 108诊室',
-        status: '已取消',
-        notes: ''
-      }],
-      // 健康档案数据
+      myAppointments: [],
+      isLoadingAppointments: true,
+      currentUser: {
+        studentId: '645730151',
+        name: '张三'
+      },
       healthRecordTypes: [{
         name: '就诊记录',
         icon: '/static/images/record-visit.png'
@@ -705,41 +284,10 @@ var _default = {
       }, {
         name: '疫苗接种',
         icon: '/static/images/record-vaccine.png'
-      }, {
-        name: '药品清单',
-        icon: '/static/images/record-medicine.png'
       }],
       currentRecordType: 0,
-      // 就诊记录
-      medicalRecords: [{
-        id: 1,
-        department: '内科',
-        disease: '上呼吸道感染',
-        date: '2023-05-15',
-        doctorName: '张医生',
-        doctorTitle: '主任医师',
-        description: '症状为发热、咳嗽、咽痛，予以抗病毒及对症治疗',
-        tags: ['发热', '咳嗽', '用药']
-      }, {
-        id: 2,
-        department: '眼科',
-        disease: '结膜炎',
-        date: '2023-04-10',
-        doctorName: '刘医生',
-        doctorTitle: '副主任医师',
-        description: '双眼结膜充血，分泌物较多，给予抗菌滴眼液治疗',
-        tags: ['眼部', '炎症', '用药']
-      }, {
-        id: 3,
-        department: '口腔科',
-        disease: '牙周炎',
-        date: '2023-03-22',
-        doctorName: '陈医生',
-        doctorTitle: '主治医师',
-        description: '牙龈红肿出血，洗牙后给予漱口水',
-        tags: ['口腔', '炎症', '治疗']
-      }],
-      // 体检报告
+      medicalRecords: [],
+      isLoadingMedicalRecords: false,
       examReports: [{
         id: 1,
         title: '2023学年入学体检',
@@ -747,15 +295,7 @@ var _default = {
         summary: '体检各项指标正常，无异常发现',
         location: '校医院体检中心',
         status: '正常'
-      }, {
-        id: 2,
-        title: '2022学年常规体检',
-        date: '2022-09-05',
-        summary: '血压偏高，建议定期复查，注意作息',
-        location: '校医院体检中心',
-        status: '异常'
       }],
-      // 疫苗接种记录
       vaccineRecords: [{
         id: 1,
         name: '流感疫苗',
@@ -763,48 +303,13 @@ var _default = {
         date: '2023-10-15',
         location: '校医院预防接种门诊',
         batch: 'FL202310A'
-      }, {
-        id: 2,
-        name: '新冠疫苗加强针',
-        status: '已接种',
-        date: '2023-08-20',
-        location: '校医院预防接种门诊',
-        batch: 'CV202308B'
-      }, {
-        id: 3,
-        name: '乙肝疫苗',
-        status: '未接种',
-        date: '',
-        location: '',
-        batch: ''
       }],
-      // 药品清单
-      medications: [{
-        id: 1,
-        name: '布洛芬缓释胶囊',
-        usage: '头痛、发热时，一次1粒，一日3次',
-        image: '/static/images/med1.png',
-        prescriptionDate: '2023-05-15',
-        doctorName: '张医生（内科）'
-      }, {
-        id: 2,
-        name: '氯雷他定片',
-        usage: '过敏症状时，一次1片，一日1次',
-        image: '/static/images/med2.png',
-        prescriptionDate: '2023-04-20',
-        doctorName: '王医生（内科）'
-      }, {
-        id: 3,
-        name: '红霉素眼膏',
-        usage: '结膜炎治疗，每日3-4次，少量涂于下眼睑内侧',
-        image: '/static/images/med3.png',
-        prescriptionDate: '2023-04-10',
-        doctorName: '刘医生（眼科）'
-      }],
-      // 弹窗控制
       showAppointmentSuccess: false,
       showAppointmentDetail: false,
+      showMedicalRecordDetail: false,
       currentAppointment: {},
+      currentMedicalRecord: {},
+      isLoadingRecordDetail: false,
       appointmentResult: {}
     };
   },
@@ -814,18 +319,25 @@ var _default = {
       var appointmentsToFilter = this.myAppointments;
       if (this.currentStatusTab !== 0) {
         var statusMap = {
-          1: '待就诊',
+          1: '已预约',
           2: '已完成',
           3: '已取消'
         };
         var statusFilter = statusMap[this.currentStatusTab];
         appointmentsToFilter = this.myAppointments.filter(function (item) {
-          return item.status === statusFilter;
+          return item.lb77_appointment_status === statusFilter;
         });
       }
       return appointmentsToFilter.map(function (appointment) {
         return _objectSpread(_objectSpread({}, appointment), {}, {
-          statusClass: _this.getStatusClass(appointment.status)
+          department: appointment.lb77_doctor_lb77_department_name,
+          doctorName: appointment.lb77_doctor_name,
+          doctorTitle: appointment.lb77_doctor_lb77_title,
+          date: appointment.lb77_appointment_date.split(' ')[0],
+          time: _this.secondsToTime(appointment.lb77_starttime),
+          location: '校医院 ' + appointment.lb77_doctor_lb77_department_name,
+          status: appointment.lb77_appointment_status === '已预约' ? '待就诊' : appointment.lb77_appointment_status,
+          statusClass: _this.getStatusClass(appointment.lb77_appointment_status)
         });
       });
     },
@@ -836,205 +348,647 @@ var _default = {
       return '';
     }
   },
-  created: function created() {
+  onLoad: function onLoad(options) {
     var _this2 = this;
-    // 为 examReports 添加 statusClass
-    this.examReports = this.examReports.map(function (report) {
-      return _objectSpread(_objectSpread({}, report), {}, {
-        statusClass: _this2.getReportStatusClass(report.status)
-      });
-    });
+    return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+      var department, doctor;
+      return _regenerator.default.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              _this2.generateAvailableDates();
+              _this2.fetchMyAppointments();
+              _this2.fetchMedicalRecords();
+              _this2.examReports = _this2.examReports.map(function (report) {
+                return _objectSpread(_objectSpread({}, report), {}, {
+                  statusClass: _this2.getReportStatusClass(report.status)
+                });
+              });
+              _this2.vaccineRecords = _this2.vaccineRecords.map(function (vaccine) {
+                return _objectSpread(_objectSpread({}, vaccine), {}, {
+                  statusClass: _this2.getVaccineStatusClass(vaccine.status)
+                });
+              });
 
-    // 为 vaccineRecords 添加 statusClass
-    this.vaccineRecords = this.vaccineRecords.map(function (vaccine) {
-      return _objectSpread(_objectSpread({}, vaccine), {}, {
-        statusClass: _this2.getVaccineStatusClass(vaccine.status)
-      });
-    });
+              // 默认加载，会选中第一个科室并加载其医生列表
+              _context.next = 7;
+              return _this2.fetchDepartments();
+            case 7:
+              if (!(options && options.departmentId && options.recommendDoctorId)) {
+                _context.next = 19;
+                break;
+              }
+              department = _this2.departments.find(function (d) {
+                return d.number === options.departmentId;
+              });
+              if (!department) {
+                _context.next = 17;
+                break;
+              }
+              if (!(!_this2.selectedDepartment || _this2.selectedDepartment.number !== department.number)) {
+                _context.next = 13;
+                break;
+              }
+              _context.next = 13;
+              return _this2.selectDepartment(department);
+            case 13:
+              // 现在正确的医生列表已加载，查找推荐的医生
+              doctor = _this2.doctorsList.find(function (doc) {
+                return doc.id === options.recommendDoctorId;
+              });
+              if (doctor) {
+                _this2.$nextTick(function () {
+                  _this2.showDoctorDetail(doctor);
+                });
+              } else {
+                console.warn("\u5728\u79D1\u5BA4 ".concat(department.name, " \u672A\u627E\u5230ID\u4E3A ").concat(options.recommendDoctorId, " \u7684\u533B\u751F"));
+                uni.showToast({
+                  title: '未在该科室找到推荐医生',
+                  icon: 'none'
+                });
+              }
+              _context.next = 19;
+              break;
+            case 17:
+              console.warn("\u672A\u627E\u5230ID\u4E3A ".concat(options.departmentId, " \u7684\u79D1\u5BA4"));
+              uni.showToast({
+                title: '未找到推荐的科室',
+                icon: 'none'
+              });
+            case 19:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }))();
   },
   methods: {
-    // 标签切换
+    // ===================================================================
+    // ========================== 数据获取与处理 ==========================
+    // ===================================================================
+    generateAvailableDates: function generateAvailableDates() {
+      var dates = [];
+      var weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      for (var i = 0; i < 7; i++) {
+        var date = new Date();
+        date.setDate(date.getDate() + i);
+        dates.push({
+          fullDate: this.formatDate(date, 'yyyy-MM-dd'),
+          day: this.formatDate(date, 'dd'),
+          weekday: weekdays[date.getDay()]
+        });
+      }
+      this.availableDates = dates;
+      // 默认选中今天
+      if (this.availableDates.length > 0) {
+        this.selectDate(this.availableDates[0]);
+      }
+    },
+    fetchDepartments: function fetchDepartments() {
+      var _this3 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+        var res;
+        return _regenerator.default.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                _this3.isLoadingDepartments = true;
+                _context2.prev = 1;
+                _context2.next = 4;
+                return _kingdeeAgent.default.getHospitalDepartments(20);
+              case 4:
+                res = _context2.sent;
+                if (!(res && res.data && res.data.rows)) {
+                  _context2.next = 10;
+                  break;
+                }
+                _this3.departments = res.data.rows;
+                // 默认选中第一个科室
+                if (!(_this3.departments.length > 0)) {
+                  _context2.next = 10;
+                  break;
+                }
+                _context2.next = 10;
+                return _this3.selectDepartment(_this3.departments[0]);
+              case 10:
+                _context2.next = 16;
+                break;
+              case 12:
+                _context2.prev = 12;
+                _context2.t0 = _context2["catch"](1);
+                console.error("获取科室列表失败:", _context2.t0);
+                uni.showToast({
+                  title: '科室加载失败',
+                  icon: 'none'
+                });
+              case 16:
+                _context2.prev = 16;
+                _this3.isLoadingDepartments = false;
+                return _context2.finish(16);
+              case 19:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, null, [[1, 12, 16, 19]]);
+      }))();
+    },
+    fetchDoctors: function fetchDoctors(departmentNumber) {
+      var _this4 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
+        var res;
+        return _regenerator.default.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                _this4.isLoadingDoctors = true;
+                _this4.doctorsList = [];
+                _context3.prev = 2;
+                _context3.next = 5;
+                return _kingdeeAgent.default.getDoctorsByDepartment(departmentNumber);
+              case 5:
+                res = _context3.sent;
+                if (res && res.data && res.data.rows) {
+                  _this4.doctorsList = res.data.rows.map(function (doc, index) {
+                    return _objectSpread(_objectSpread({}, doc), {}, {
+                      id: doc.number,
+                      avatar: doctorAvatars[index % doctorAvatars.length],
+                      title: doc.lb77_title,
+                      specialty: doc.lb77_specialty,
+                      rating: (4.5 + Math.random() * 0.5).toFixed(1),
+                      ratingCount: Math.floor(Math.random() * 200) + 50,
+                      availableSlots: [],
+                      isLoadingSlots: true
+                    });
+                  });
+                  _this4.updateAllDoctorSchedules();
+                }
+                _context3.next = 13;
+                break;
+              case 9:
+                _context3.prev = 9;
+                _context3.t0 = _context3["catch"](2);
+                console.error("获取医生列表失败:", _context3.t0);
+                uni.showToast({
+                  title: '医生加载失败',
+                  icon: 'none'
+                });
+              case 13:
+                _context3.prev = 13;
+                _this4.isLoadingDoctors = false;
+                return _context3.finish(13);
+              case 16:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, null, [[2, 9, 13, 16]]);
+      }))();
+    },
+    updateAllDoctorSchedules: function updateAllDoctorSchedules() {
+      var _this5 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee4() {
+        var schedulePromises;
+        return _regenerator.default.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                if (_this5.selectedDate) {
+                  _context4.next = 2;
+                  break;
+                }
+                return _context4.abrupt("return");
+              case 2:
+                schedulePromises = _this5.doctorsList.map(function (doctor) {
+                  return _this5.updateDoctorSchedule(doctor);
+                });
+                _context4.next = 5;
+                return Promise.all(schedulePromises);
+              case 5:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4);
+      }))();
+    },
+    updateDoctorSchedule: function updateDoctorSchedule(doctor) {
+      var _this6 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5() {
+        var scheduleRes, bookingsRes, allSlots, weeklySchedule, bookedSlots, availableSlots;
+        return _regenerator.default.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _this6.$set(doctor, 'isLoadingSlots', true);
+                _this6.$set(doctor, 'availableSlots', []);
+                _context5.prev = 2;
+                _context5.next = 5;
+                return _kingdeeAgent.default.getDoctorWeeklySchedule(doctor.number);
+              case 5:
+                scheduleRes = _context5.sent;
+                _context5.next = 8;
+                return _kingdeeAgent.default.getAppointmentsByDate(doctor.number, _this6.selectedDate.fullDate);
+              case 8:
+                bookingsRes = _context5.sent;
+                allSlots = [];
+                if (scheduleRes && scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0].lb77_weekschedule) {
+                  weeklySchedule = scheduleRes.data.rows[0].lb77_weekschedule;
+                  allSlots = weeklySchedule.filter(function (slot) {
+                    return slot.lb77_day_of_week.trim() === _this6.selectedDate.weekday;
+                  }).map(function (slot) {
+                    return {
+                      start: slot.lb77_start_time,
+                      end: slot.lb77_end_time
+                    };
+                  });
+                }
+                bookedSlots = [];
+                if (bookingsRes && bookingsRes.data && bookingsRes.data.rows) {
+                  bookedSlots = bookingsRes.data.rows.map(function (booking) {
+                    return booking.lb77_starttime;
+                  });
+                }
+                availableSlots = allSlots.filter(function (slot) {
+                  return !bookedSlots.includes(slot.start);
+                }).map(function (slot) {
+                  return _this6.secondsToTime(slot.start);
+                });
+                _this6.$set(doctor, 'availableSlots', availableSlots);
+                _context5.next = 21;
+                break;
+              case 17:
+                _context5.prev = 17;
+                _context5.t0 = _context5["catch"](2);
+                console.error("\u83B7\u53D6\u533B\u751F ".concat(doctor.name, " \u7684\u6392\u73ED\u5931\u8D25:"), _context5.t0);
+                _this6.$set(doctor, 'availableSlots', []);
+              case 21:
+                _context5.prev = 21;
+                _this6.$set(doctor, 'isLoadingSlots', false);
+                return _context5.finish(21);
+              case 24:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, null, [[2, 17, 21, 24]]);
+      }))();
+    },
+    // ===================================================================
+    // ========================= 预约挂号页面事件 ========================
+    // ===================================================================
+    selectDepartment: function selectDepartment(dept) {
+      var _this7 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6() {
+        return _regenerator.default.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                if (!(_this7.selectedDepartment && _this7.selectedDepartment.number === dept.number)) {
+                  _context6.next = 2;
+                  break;
+                }
+                return _context6.abrupt("return");
+              case 2:
+                _this7.selectedDepartment = dept;
+                _context6.next = 5;
+                return _this7.fetchDoctors(dept.number);
+              case 5:
+              case "end":
+                return _context6.stop();
+            }
+          }
+        }, _callee6);
+      }))();
+    },
+    selectDate: function selectDate(date) {
+      if (this.selectedDate && this.selectedDate.fullDate === date.fullDate) return;
+      this.selectedDate = date;
+      if (this.doctorsList.length > 0) {
+        this.updateAllDoctorSchedules();
+      }
+    },
+    showDoctorDetail: function showDoctorDetail(doctor) {
+      this.currentDoctor = doctor;
+      this.selectedTimeInPopup = null; // 重置时间选择
+      this.showDoctorDetailPopup = true;
+    },
+    hideDoctorDetail: function hideDoctorDetail() {
+      this.showDoctorDetailPopup = false;
+    },
+    selectSlotInPopup: function selectSlotInPopup(time) {
+      this.selectedTimeInPopup = time;
+    },
+    isSlotSelectedInPopup: function isSlotSelectedInPopup(time) {
+      return this.selectedTimeInPopup === time;
+    },
+    submitAppointment: function submitAppointment() {
+      var _this8 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee7() {
+        var timeParts, startTimeInSeconds, endTimeInSeconds, appointmentData, res;
+        return _regenerator.default.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                if (!(!_this8.currentDoctor.number || !_this8.selectedTimeInPopup)) {
+                  _context7.next = 3;
+                  break;
+                }
+                uni.showToast({
+                  title: '请选择预约时间',
+                  icon: 'none'
+                });
+                return _context7.abrupt("return");
+              case 3:
+                uni.showLoading({
+                  title: '正在提交...'
+                });
+                _context7.prev = 4;
+                timeParts = _this8.selectedTimeInPopup.split(':');
+                startTimeInSeconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60;
+                endTimeInSeconds = startTimeInSeconds + 15 * 60;
+                appointmentData = {
+                  billno: "YUYUE-".concat(_this8.currentUser.studentId, "-").concat(Date.now()),
+                  lb77_appointment_date: _this8.selectedDate.fullDate,
+                  lb77_starttime: startTimeInSeconds,
+                  lb77_endtime: endTimeInSeconds,
+                  lb77_symptoms: "用户自助预约",
+                  lb77_appointment_status: '已预约',
+                  lb77_student_number: _this8.currentUser.studentId,
+                  lb77_doctor_number: _this8.currentDoctor.number
+                };
+                _context7.next = 11;
+                return _kingdeeAgent.default.createMedicalAppointment(appointmentData);
+              case 11:
+                res = _context7.sent;
+                if (!(res && res.data && res.data.successCount > 0)) {
+                  _context7.next = 21;
+                  break;
+                }
+                uni.hideLoading();
+                _this8.hideDoctorDetail();
+                _this8.appointmentResult = {
+                  department: _this8.selectedDepartment.name,
+                  doctorName: _this8.currentDoctor.name,
+                  date: _this8.selectedDate.fullDate,
+                  time: _this8.selectedTimeInPopup,
+                  location: "\u6821\u533B\u9662 ".concat(_this8.selectedDepartment.name)
+                };
+                _this8.showAppointmentSuccess = true;
+                _this8.fetchMyAppointments();
+                _this8.updateAllDoctorSchedules();
+                _context7.next = 22;
+                break;
+              case 21:
+                throw new Error(res.message || '预约失败');
+              case 22:
+                _context7.next = 30;
+                break;
+              case 24:
+                _context7.prev = 24;
+                _context7.t0 = _context7["catch"](4);
+                uni.hideLoading();
+                console.error("创建预约失败:", _context7.t0);
+                uni.showToast({
+                  title: _context7.t0.message || '预约失败，该时段可能已被预约',
+                  icon: 'none'
+                });
+                _this8.updateAllDoctorSchedules();
+              case 30:
+              case "end":
+                return _context7.stop();
+            }
+          }
+        }, _callee7, null, [[4, 24]]);
+      }))();
+    },
+    // ===================================================================
+    // ========================= 其他页面和通用事件 ========================
+    // ===================================================================
     switchTab: function switchTab(index) {
       this.currentTab = index;
     },
-    // 科室选择
-    selectDepartment: function selectDepartment(index) {
-      this.selectedDepartment = index;
-      this.selectedDate = null;
-      this.selectedDoctor = null;
-      this.selectedTimeSlot = null;
-      this.selectedTimeSlotIndex = null;
-
-      // 实际应用中，这里应该根据选择的科室获取可预约的日期
+    fetchMyAppointments: function fetchMyAppointments() {
+      var _this9 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee8() {
+        var res;
+        return _regenerator.default.wrap(function _callee8$(_context8) {
+          while (1) {
+            switch (_context8.prev = _context8.next) {
+              case 0:
+                _this9.isLoadingAppointments = true;
+                _context8.prev = 1;
+                _context8.next = 4;
+                return _kingdeeAgent.default.getPersonalAppointments(_this9.currentUser.studentId, 50);
+              case 4:
+                res = _context8.sent;
+                if (res && res.data && res.data.rows) {
+                  _this9.myAppointments = res.data.rows.sort(function (a, b) {
+                    var dateA = new Date(a.lb77_appointment_date).getTime();
+                    var dateB = new Date(b.lb77_appointment_date).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return b.lb77_starttime - a.lb77_starttime;
+                  });
+                } else {
+                  _this9.myAppointments = [];
+                }
+                _context8.next = 12;
+                break;
+              case 8:
+                _context8.prev = 8;
+                _context8.t0 = _context8["catch"](1);
+                console.error("获取我的预约记录失败:", _context8.t0);
+                uni.showToast({
+                  title: '预约记录加载失败',
+                  icon: 'none'
+                });
+              case 12:
+                _context8.prev = 12;
+                _this9.isLoadingAppointments = false;
+                return _context8.finish(12);
+              case 15:
+              case "end":
+                return _context8.stop();
+            }
+          }
+        }, _callee8, null, [[1, 8, 12, 15]]);
+      }))();
     },
-    // 日期导航
-    prevDate: function prevDate() {
-      uni.showToast({
-        title: '已是最早日期',
-        icon: 'none'
-      });
+    fetchMedicalRecords: function fetchMedicalRecords() {
+      var _this10 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee9() {
+        var res;
+        return _regenerator.default.wrap(function _callee9$(_context9) {
+          while (1) {
+            switch (_context9.prev = _context9.next) {
+              case 0:
+                if (!(!_this10.currentUser || !_this10.currentUser.studentId)) {
+                  _context9.next = 2;
+                  break;
+                }
+                return _context9.abrupt("return");
+              case 2:
+                _this10.isLoadingMedicalRecords = true;
+                _context9.prev = 3;
+                _context9.next = 6;
+                return _kingdeeAgent.default.getMedicalRecords(_this10.currentUser.studentId);
+              case 6:
+                res = _context9.sent;
+                if (res && res.data && Array.isArray(res.data.rows)) {
+                  _this10.medicalRecords = res.data.rows.map(function (record) {
+                    return _objectSpread(_objectSpread({}, record), {}, {
+                      disease: record.lb77_diagnosis,
+                      date: (record.lb77_fdate || '').split(' ')[0],
+                      doctorName: record.lb77_doctor_name,
+                      doctorTitle: record.lb77_doctor_lb77_title,
+                      description: record.lb77_advice || '暂无医嘱详情'
+                    });
+                  });
+                }
+                _context9.next = 14;
+                break;
+              case 10:
+                _context9.prev = 10;
+                _context9.t0 = _context9["catch"](3);
+                console.error("获取就诊记录失败:", _context9.t0);
+                uni.showToast({
+                  title: '就诊记录加载失败',
+                  icon: 'none'
+                });
+              case 14:
+                _context9.prev = 14;
+                _this10.isLoadingMedicalRecords = false;
+                return _context9.finish(14);
+              case 17:
+              case "end":
+                return _context9.stop();
+            }
+          }
+        }, _callee9, null, [[3, 10, 14, 17]]);
+      }))();
     },
-    nextDate: function nextDate() {
-      uni.showToast({
-        title: '已是最晚日期',
-        icon: 'none'
-      });
+    cancelAppointment: function cancelAppointment(appointment) {
+      var _this11 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee11() {
+        return _regenerator.default.wrap(function _callee11$(_context11) {
+          while (1) {
+            switch (_context11.prev = _context11.next) {
+              case 0:
+                uni.showModal({
+                  title: '取消预约',
+                  content: '确定要取消此次预约吗？',
+                  success: function () {
+                    var _success = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee10(res) {
+                      var apiRes;
+                      return _regenerator.default.wrap(function _callee10$(_context10) {
+                        while (1) {
+                          switch (_context10.prev = _context10.next) {
+                            case 0:
+                              if (!res.confirm) {
+                                _context10.next = 21;
+                                break;
+                              }
+                              uni.showLoading({
+                                title: '正在取消...'
+                              });
+                              _context10.prev = 2;
+                              _context10.next = 5;
+                              return _kingdeeAgent.default.cancelMedicalAppointment(appointment.billno);
+                            case 5:
+                              apiRes = _context10.sent;
+                              if (!(apiRes && apiRes.data && apiRes.data.successCount > 0)) {
+                                _context10.next = 13;
+                                break;
+                              }
+                              uni.hideLoading();
+                              uni.showToast({
+                                title: '预约已取消',
+                                icon: 'success'
+                              });
+                              _this11.fetchMyAppointments();
+                              if (_this11.showAppointmentDetail) {
+                                _this11.hideAppointmentDetail();
+                              }
+                              _context10.next = 14;
+                              break;
+                            case 13:
+                              throw new Error(apiRes.message || '取消失败');
+                            case 14:
+                              _context10.next = 21;
+                              break;
+                            case 16:
+                              _context10.prev = 16;
+                              _context10.t0 = _context10["catch"](2);
+                              uni.hideLoading();
+                              console.error('取消预约失败:', _context10.t0);
+                              uni.showToast({
+                                title: _context10.t0.message || '取消操作失败',
+                                icon: 'none'
+                              });
+                            case 21:
+                            case "end":
+                              return _context10.stop();
+                          }
+                        }
+                      }, _callee10, null, [[2, 16]]);
+                    }));
+                    function success(_x) {
+                      return _success.apply(this, arguments);
+                    }
+                    return success;
+                  }()
+                });
+              case 1:
+              case "end":
+                return _context11.stop();
+            }
+          }
+        }, _callee11);
+      }))();
     },
-    // 选择日期
-    selectDate: function selectDate(index) {
-      this.selectedDate = index;
-      this.selectedDoctor = null;
-      this.selectedTimeSlot = null;
-      this.selectedTimeSlotIndex = null;
-
-      // 实际应用中，这里应该根据选择的科室和日期获取可预约的医生
-    },
-    // 选择医生
-    selectDoctor: function selectDoctor(doctor) {
-      this.selectedDoctor = doctor;
-      this.selectedTimeSlot = null;
-      this.selectedTimeSlotIndex = null;
-    },
-    // 选择时间
-    selectTimeSlot: function selectTimeSlot(doctor, slot, index) {
-      this.selectedTimeSlot = slot;
-      this.selectedTimeSlotIndex = index;
-    },
-    // 判断时间是否被选中
-    isSelectedTimeSlot: function isSelectedTimeSlot(doctor, index) {
-      return this.selectedDoctor && this.selectedDoctor.id === doctor.id && this.selectedTimeSlotIndex === index;
-    },
-    // 提交预约
-    submitAppointment: function submitAppointment() {
-      if (!this.selectedDoctor || this.selectedTimeSlot === null) {
-        uni.showToast({
-          title: '请选择医生和时间',
-          icon: 'none'
-        });
-        return;
-      }
-
-      // 构建预约结果
-      var dept = this.departments[this.selectedDepartment];
-      var date = this.availableDates[this.selectedDate];
-      this.appointmentResult = {
-        department: dept.name,
-        doctorName: this.selectedDoctor.name,
-        date: "2023-05-".concat(date.day),
-        time: this.selectedTimeSlot,
-        location: "\u6821\u533B\u9662 ".concat(Math.floor(Math.random() * 5) + 1, "\u697C ").concat(Math.floor(Math.random() * 20) + 1, "\u8BCA\u5BA4")
-      };
-
-      // 添加到我的预约列表
-      var newAppointment = {
-        id: this.myAppointments.length + 1,
-        department: this.appointmentResult.department,
-        doctorName: this.appointmentResult.doctorName,
-        doctorTitle: this.selectedDoctor.title,
-        date: this.appointmentResult.date,
-        time: this.appointmentResult.time,
-        location: this.appointmentResult.location,
-        status: '待就诊',
-        notes: '请携带学生证和校园卡'
-      };
-      this.myAppointments.unshift(newAppointment);
-
-      // 显示成功弹窗
-      this.showAppointmentSuccess = true;
-
-      // 重置选择
-      // this.resetSelection();
-    },
-    // 重置选择
-    resetSelection: function resetSelection() {
-      this.selectedDepartment = null;
-      this.selectedDate = null;
-      this.selectedDoctor = null;
-      this.selectedTimeSlot = null;
-      this.selectedTimeSlotIndex = null;
-    },
-    // 添加到日历
-    addToCalendar: function addToCalendar() {
-      uni.showToast({
-        title: '已添加到日历',
-        icon: 'success'
-      });
-    },
-    // 隐藏成功弹窗
     hideAppointmentSuccess: function hideAppointmentSuccess() {
       this.showAppointmentSuccess = false;
-      // 跳转到我的预约标签页
       this.currentTab = 1;
-      this.currentStatusTab = 1; // 待就诊
+      this.currentStatusTab = 1;
     },
-    // 切换预约状态标签
     switchStatusTab: function switchStatusTab(index) {
       this.currentStatusTab = index;
     },
-    // 查看预约详情
     viewAppointmentDetail: function viewAppointmentDetail(appointment) {
       this.currentAppointment = appointment;
       this.showAppointmentDetail = true;
     },
-    // 隐藏预约详情
     hideAppointmentDetail: function hideAppointmentDetail() {
       this.showAppointmentDetail = false;
     },
-    // 取消预约确认
     confirmCancelAppointment: function confirmCancelAppointment() {
-      var _this3 = this;
-      uni.showModal({
-        title: '取消预约',
-        content: '确定要取消此次预约吗？',
-        success: function success(res) {
-          if (res.confirm) {
-            _this3.cancelAppointment(_this3.currentAppointment);
-          }
-        }
-      });
+      this.cancelAppointment(this.currentAppointment);
     },
-    // 取消预约
-    cancelAppointment: function cancelAppointment(appointment) {
-      // 修改预约状态
-      var index = this.myAppointments.findIndex(function (item) {
-        return item.id === appointment.id;
-      });
-      if (index !== -1) {
-        this.myAppointments[index].status = '已取消';
-        uni.showToast({
-          title: '预约已取消',
-          icon: 'success'
-        });
-        this.hideAppointmentDetail();
+    secondsToTime: function secondsToTime(seconds) {
+      if (isNaN(seconds)) return '';
+      var h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+      var m = Math.floor(seconds % 3600 / 60).toString().padStart(2, '0');
+      return "".concat(h, ":").concat(m);
+    },
+    formatDate: function formatDate(date, fmt) {
+      var o = {
+        "M+": date.getMonth() + 1,
+        "d+": date.getDate()
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
       }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, ("00" + o[k]).substr(("" + o[k]).length));
+        }
+      }
+      return fmt;
     },
-    // 预约改期
-    rescheduleAppointment: function rescheduleAppointment() {
-      uni.showToast({
-        title: '改期功能开发中',
-        icon: 'none'
-      });
-    },
-    // 导航到就诊地点
-    navigateToClinic: function navigateToClinic(appointment) {
-      uni.showToast({
-        title: '正在导航至' + appointment.location,
-        icon: 'none'
-      });
-
-      // 实际应用中应该调用地图API进行导航
-      setTimeout(function () {
-        uni.showModal({
-          title: '导航信息',
-          content: "\u4ECE\u5F53\u524D\u4F4D\u7F6E\u5230".concat(appointment.location, "\u5927\u7EA6\u9700\u89815\u5206\u949F\uFF0C\u8DEF\u7EBF\u5DF2\u751F\u6210"),
-          showCancel: false
-        });
-      }, 1500);
-      this.hideAppointmentDetail();
-    },
-    // 获取预约状态样式类
     getStatusClass: function getStatusClass(status) {
       switch (status) {
+        case '已预约':
         case '待就诊':
           return 'status-pending';
         case '已完成':
@@ -1045,25 +999,68 @@ var _default = {
           return '';
       }
     },
-    // 切换健康记录类型
     switchRecordType: function switchRecordType(index) {
       this.currentRecordType = index;
     },
-    // 查看就诊记录详情
     viewRecordDetail: function viewRecordDetail(record) {
-      uni.showToast({
-        title: '查看记录: ' + record.disease,
-        icon: 'none'
-      });
+      var _this12 = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee12() {
+        var res;
+        return _regenerator.default.wrap(function _callee12$(_context12) {
+          while (1) {
+            switch (_context12.prev = _context12.next) {
+              case 0:
+                _this12.isLoadingRecordDetail = true;
+                _this12.showMedicalRecordDetail = true;
+                _this12.currentMedicalRecord = {};
+                _context12.prev = 3;
+                _context12.next = 6;
+                return _kingdeeAgent.default.getMedicalRecordDetails(record.billno);
+              case 6:
+                res = _context12.sent;
+                if (!(res && res.data && res.data.rows && res.data.rows.length > 0)) {
+                  _context12.next = 11;
+                  break;
+                }
+                _this12.currentMedicalRecord = res.data.rows[0];
+                _context12.next = 12;
+                break;
+              case 11:
+                throw new Error('未找到该条记录的详细信息');
+              case 12:
+                _context12.next = 19;
+                break;
+              case 14:
+                _context12.prev = 14;
+                _context12.t0 = _context12["catch"](3);
+                console.error("获取就诊记录详情失败:", _context12.t0);
+                uni.showToast({
+                  title: _context12.t0.message || '加载详情失败',
+                  icon: 'none'
+                });
+                _this12.hideMedicalRecordDetail();
+              case 19:
+                _context12.prev = 19;
+                _this12.isLoadingRecordDetail = false;
+                return _context12.finish(19);
+              case 22:
+              case "end":
+                return _context12.stop();
+            }
+          }
+        }, _callee12, null, [[3, 14, 19, 22]]);
+      }))();
     },
-    // 查看体检报告
+    hideMedicalRecordDetail: function hideMedicalRecordDetail() {
+      this.showMedicalRecordDetail = false;
+      this.currentMedicalRecord = {};
+    },
     viewExamReport: function viewExamReport(report) {
       uni.showToast({
         title: '查看报告: ' + report.title,
         icon: 'none'
       });
     },
-    // 获取体检报告状态样式类
     getReportStatusClass: function getReportStatusClass(status) {
       switch (status) {
         case '正常':
@@ -1074,14 +1071,12 @@ var _default = {
           return '';
       }
     },
-    // 预约疫苗接种
     reserveVaccine: function reserveVaccine(vaccine) {
       uni.showToast({
         title: '预约接种: ' + vaccine.name,
         icon: 'none'
       });
     },
-    // 获取疫苗状态样式类
     getVaccineStatusClass: function getVaccineStatusClass(status) {
       switch (status) {
         case '已接种':
@@ -1091,20 +1086,6 @@ var _default = {
         default:
           return '';
       }
-    },
-    // 查看药品详情
-    viewMedicationDetail: function viewMedicationDetail(medicine) {
-      uni.showToast({
-        title: '查看药品: ' + medicine.name,
-        icon: 'none'
-      });
-    },
-    // 查看电子病历
-    viewMedicalRecord: function viewMedicalRecord(appointment) {
-      uni.showToast({
-        title: '查看病历: ' + appointment.department,
-        icon: 'none'
-      });
     }
   }
 };

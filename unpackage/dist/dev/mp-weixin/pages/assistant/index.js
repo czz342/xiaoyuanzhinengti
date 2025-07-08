@@ -293,7 +293,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://rewards-pas-features-consulting.trycloudflare.com",
+      tunnelUrl: "https://incoming-offline-rd-inventory.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -433,7 +433,7 @@ var _default = {
               case 11:
                 _this2.assistants = assistantsResponse.data;
                 if (!(_this2.assistants && _this2.assistants.length > 0)) {
-                  _context2.next = 46;
+                  _context2.next = 45;
                   break;
                 }
                 // 目标助手的ID和名称
@@ -458,11 +458,12 @@ var _default = {
                 console.log('已选择助手:', JSON.parse(JSON.stringify(_this2.selectedAssistant)));
 
                 // 更新欢迎消息等
-                _this2.chatMessages.unshift({
-                  type: 'system',
-                  content: _this2.selectedAssistant.openingSpeech || "\u60A8\u597D\uFF0C\u6211\u662F\u60A8\u7684\u52A9\u624B ".concat(_this2.selectedAssistant.name, "\uFF0C\u6709\u4EC0\u4E48\u53EF\u4EE5\u5E2E\u52A9\u60A8\u7684\u5417\uFF1F"),
-                  timestamp: Date.now()
-                });
+                /* this.chatMessages.unshift({
+                	type: 'system',
+                	content: this.selectedAssistant.openingSpeech || `您好，我是您的助手 ${this.selectedAssistant.name}，有什么可以帮助您的吗？`,
+                	timestamp: Date.now()
+                }); */
+
                 uni.showLoading({
                   title: '正在创建新会话...'
                 });
@@ -471,16 +472,16 @@ var _default = {
                 assistantIdToUse = _this2.selectedAssistant.id; // 将回调URL指向我们的cloudflared服务器
                 callbackUrlToUse = "".concat(_this2.tunnelUrl, "/webhook");
                 if (assistantIdToUse) {
-                  _context2.next = 26;
+                  _context2.next = 25;
                   break;
                 }
                 console.error("无法从selectedAssistant中获取有效的ID!");
                 throw new Error("无法初始化会话：助手ID缺失。");
-              case 26:
+              case 25:
                 console.log("\u51C6\u5907\u8C03\u7528createSession\uFF0CassistantId: ".concat(assistantIdToUse, ", callbackUrl: ").concat(callbackUrlToUse));
-                _context2.next = 29;
+                _context2.next = 28;
                 return _kingdeeAgent.default.createSession(assistantIdToUse, callbackUrlToUse);
-              case 29:
+              case 28:
                 sessionResponse = _context2.sent;
                 console.log('创建会话响应 (原始):', JSON.parse(JSON.stringify(sessionResponse))); // 使用深拷贝打印
 
@@ -504,7 +505,7 @@ var _default = {
                 sessionResponse.data && typeof sessionResponse.data.sessionId === 'string' &&
                 // 确保 sessionId 是字符串
                 sessionResponse.data.sessionId.length > 0)) {
-                  _context2.next = 40;
+                  _context2.next = 39;
                   break;
                 }
                 _this2.sessionId = sessionResponse.data.sessionId;
@@ -522,9 +523,9 @@ var _default = {
                 uni.setNavigationBarTitle({
                   title: "\u4E0E ".concat(_this2.selectedAssistant.name, " \u5BF9\u8BDD\u4E2D")
                 });
-                _context2.next = 44;
+                _context2.next = 43;
                 break;
-              case 40:
+              case 39:
                 console.error('创建会话失败或未返回有效的sessionId (检查后):', sessionResponse);
                 // 抛出更具体的错误信息，如果可能的话
                 errMsg = '创建会话失败或未返回有效的sessionId';
@@ -536,22 +537,22 @@ var _default = {
                   errMsg = "\u521B\u5EFA\u4F1A\u8BDDAPI\u54CD\u5E94\u72B6\u6001\u975E\u6210\u529F (status: ".concat(sessionResponse.status, ")");
                 }
                 throw new Error((sessionResponse === null || sessionResponse === void 0 ? void 0 : sessionResponse.message) || errMsg);
-              case 44:
-                _context2.next = 48;
+              case 43:
+                _context2.next = 47;
                 break;
-              case 46:
+              case 45:
                 console.warn('未获取到助手列表，或列表为空');
                 _this2.chatMessages.unshift({
                   type: 'system',
                   content: '抱歉，助手列表为空，无法初始化会话。'
                 });
-              case 48:
+              case 47:
                 uni.hideLoading();
                 console.log('初始化完成');
-                _context2.next = 58;
+                _context2.next = 57;
                 break;
-              case 52:
-                _context2.prev = 52;
+              case 51:
+                _context2.prev = 51;
                 _context2.t0 = _context2["catch"](1);
                 uni.hideLoading();
                 console.error('初始化AI助手失败:', {
@@ -566,12 +567,12 @@ var _default = {
                   content: '抱歉，AI助手连接失败，请稍后重试。'
                 }];
                 throw _context2.t0;
-              case 58:
+              case 57:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[1, 52]]);
+        }, _callee2, null, [[1, 51]]);
       }))();
     },
     // 发送消息
@@ -1033,7 +1034,7 @@ var _default = {
           clearInterval(_this6.reconnectInterval);
           _this6.reconnectInterval = null;
         }
-        _this6.addSystemMessage("智能助手连接成功！");
+        // this.addSystemMessage("智能助手连接成功！");
 
         // 新增：开启心跳
         _this6.startHeartbeat();

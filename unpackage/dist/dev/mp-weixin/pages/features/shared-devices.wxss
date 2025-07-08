@@ -165,11 +165,6 @@
 	color: #666;
 	margin-bottom: 8rpx;
 }
-.device-distance {
-	font-size: 22rpx;
-	color: #999;
-	margin-bottom: 8rpx;
-}
 .device-status {
 	font-size: 24rpx;
 	padding: 4rpx 16rpx;
@@ -182,6 +177,10 @@
 .status-busy {
 	background-color: #fff2e6;
 	color: #FF9500;
+}
+.status-fault {
+	background-color: #ffe6e6;
+	color: #ff3b30;
 }
 
 /* 使用教程样式 */

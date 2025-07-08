@@ -3,27 +3,27 @@
 		<!-- 顶部状态卡片 -->
 		<view class="status-card">
 			<view class="status-header">
-				<text class="location-name">图书馆一楼洗衣房</text>
+				<text class="location-name">校园洗衣房</text>
 				<view class="distance-info">
 					<uni-icons type="location" size="14" color="#666"></uni-icons>
-					<text>50m</text>
+					<text>多地点</text>
 				</view>
 			</view>
 			<view class="status-grid">
 				<view class="status-item">
-					<text class="status-number available">12</text>
+					<text class="status-number available">{{ availableMachines.length }}</text>
 					<text class="status-label">空闲机器</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number busy">8</text>
+					<text class="status-number busy">{{ busyMachines.length }}</text>
 					<text class="status-label">使用中</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number">5</text>
+					<text class="status-number">~{{ estimatedWaitTime }}</text>
 					<text class="status-label">分钟等待</text>
 				</view>
 				<view class="status-item">
-					<text class="status-number">￥3</text>
+					<text class="status-number">￥{{ startingPrice }}</text>
 					<text class="status-label">起步价</text>
 				</view>
 			</view>
@@ -40,7 +40,7 @@
 			</view>
 			<view class="recommendation-card">
 				<view class="machine-info">
-					<image src="/static/images/washer-large.png" mode="aspectFit" class="machine-image"></image>
+					<image :src="recommendedMachine.image" mode="aspectFit" class="machine-image"></image>
 					<view class="machine-details">
 						<text class="machine-name">{{recommendedMachine.name}}</text>
 						<text class="machine-location">{{recommendedMachine.location}}</text>
@@ -51,8 +51,8 @@
 				</view>
 				<view class="booking-info">
 					<view class="price-info">
-						<text class="price-amount">￥{{recommendedMachine.price}}</text>
-						<text class="price-unit">/次</text>
+						<text class="price-amount">￥{{startingPrice}}</text>
+						<text class="price-unit">起</text>
 					</view>
 					<button class="book-btn" @tap="bookMachine(recommendedMachine)">立即预约</button>
 				</view>
@@ -88,9 +88,9 @@
 								<uni-icons type="location" size="14" color="#666"></uni-icons>
 								<text>{{machine.location}}</text>
 							</view>
-							<view class="detail-item" v-if="machine.remainingTime">
+							<view class="detail-item" v-if="machine.status === '使用中'">
 								<uni-icons type="timer" size="14" color="#666"></uni-icons>
-								<text>剩余{{machine.remainingTime}}分钟</text>
+								<text>使用中</text>
 							</view>
 							<view class="detail-item">
 								<uni-icons type="medal" size="14" color="#666"></uni-icons>
@@ -98,8 +98,8 @@
 							</view>
 						</view>
 						<view class="machine-price">
-							<text class="price-amount">￥{{machine.price}}</text>
-							<text class="price-unit">/次</text>
+							<text class="price-amount">￥{{startingPrice}}</text>
+							<text class="price-unit">起</text>
 						</view>
 					</view>
 					<view class="machine-footer">
@@ -107,9 +107,10 @@
 							<text class="feature-tag" v-for="(feature, fIndex) in machine.features" :key="fIndex">{{feature}}</text>
 						</view>
 						<button class="action-btn" 
+							:disabled="machine.status !== '空闲'"
 							:class="machine.status === '空闲' ? 'available' : 'busy'"
 							@tap="machine.status === '空闲' ? bookMachine(machine) : null">
-							{{machine.status === '空闲' ? '立即预约' : '查看详情'}}
+							{{machine.status === '空闲' ? '立即预约' : machine.status}}
 						</button>
 					</view>
 				</view>
@@ -141,8 +142,8 @@
 								<text 
 									v-for="(mode, index) in washingModes" 
 									:key="index"
-									:class="['mode-option', selectedMode === mode.id ? 'active' : '']"
-									@tap="selectMode(mode.id)">
+									:class="['mode-option', selectedMode.number === mode.number ? 'active' : '']"
+									@tap="selectMode(mode)">
 									{{mode.name}}
 								</text>
 							</view>
@@ -194,70 +195,36 @@
 </template>
 
 <script>
+import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 export default {
 	data() {
 		return {
 			currentFilter: 'all',
 			showBookingPopup: false,
 			selectedMachine: null,
-			selectedMode: 'normal',
+			selectedMode: null,
 			selectedPayment: 'wechat',
 			notifications: ['sms', 'wechat'],
 			
-			recommendedMachine: {
-				id: 'W001',
-				name: '洗衣机 W001',
-				location: '图书馆一楼 A区',
-				image: '/static/images/washer-large.png',
-				features: ['智能杀菌', '大容量', '省电模式'],
-				price: 3,
-				status: '空闲',
-				rating: 4.8
-			},
-			
-			washingModes: [
-				{ id: 'quick', name: '快速洗', price: 3 },
-				{ id: 'normal', name: '标准洗', price: 4 },
-				{ id: 'heavy', name: '大件洗', price: 5 }
-			],
-			
+			recommendedMachine: null,
+			washingModes: [],
 			paymentMethods: [
 				{ id: 'wechat', name: '微信支付', icon: '/static/images/wechat-pay.png' },
 				{ id: 'alipay', name: '支付宝', icon: '/static/images/alipay.png' },
 				{ id: 'campus', name: '校园卡', icon: '/static/images/campus-card.png' }
 			],
-			
-			machines: [
-				{
-					id: 'W001',
-					name: '洗衣机 W001',
-					type: '海尔智能洗衣机',
-					location: '图书馆一楼 A区',
-					status: '空闲',
-					statusClass: 'status-available',
-					image: '/static/images/washer-icon.png',
-					features: ['智能杀菌', '大容量', '省电模式'],
-					price: 3,
-					rating: 4.8
-				},
-				{
-					id: 'W002',
-					name: '洗衣机 W002',
-					type: '海尔智能洗衣机',
-					location: '图书馆一楼 A区',
-					status: '使用中',
-					statusClass: 'status-busy',
-					remainingTime: 15,
-					image: '/static/images/washer-icon.png',
-					features: ['智能杀菌', '大容量'],
-					price: 3,
-					rating: 4.6
-				},
-				// 更多洗衣机数据...
-			]
+			machines: [],
+			busyMachines: [],
+			estimatedWaitTime: 0,
+			startingPrice: 0,
+			recommendedDeviceIdFromUrl: null, // 用于接收URL参数
 		}
 	},
 	computed: {
+		availableMachines() {
+			return this.machines.filter(m => m.status === '空闲');
+		},
 		filteredMachines() {
 			if (this.currentFilter === 'all') return this.machines;
 			return this.machines.filter(machine => {
@@ -266,28 +233,134 @@ export default {
 			});
 		}
 	},
+	onLoad(options) {
+		if (options && options.recommendDeviceId) {
+			this.recommendedDeviceIdFromUrl = options.recommendDeviceId;
+		}
+		this.loadPageData();
+	},
 	methods: {
+		async loadPageData() {
+			uni.showLoading({ title: '加载中...' });
+			try {
+				const [devicesRes, busyRes, pricingRes] = await Promise.all([
+					KingdeeAgentService.getDevicesByType('洗衣机', 200),
+					KingdeeAgentService.getBusyLaundryDeviceIds(this.formatDate(new Date())),
+					KingdeeAgentService.getServicePricing('洗衣', 100)
+				]);
+
+				const allLaundryMachines = devicesRes?.data?.rows ?? [];
+				const busyMachineIds = new Set((busyRes?.data?.rows ?? []).map(d => d.lb77_device_number));
+				this.washingModes = (pricingRes?.data?.rows ?? []).sort((a, b) => a.lb77_unit_price - b.lb77_unit_price);
+				
+				if (this.washingModes.length > 0) {
+					this.startingPrice = this.washingModes[0].lb77_unit_price.toFixed(2);
+					this.selectedMode = this.washingModes[0];
+				}
+
+				this.machines = allLaundryMachines.map(device => {
+					let status = '';
+					let statusClass = '';
+
+					if (device.lb77_status !== '正常') {
+						status = '故障';
+						statusClass = 'status-fault';
+					} else {
+						if (busyMachineIds.has(device.number)) {
+							status = '使用中';
+							statusClass = 'status-busy';
+						} else {
+							status = '空闲';
+							statusClass = 'status-available';
+						}
+					}
+					
+					return {
+						id: device.number,
+						name: device.name,
+						type: device.lb77_brand_model,
+						location: device.lb77_location,
+						status: status,
+						statusClass: statusClass,
+						image: '/static/images/washer-icon.png',
+						features: ['智能杀菌', '大容量'],
+						rating: (Math.random() * 0.5 + 4.5).toFixed(1)
+					};
+				});
+
+				this.busyMachines = this.machines.filter(m => m.status === '使用中');
+				this.refreshRecommendation();
+				
+			} catch (error) {
+				console.error("加载洗衣页数据失败:", error);
+				uni.showToast({ title: '数据加载失败', icon: 'error' });
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		formatDate(date) {
+			const y = date.getFullYear();
+			const m = (date.getMonth() + 1).toString().padStart(2, '0');
+			const d = date.getDate().toString().padStart(2, '0');
+			const h = date.getHours().toString().padStart(2, '0');
+			const i = date.getMinutes().toString().padStart(2, '0');
+			const s = date.getSeconds().toString().padStart(2, '0');
+			return `${y}-${m}-${d} ${h}:${i}:${s}`;
+		},
 		setFilter(filter) {
 			this.currentFilter = filter;
 		},
-		refreshRecommendation() {
-			uni.showToast({
-				title: '推荐已更新',
-				icon: 'success'
-			});
+		refreshRecommendation(isManual = false) {
+			const available = this.availableMachines;
+
+			// 优先处理来自URL的推荐ID
+			if (this.recommendedDeviceIdFromUrl && this.machines.length > 0) {
+				const targetMachine = this.machines.find(m => m.id === this.recommendedDeviceIdFromUrl);
+				
+				if (targetMachine && targetMachine.status === '空闲') {
+					this.recommendedMachine = { ...targetMachine, image: '/static/images/washer-large.png' };
+					uni.showToast({ title: '已为您推荐指定洗衣机', icon: 'none' });
+				} else {
+					uni.showToast({ title: '抱歉，推荐的洗衣机已被占用', icon: 'none' });
+					this.pickRandomRecommendation(available); // Fallback to random
+				}
+				// 处理完毕后清空URL参数，避免手动刷新时重复触发
+				this.recommendedDeviceIdFromUrl = null;
+				return;
+			}
+			
+			// 默认或手动刷新逻辑
+			this.pickRandomRecommendation(available);
+			if (isManual) {
+				uni.showToast({ title: '推荐已更新', icon: 'none' });
+			}
+		},
+		pickRandomRecommendation(availableMachines) {
+			if (availableMachines.length > 0) {
+				const randomIndex = Math.floor(Math.random() * availableMachines.length);
+				this.recommendedMachine = availableMachines[randomIndex];
+				this.recommendedMachine.image = '/static/images/washer-large.png';
+			} else {
+				this.recommendedMachine = null;
+			}
 		},
 		bookMachine(machine) {
 			this.selectedMachine = machine;
 			this.showBookingPopup = true;
+			if(this.washingModes.length > 0 && !this.selectedMode) {
+				this.selectedMode = this.washingModes[0];
+			}
 		},
 		cancelBooking() {
 			this.showBookingPopup = false;
 			this.selectedMachine = null;
-			this.selectedMode = 'normal';
+			if(this.washingModes.length > 0) {
+				this.selectedMode = this.washingModes[0];
+			}
 			this.selectedPayment = 'wechat';
 		},
-		selectMode(modeId) {
-			this.selectedMode = modeId;
+		selectMode(mode) {
+			this.selectedMode = mode;
 		},
 		selectPayment(paymentId) {
 			this.selectedPayment = paymentId;
@@ -296,31 +369,41 @@ export default {
 			this.notifications = e.detail.value;
 		},
 		calculatePrice() {
-			const mode = this.washingModes.find(m => m.id === this.selectedMode);
-			return mode ? mode.price : 3;
+			return this.selectedMode ? this.selectedMode.lb77_unit_price.toFixed(2) : '0.00';
 		},
-		confirmBooking() {
-			uni.showLoading({
-				title: '预约中...'
-			});
+		async confirmBooking() {
+			if (!this.selectedMachine || !this.selectedMode) {
+				uni.showToast({ title: '请选择洗衣模式', icon: 'none' });
+				return;
+			}
+			uni.showLoading({ title: '预约中...' });
 			
-			// 模拟预约请求
-			setTimeout(() => {
+			const orderData = {
+				billno: `LX${Date.now()}`,
+				lb77_user_number: "645730151",
+				lb77_laundry_mode_number: this.selectedMode.number,
+				lb77_device_number: this.selectedMachine.id
+			};
+
+			try {
+				const res = await KingdeeAgentService.createLaundryOrder(orderData);
+				if (res && res.data && res.data.successCount > 0) {
+					uni.hideLoading();
+					uni.showToast({ title: '预约成功', icon: 'success' });
+					this.showBookingPopup = false;
+					
+					// 跳转到订单历史页面，并筛选“进行中”
+					uni.redirectTo({
+						url: '/pages/features/laundry-history?filter=processing'
+					});
+
+				} else {
+					throw new Error(res.message || '预约失败');
+				}
+			} catch (error) {
 				uni.hideLoading();
-				uni.showToast({
-					title: '预约成功',
-					icon: 'success'
-				});
-				this.showBookingPopup = false;
-				
-				// 模拟发送通知
-				if (this.notifications.includes('sms')) {
-					console.log('发送短信通知');
-				}
-				if (this.notifications.includes('wechat')) {
-					console.log('发送微信通知');
-				}
-			}, 1500);
+				uni.showToast({ title: error.message || '预约失败，请重试', icon: 'error' });
+			}
 		}
 	}
 }
@@ -631,6 +714,12 @@ export default {
 .action-btn.busy {
 	background-color: #f5f5f5;
 	color: #666;
+	border: 1px solid #ddd;
+}
+
+.action-btn[disabled] {
+    background-color: #f5f5f5 !important;
+    color: #999 !important;
 }
 
 /* 预约弹窗样式 */
@@ -712,11 +801,13 @@ export default {
 	background-color: #f5f5f5;
 	border-radius: 12rpx;
 	color: #666;
+	border: 1px solid transparent;
 }
 
 .mode-option.active {
-	background-color: #007AFF;
-	color: #FFFFFF;
+	background-color: #e6f2ff;
+	color: #007AFF;
+	border-color: #007AFF;
 }
 
 .payment-options {

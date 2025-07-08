@@ -22,7 +22,9 @@
     "pages/features/printing",
     "pages/features/laundry-history",
     "pages/features/printing-history",
-    "pages/personal/index"
+    "pages/personal/index",
+    "pages/features/club-activities",
+    "pages/features/canteen-traffic"
   ],
   "subPackages": [],
   "window": {

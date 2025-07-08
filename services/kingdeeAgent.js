@@ -899,6 +899,527 @@ class KingdeeAgentService {
       }
     });
   }
+
+  // =================================================================
+  // ============= 共享设备 (洗衣机、打印机) 相关API =============
+  // =================================================================
+
+  /**
+   * @description 获取所有共享设备列表
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getAllSharedDevices(pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_shared_device/getAllSharedDevices',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据设备类型获取设备列表 (例如 "洗衣机" 或 "打印机")
+   * @note API URL为getLaundryDevices，但可根据deviceType查询不同类型设备
+   * @param {string} deviceType - 设备类型
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getDevicesByType(deviceType, pageSize = 10, pageNo = 1) {
+    return request({
+      // 注意：您提供的API URL是getLaundryDevices，这里照常使用
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_shared_device/getLaundryDevices',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_device_type: deviceType
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+  
+  /**
+   * @description 查询指定时间点正在使用的洗衣机ID列表
+   * @param {string} queryTime - 查询时间，格式 "YYYY-MM-DD HH:mm:ss"
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getBusyLaundryDeviceIds(queryTime, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_laundry_order/getBusyLaundryDeviceIds',
+      method: 'POST',
+      data: {
+        data: {
+          query_time: queryTime
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 查询指定时间点正在使用的打印机ID列表
+   * @param {string} queryTime - 查询时间，格式 "YYYY-MM-DD HH:mm:ss"
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getBusyPrinterDeviceIds(queryTime, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_print_job/getBusyPrinterDeviceIds',
+      method: 'POST',
+      data: {
+        data: {
+          query_time: queryTime
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据服务大类（如"洗衣"、"打印"）获取服务价目表
+   * @param {string} serviceType - 服务大类
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getServicePricing(serviceType, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_service_pricing/getServicePricing',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_service_type: serviceType
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 创建洗衣订单
+   * @param {object} orderData - 订单数据
+   */
+  static async createLaundryOrder(orderData) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_laundry_order/createLaundryOrder',
+      method: 'POST',
+      data: {
+        data: [orderData]
+      }
+    });
+  }
+
+  /**
+   * @description 创建打印任务
+   * @param {object} jobData - 打印任务数据
+   */
+  static async createPrintJob(jobData) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_print_job/createPrintJob',
+      method: 'POST',
+      data: {
+        data: [jobData]
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号查询我的洗衣订单
+   * @param {string} userNumber - 用户学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getMyLaundryOrders(userNumber, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_laundry_order/getMyLaundryOrders',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_user_number: userNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号查询我的打印任务
+   * @param {string} userNumber - 用户学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getMyPrintJobs(userNumber, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_shared_device/lb77_print_job/getMyPrintJobs',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_user_number: userNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  // =================================================================
+  // ================== 校医预约 相关API ==================
+  // =================================================================
+
+  /**
+   * @description 获取科室列表
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getHospitalDepartments(pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_departments/getDepartmentList',
+      method: 'POST',
+      data: {
+        data: {},
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据科室获取医生列表
+   * @param {string} departmentNumber - 科室编码
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getDoctorsByDepartment(departmentNumber, pageSize = 10, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_doctors/getDoctorsByDepartment',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_department_number: departmentNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 获取医生周排班模板
+   * @param {string} doctorNumber - 医生工号
+   */
+  static async getDoctorWeeklySchedule(doctorNumber) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_weekly_schedule_doc/getDoctorWeeklySchedule',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_doctor_number: doctorNumber
+        },
+        pageSize: 1, // 一个医生通常只有一个周排班模板
+        pageNo: 1
+      }
+    });
+  }
+
+  /**
+   * @description 获取指定医生和日期的已预约记录
+   * @param {string} doctorNumber - 医生工号
+   * @param {string} appointmentDate - 预约日期 (格式 "YYYY-MM-DD")
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getAppointmentsByDate(doctorNumber, appointmentDate, pageSize = 200, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_appointments/getAppointmentsByDate',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_doctor_number: doctorNumber,
+          lb77_appointment_date: appointmentDate
+        },
+        pageSize: pageSize, // 获取当天所有预约记录
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 创建就医预约
+   * @param {object} appointmentData - 预约数据
+   */
+  static async createMedicalAppointment(appointmentData) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_appointments/createMedicalAppointment',
+      method: 'POST',
+      data: {
+        data: [appointmentData] // API要求data是数组格式
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号获取我的预约记录
+   * @param {string} studentNumber - 学生学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getPersonalAppointments(studentNumber, pageSize = 20, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_appointments/getPersonalAppointments',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_student_number: studentNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 取消预约
+   * @param {string} billno - 预约编号
+   */
+  static async cancelMedicalAppointment(billno) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_appointments/cancelMedicalAppointment',
+      method: 'POST',
+      data: {
+        data: [{
+          billno: billno,
+          lb77_appointment_status: '已取消' // 根据API文档，更新状态为'已取消'
+        }]
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号获取该学生的所有就诊记录
+   * @param {string} studentNumber - 学生学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getMedicalRecords(studentNumber, pageSize = 20, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_medical_records/getMedicalRecords',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_student_number: studentNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 根据单据编号获取某条就诊记录的详细信息（包含药品清单）
+   * @param {string} billno - 就诊记录的单据编号
+   * @param {number} pageSize - 药品清单的分页大小
+   * @param {number} pageNo 
+   */
+  static async getMedicalRecordDetails(billno, pageSize = 50, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_hospital/lb77_medical_records/getMedicalRecordDetails',
+      method: 'POST',
+      data: {
+        data: {
+          billno: billno
+        },
+        pageSize: pageSize, // 获取药品清单，设置大一点确保拿全
+        pageNo: pageNo
+      }
+    });
+  }
+
+  // =================================================================
+  // ================== 心理测评 相关API ==================
+  // =================================================================
+
+  /**
+   * @description 获取在职的心理咨询师列表
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getCounselors(pageSize = 20, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_counselor/getCounselors',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_status: '在职'
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 获取指定咨询师的周排班模板
+   * @param {string} counselorNumber - 咨询师编码
+   */
+  static async getCounselorWeeklySchedule(counselorNumber) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_counselorschedule/getCounselorWeeklySchedule',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_counselor_number: counselorNumber
+        },
+        pageSize: 1, // 一个咨询师只有一个排班模板
+        pageNo: 1
+      }
+    });
+  }
+
+  /**
+   * @description 查询某日某位咨询师已被预约的时段
+   * @param {string} counselorNumber - 咨询师编码
+   * @param {string} appointmentDate - 查询日期 "YYYY-MM-DD"
+   */
+  static async getCounselingAppointmentsByDate(counselorNumber, appointmentDate) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_counseling/getCounselingAppointmentsByDate',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_counselor_number: counselorNumber,
+          lb77_appointment_date: appointmentDate,
+          lb77_appointment_status: '已预约'
+        },
+        pageSize: 200, // 获取当天所有已预约记录
+        pageNo: 1
+      }
+    });
+  }
+
+  /**
+   * 创建一个新的心理咨询预约
+   * @param {string} studentId - 学生ID
+   * @param {string} counselorId - 咨询师ID
+   * @param {string} date - 日期 (YYYY-MM-DD)
+   * @param {number} startTime - 开始时间 (秒)
+   * @param {number} endTime - 结束时间 (秒)
+   */
+  static async createCounselingAppointment(studentId, counselorId, date, startTime, endTime) {
+    const billNo = 'CS' + Date.now();
+    
+    return request({
+      url: `/kapi/v2/lb77/lb77_psychreport/lb77_counseling/createCounselingAppointment`,
+      method: 'POST',
+      data: {
+        "data": [
+          {
+            "billno": billNo,
+            "lb77_appointment_date": date,
+            "lb77_starttime": startTime,
+            "lb77_endtime": endTime,
+            "lb77_appointment_status": "已预约",
+            "lb77_student_number": studentId,
+            "lb77_counselor_number": counselorId
+          }
+        ]
+      }
+    });
+  }
+
+  /**
+   * @description 根据学号获取我的心理咨询预约记录
+   * @param {string} studentNumber - 学号
+   * @param {number} pageSize 
+   * @param {number} pageNo 
+   */
+  static async getMyCounselingAppointments(studentNumber, pageSize = 20, pageNo = 1) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_counseling/getMyCounselingAppointments',
+      method: 'POST',
+      data: {
+        data: {
+          lb77_student_number: studentNumber
+        },
+        pageSize: pageSize,
+        pageNo: pageNo
+      }
+    });
+  }
+
+  /**
+   * @description 取消心理咨询预约
+   * @param {string} billno - 预约单据编号
+   */
+  static async cancelCounselingAppointment(billno) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_counseling/cancelCounselingAppointment',
+      method: 'POST',
+      data: {
+        data: [{
+          billno: billno,
+          lb77_appointment_status: '已取消'
+        }]
+      }
+    });
+  }
+
+  /**
+   * 保存用户的心理评估报告
+   * @param {string} studentId - 学生ID
+   * @param {number} totalScore - 总得分
+   * @param {string} resultSummary - 结果摘要/等级
+   * @param {Array} entries - 每个问题的回答详情
+   * @param {string} questionnaireId - 问卷ID
+   * @param {string} questionnaireTitle - 问卷标题
+   */
+  static async createPsychReport(studentId, totalScore, resultSummary, entries, questionnaireId, questionnaireTitle) {
+    const billNo = 'PR' + Date.now();
+
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_psychreport/createPsychReport',
+      method: 'POST',
+      data: {
+        "data": [
+          {
+            "billno": billNo,
+            "lb77_questionnairetitle": questionnaireTitle,
+            "lb77_questionnaireid": questionnaireId,
+            "lb77_totalscore": totalScore,
+            "lb77_resultsummary": resultSummary,
+            "entryentity": entries,
+            "lb77_student_number": studentId
+          }
+        ]
+      }
+    });
+  }
+
+  /**
+   * 获取我的心理评估报告列表
+   * @param {string} studentId - 学生ID
+   */
+  static async getMyPsychReports(studentId) {
+    return request({
+      url: '/kapi/v2/lb77/lb77_psychreport/lb77_psychreport/getMyPsychReports',
+      method: 'POST',
+      data: {
+        "pageSize": 20,
+        "pageNo": 1,
+        "data": {
+          "lb77_student_number": studentId
+        }
+      }
+    });
+  }
 }
 
 export default KingdeeAgentService; 

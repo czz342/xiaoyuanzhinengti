@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "服务大厅",
+  "enablePullDownRefresh": false,
   "usingComponents": {
     "qiun-data-charts": "/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts"
   }

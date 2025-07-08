@@ -117,7 +117,8 @@ export default {
 								// 我们只需要处理图片路径
 								let imageName = 'default.png';
 								if (entry.lb77_food_item_id_lb77_description) {
-									const parts = entry.lb77_food_item_id_lb77_description.split('\\\\');
+									// 修正路径分割符，来正确处理Windows路径
+									const parts = entry.lb77_food_item_id_lb77_description.split('\\');
 									imageName = parts[parts.length - 1];
 								}
 								entry.image = `/static/images/FoodList/${imageName}`;
