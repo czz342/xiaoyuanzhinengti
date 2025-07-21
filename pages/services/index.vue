@@ -104,6 +104,14 @@
 						<view class="grid-badge" v-if="psychologyCount > 0">{{psychologyCount}}</view>
 					</view>
 					
+					<!-- 心灵港湾 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/mental-health-hub')">
+						<view class="grid-icon health">
+							<image src="/static/images/mental-health-hub.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">心灵港湾</text>
+					</view>
+
 					<!-- 校医挂号 -->
 					<view class="grid-item" @tap="navigateTo('/pages/features/medical')">
 						<view class="grid-icon health">

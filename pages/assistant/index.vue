@@ -104,7 +104,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://incoming-offline-rd-inventory.trycloudflare.com", 
+			tunnelUrl: "https://winners-execute-existence-lower.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,

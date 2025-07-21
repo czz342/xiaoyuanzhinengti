@@ -61,21 +61,21 @@ export default {
 					title: '「迎新晚会」歌手&舞者招募',
 					club: '校学生会文艺部',
 					time: '2023-09-15 截止',
-					banner: '/static/images/activity-banner-1.png'
+					banner: '/static/images/activity-banner-1.jpg'
 				},
 				{
 					id: 2,
 					title: 'AI技术创新与应用系列讲座',
 					club: '计算机爱好者协会',
 					time: '2023-09-20 19:00',
-					banner: '/static/images/activity-banner-2.png'
+					banner: '/static/images/activity-banner-2.jpg'
 				},
 				{
 					id: 3,
 					title: '每周五晚「狼人杀」主题桌游夜',
 					club: '推理社',
 					time: '每周五 18:30',
-					banner: '/static/images/activity-banner-3.png'
+					banner: '/static/images/activity-banner-3.jpg'
 				}
 			],
 			myClubs: [

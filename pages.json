@@ -80,6 +80,42 @@
 			}
 		},
 		{
+			"path": "pages/features/mental-health-hub",
+			"style": {
+				"navigationBarTitleText": "心灵港湾"
+			}
+		},
+		{
+			"path": "pages/features/ai-companion",
+			"style": {
+				"navigationBarTitleText": "AI心理伙伴"
+			}
+		},
+		{
+			"path": "pages/features/journal",
+			"style": {
+				"navigationBarTitleText": "心情日记"
+			}
+		},
+		{
+			"path": "pages/features/community",
+			"style": {
+				"navigationBarTitleText": "互助社区"
+			}
+		},
+		{
+			"path": "pages/features/community-post-detail",
+			"style": {
+				"navigationBarTitleText": "帖子详情"
+			}
+		},
+		{
+			"path": "pages/features/community-create-post",
+			"style": {
+				"navigationBarTitleText": "发布新帖"
+			}
+		},
+		{
 			"path": "pages/features/assessment-detail",
 			"style": {
 				"navigationBarTitleText": "心理测评"

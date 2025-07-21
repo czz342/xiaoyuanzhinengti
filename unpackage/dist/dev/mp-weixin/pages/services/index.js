@@ -101,7 +101,7 @@ var components
 try {
   components = {
     qiunDataCharts: function () {
-      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 239))
+      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 287))
     },
   }
 } catch (e) {
@@ -396,9 +396,17 @@ var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/ki
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
 var qiunDataCharts = function qiunDataCharts() {
   Promise.all(/*! require.ensure | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then((function () {
-    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 239));
+    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 287));
   }).bind(null, __webpack_require__)).catch(__webpack_require__.oe);
 };
 var _default = {
