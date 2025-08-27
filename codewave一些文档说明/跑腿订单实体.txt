@@ -1,0 +1,146 @@
+你说得很对！确实可以直接加到用户表上，这样更简单高效。让我重新设计：
+
+##️ 跑腿代办模块 - 完整实体设计（优化版）
+
+### 1. **ErrandOrder (跑腿订单)**
+**数据库表名**: `errand_order`
+**描述**: 跑腿代办订单主表
+
+| 字段名 | 类型 | 长度 | 是否必填 | 默认值 | 说明 |
+|--------|------|------|----------|--------|------|
+| id | Integer | - | 是 | 自动生成 | 主键，订单ID |
+| createdTime | DateTime | - | 是 | 自动生成 | 创建时间 |
+| updatedTime | DateTime | - | 是 | 自动生成 | 更新时间 |
+| createdBy | String | 50 | 是 | - | 创建者（发布者用户ID） |
+| updatedBy | String | 50 | 否 | - | 更新者 |
+| title | String | 100 | 是 | - | 订单标题 |
+| description | String | 500 | 是 | - | 详细描述 |
+| serviceType | String | 20 | 是 | - | 服务类型（takeout/express/other） |
+| pickupLocation | String | 200 | 是 | - | 取件地点 |
+| deliveryLocation | String | 200 | 是 | - | 送达地点 |
+| price | Decimal | 10,2 | 是 | 0.00 | 跑腿费用 |
+| expectedTime | String | 10 | 是 | - | 期望完成时间（HH:MM格式） |
+| phone | String | 20 | 是 | - | 联系电话 |
+| status | String | 20 | 是 | 'pending' | 订单状态 |
+| acceptedBy | String | 50 | 否 | - | 接单者用户ID |
+| acceptedTime | DateTime | - | 否 | - | 接单时间 |
+| completedTime | DateTime | - | 否 | - | 完成时间 |
+| cancelledTime | DateTime | - | 否 | - | 取消时间 |
+| cancelReason | String | 200 | 否 | - | 取消原因 |
+
+### 2. **User (用户)**
+**数据库表名**: `lcap_user_e63293` (使用系统默认用户表)
+**描述**: 用户信息表
+
+| 字段名 | 类型 | 长度 | 是否必填 | 默认值 | 说明 |
+|--------|------|------|----------|--------|------|
+| id | Integer | - | 是 | 自动生成 | 主键 |
+| userId | String | 50 | 是 | 自动生成 | 用户ID |
+| userName | String | 50 | 是 | - | 用户名 |
+| displayName | String | 50 | 否 | - | 昵称 |
+| phone | String | 20 | 否 | - | 手机号 |
+| email | String | 100 | 否 | - | 邮箱 |
+| picture | String | 200 | 否 | - | 头像 |
+| studentId | Integer | - | 否 | - | 学号 |
+| status | String | 20 | 是 | 'active' | 用户状态 |
+| **creditScore** | **Decimal** | **5,2** | **是** | **5.00** | **信誉评分（0.00-5.00）** |
+| **completedOrders** | **Integer** | **-** | **是** | **0** | **完成订单数** |
+
+### 3. **OrderStatusLog (订单状态日志)**
+**数据库表名**: `order_status_log`
+**描述**: 订单状态变更记录
+
+| 字段名 | 类型 | 长度 | 是否必填 | 默认值 | 说明 |
+|--------|------|------|----------|--------|------|
+| id | Integer | - | 是 | 自动生成 | 主键 |
+| createdTime | DateTime | - | 是 | 自动生成 | 创建时间 |
+| orderId | Integer | - | 是 | - | 订单ID（外键） |
+| fromStatus | String | 20 | 是 | - | 原状态 |
+| toStatus | String | 20 | 是 | - | 新状态 |
+| operatorId | String | 50 | 是 | - | 操作者用户ID |
+| operatorType | String | 20 | 是 | - | 操作者类型（publisher/accepter/system） |
+| remark | String | 200 | 否 | - | 备注说明 |
+
+### 4. **OrderReview (订单评价)**
+**数据库表名**: `order_review`
+**描述**: 订单完成后的评价
+
+| 字段名 | 类型 | 长度 | 是否必填 | 默认值 | 说明 |
+|--------|------|------|----------|--------|------|
+| id | Integer | - | 是 | 自动生成 | 主键 |
+| createdTime | DateTime | - | 是 | 自动生成 | 创建时间 |
+| orderId | Integer | - | 是 | - | 订单ID（外键） |
+| reviewerId | String | 50 | 是 | - | 评价者用户ID |
+| reviewedId | String | 50 | 是 | - | 被评价者用户ID |
+| rating | Integer | - | 是 | 5 | 评分（1-5分） |
+| content | String | 500 | 否 | - | 评价内容 |
+| reviewType | String | 20 | 是 | - | 评价类型（publisher/accepter） |
+
+### 5. **枚举值定义**
+
+#### **ServiceType (服务类型)**
+```javascript
+takeout: "外卖代拿"
+express: "快递代取"  
+other: "小事代办"
+```
+
+#### **OrderStatus (订单状态)**
+```javascript
+pending: "待接单"
+accepted: "已接单"
+in_progress: "进行中"
+completed: "已完成"
+cancelled: "已取消"
+```
+
+#### **UserStatus (用户状态)**
+```javascript
+active: "正常"
+inactive: "禁用"
+suspended: "暂停"
+```
+
+#### **OperatorType (操作者类型)**
+```javascript
+publisher: "发布者"
+accepter: "接单者"
+system: "系统"
+```
+
+#### **ReviewType (评价类型)**
+```javascript
+publisher: "发布者评价"
+accepter: "接单者评价"
+```
+
+### 6. **实体关系图**
+```
+User (用户)
+├── 发布订单 (1:N) → ErrandOrder
+├── 接单 (1:N) → ErrandOrder  
+├── 评价 (1:N) → OrderReview
+└── 包含信誉信息 (直接字段)
+
+ErrandOrder (订单)
+├── 状态变更 (1:N) → OrderStatusLog
+├── 评价 (1:2) → OrderReview (发布者评价接单者，接单者评价发布者)
+├── 发布者 (N:1) → User
+└── 接单者 (N:1) → User
+```
+
+### 7. **优势**
+✅ **减少连表查询**: 用户信誉信息直接在主表中
+✅ **提高查询效率**: 不需要JOIN操作
+✅ **简化数据结构**: 减少了一个实体表
+✅ **维护更简单**: 信誉信息更新直接在用户表操作
+
+### 8. **在Codewave上创建步骤**
+1. **修改用户表**: 在现有的 `lcap_user_e63293` 表中添加两个字段
+   - `creditScore`: Decimal(5,2), 默认值5.00
+   - `completedOrders`: Integer, 默认值0
+2. **创建其他实体**: 创建订单、状态日志、评价表
+3. **设置关系**: 配置外键关系
+4. **配置枚举**: 设置状态枚举值
+
+这样设计确实更合理！既满足了功能需求，又避免了不必要的连表查询，提高了系统性能。

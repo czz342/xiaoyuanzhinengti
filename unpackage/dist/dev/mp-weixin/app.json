@@ -30,7 +30,9 @@
     "pages/features/printing-history",
     "pages/personal/index",
     "pages/features/club-activities",
-    "pages/features/canteen-traffic"
+    "pages/features/canteen-traffic",
+    "pages/features/errand-service",
+    "pages/features/order-detail"
   ],
   "subPackages": [],
   "window": {

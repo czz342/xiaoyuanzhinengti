@@ -1,0 +1,231 @@
+{
+	"pages": [
+		{
+			"path": "pages/assistant/index",
+			"style": {
+				"navigationBarTitleText": "智能助手"
+			}
+		},
+		{
+			"path": "pages/services/index",
+			"style": {
+				"navigationBarTitleText": "服务大厅",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/features/schedule",
+			"style": {
+				"navigationBarTitleText": "课表查询"
+			}
+		},
+		{
+			"path": "pages/features/classroom",
+			"style": {
+				"navigationBarTitleText": "教室预约"
+			}
+		},
+		{
+			"path": "pages/features/my-classroom-reservations",
+			"style": {
+				"navigationBarTitleText": "我的预约"
+			}
+		},
+		{
+			"path": "pages/features/library",
+			"style": {
+				"navigationBarTitleText": "图书借阅"
+			}
+		},
+		{
+			"path": "pages/features/food",
+			"style": {
+				"navigationBarTitleText": "食堂点餐"
+			}
+		},
+		{
+			"path": "pages/features/food-history",
+			"style": {
+				"navigationBarTitleText": "我的订单"
+			}
+		},
+		{
+			"path": "pages/features/express",
+			"style": {
+				"navigationBarTitleText": "快递服务"
+			}
+		},
+		{
+			"path": "pages/features/health",
+			"style": {
+				"navigationBarTitleText": "健康服务"
+			}
+		},
+		{
+			"path": "pages/features/studyroom",
+			"style": {
+				"navigationBarTitleText": "自习室预约"
+			}
+		},
+		{
+			"path": "pages/features/my-studyroom-reservations",
+			"style": {
+				"navigationBarTitleText": "我的预约"
+			}
+		},
+		{
+			"path": "pages/features/psychological-assessment",
+			"style": {
+				"navigationBarTitleText": "心理健康评估"
+			}
+		},
+		{
+			"path": "pages/features/mental-health-hub",
+			"style": {
+				"navigationBarTitleText": "心灵港湾"
+			}
+		},
+		{
+			"path": "pages/features/ai-companion",
+			"style": {
+				"navigationBarTitleText": "AI心理伙伴"
+			}
+		},
+		{
+			"path": "pages/features/journal",
+			"style": {
+				"navigationBarTitleText": "心情日记"
+			}
+		},
+		{
+			"path": "pages/features/community",
+			"style": {
+				"navigationBarTitleText": "互助社区"
+			}
+		},
+		{
+			"path": "pages/features/community-post-detail",
+			"style": {
+				"navigationBarTitleText": "帖子详情"
+			}
+		},
+		{
+			"path": "pages/features/community-create-post",
+			"style": {
+				"navigationBarTitleText": "发布新帖"
+			}
+		},
+		{
+			"path": "pages/features/assessment-detail",
+			"style": {
+				"navigationBarTitleText": "心理测评"
+			}
+		},
+		{
+			"path": "pages/features/report-detail",
+			"style": {
+				"navigationBarTitleText": "评估报告"
+			}
+		},
+		{
+			"path": "pages/features/medical",
+			"style": {
+				"navigationBarTitleText": "校医预约"
+			}
+		},
+		{
+			"path": "pages/features/emergency",
+			"style": {
+				"navigationBarTitleText": "紧急呼救"
+			}
+		},
+		{
+			"path": "pages/features/shared-devices",
+			"style": {
+				"navigationBarTitleText": "共享设备"
+			}
+		},
+		{
+			"path": "pages/features/laundry",
+			"style": {
+				"navigationBarTitleText": "智能洗衣"
+			}
+		},
+		{
+			"path": "pages/features/printing",
+			"style": {
+				"navigationBarTitleText": "自助打印"
+			}
+		},
+		{
+			"path": "pages/features/laundry-history",
+			"style": {
+				"navigationBarTitleText": "洗衣订单"
+			}
+		},
+		{
+			"path": "pages/features/printing-history",
+			"style": {
+				"navigationBarTitleText": "打印记录"
+			}
+		},
+		{
+			"path": "pages/personal/index",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/features/club-activities",
+			"style": {
+				"navigationBarTitleText": "社团活动",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/features/canteen-traffic",
+			"style": {
+				"navigationBarTitleText": "食堂人流量"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "校园智能体",
+		"navigationBarBackgroundColor": "#007AFF",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#007AFF",
+		"borderStyle": "black",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/assistant/index",
+				"iconPath": "static/images/assistant.png",
+				"selectedIconPath": "static/images/assistant-active.png",
+				"text": "智能助手"
+			},
+			{
+				"pagePath": "pages/services/index",
+				"iconPath": "static/images/服务大厅.png",
+				"selectedIconPath": "static/images/服务大厅-active.png",
+				"text": "服务大厅"
+			},
+			{
+				"pagePath": "pages/personal/index",
+				"iconPath": "static/images/个人中心.png",
+				"selectedIconPath": "static/images/个人中心-active.png",
+				"text": "个人中心"
+			}
+		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^uni-(.*)": "@/uni_modules/uni-$1/components/uni-$1/uni-$1.vue"
+		}
+	},
+	"uniIdRouter": {}
+}

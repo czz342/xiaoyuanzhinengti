@@ -79,7 +79,8 @@
 						<text class="grid-text">智慧洗衣打印</text>
 						<view class="grid-badge" v-if="deviceCount > 0">{{deviceCount}}</view>
 					</view>
-					
+				</view>
+				<view class="grid-row">
 					<!-- 社团活动 -->
 					<view class="grid-item" @tap="navigateTo('/pages/features/club-activities')">
 						<view class="grid-icon lifestyle">
@@ -87,6 +88,22 @@
 						</view>
 						<text class="grid-text">社团活动</text>
 						<view class="grid-badge" v-if="clubActivityCount > 0">{{clubActivityCount}}</view>
+					</view>
+					
+					<!-- 跑腿代办 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/errand-service')">
+						<view class="grid-icon lifestyle">
+							<image src="/static/images/express.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">跑腿代办</text>
+					</view>
+					
+					<!-- 占位，保持布局整齐 -->
+					<view class="grid-item placeholder">
+						<view class="grid-icon lifestyle">
+							<image src="/static/images/devices.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">更多服务</text>
 					</view>
 				</view>
 			</view>
@@ -604,6 +621,19 @@ export default {
 
 .grid-icon.emergency {
 	background-color: #ffe6e6;
+}
+
+.grid-item.placeholder {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.grid-item.placeholder .grid-icon {
+	background-color: #f5f5f5;
+}
+
+.grid-item.placeholder .grid-text {
+	color: #999;
 }
 
 .grid-icon image {

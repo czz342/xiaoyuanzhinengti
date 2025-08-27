@@ -65,6 +65,16 @@
 .grid-icon.emergency {
 	background-color: #ffe6e6;
 }
+.grid-item.placeholder {
+	opacity: 0.5;
+	cursor: default;
+}
+.grid-item.placeholder .grid-icon {
+	background-color: #f5f5f5;
+}
+.grid-item.placeholder .grid-text {
+	color: #999;
+}
 .grid-icon image {
 	width: 60rpx;
 	height: 60rpx;
