@@ -1,9 +1,9 @@
 (global["webpackJsonp"] = global["webpackJsonp"] || []).push([["pages/personal/index"],{
 
 /***/ 263:
-/*!****************************************************************************!*\
-  !*** D:/网易codewave比赛/校园生活管理系统/main.js?{"page":"pages%2Fpersonal%2Findex"} ***!
-  \****************************************************************************/
+/*!******************************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/main.js?{"page":"pages%2Fpersonal%2Findex"} ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -22,9 +22,9 @@ createPage(_index.default);
 /***/ }),
 
 /***/ 264:
-/*!*********************************************************!*\
-  !*** D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue ***!
-  \*********************************************************/
+/*!***********************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue ***!
+  \***********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -63,9 +63,9 @@ component.options.__file = "pages/personal/index.vue"
 /***/ }),
 
 /***/ 265:
-/*!****************************************************************************************!*\
-  !*** D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=template&id=bb38e908& ***!
-  \****************************************************************************************/
+/*!******************************************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=template&id=bb38e908& ***!
+  \******************************************************************************************************************/
 /*! exports provided: render, staticRenderFns, recyclableRender, components */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -85,9 +85,9 @@ __webpack_require__.r(__webpack_exports__);
 /***/ }),
 
 /***/ 266:
-/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--17-0!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/template.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-uni-app-loader/page-meta.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=template&id=bb38e908& ***!
-  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--17-0!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/template.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-uni-app-loader/page-meta.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=template&id=bb38e908& ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /*! exports provided: render, staticRenderFns, recyclableRender, components */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -112,9 +112,9 @@ render._withStripped = true
 /***/ }),
 
 /***/ 267:
-/*!**********************************************************************************!*\
-  !*** D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=script&lang=js& ***!
-  \**********************************************************************************/
+/*!************************************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=script&lang=js& ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -128,19 +128,41 @@ __webpack_require__.r(__webpack_exports__);
 /***/ }),
 
 /***/ 268:
-/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/babel-loader/lib!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--13-1!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/script.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=script&lang=js& ***!
-  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/babel-loader/lib!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--13-1!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/script.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=script&lang=js& ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(uni) {
 
+var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
+var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -323,14 +345,10 @@ exports.default = void 0;
 var _default = {
   data: function data() {
     return {
+      // 登录状态
+      isLoggedIn: false,
       // 用户信息
-      userInfo: {
-        avatar: '/static/images/avatar.png',
-        name: '张同学',
-        studentId: '2020123456',
-        college: '计算机科学与技术学院',
-        status: '在校生'
-      },
+      userInfo: {},
       // 钱包信息
       wallet: {
         balance: 123.45,
@@ -379,7 +397,105 @@ var _default = {
       showQRCode: false
     };
   },
+  // 生命周期
+  onShow: function onShow() {
+    this.checkLoginStatus();
+  },
   methods: {
+    // 检查登录状态
+    checkLoginStatus: function checkLoginStatus() {
+      var token = uni.getStorageSync('token');
+      var userInfo = uni.getStorageSync('userInfo');
+      if (token && userInfo) {
+        this.isLoggedIn = true;
+        this.userInfo = userInfo;
+        // 获取最新的用户信息
+        this.fetchUserInfo();
+      } else {
+        this.isLoggedIn = false;
+        this.userInfo = {};
+      }
+    },
+    // 获取用户信息
+    fetchUserInfo: function fetchUserInfo() {
+      var _this = this;
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
+        var token, response;
+        return _regenerator.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _context.prev = 0;
+                token = uni.getStorageSync('token');
+                _context.next = 4;
+                return uni.request({
+                  url: 'http://localhost:3000/api/auth/me',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                });
+              case 4:
+                response = _context.sent;
+                if (response.data.success) {
+                  _this.userInfo = response.data.data;
+                  // 更新本地存储
+                  uni.setStorageSync('userInfo', _this.userInfo);
+                }
+                _context.next = 12;
+                break;
+              case 8:
+                _context.prev = 8;
+                _context.t0 = _context["catch"](0);
+                console.error('获取用户信息失败:', _context.t0);
+                // 如果token失效，清除登录状态
+                if (_context.t0.statusCode === 401) {
+                  _this.logout();
+                }
+              case 12:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, null, [[0, 8]]);
+      }))();
+    },
+    // 跳转到登录页面
+    goToLogin: function goToLogin() {
+      uni.navigateTo({
+        url: '/pages/login/index'
+      });
+    },
+    // 跳转到注册页面
+    goToRegister: function goToRegister() {
+      uni.navigateTo({
+        url: '/pages/register/index'
+      });
+    },
+    // 退出登录
+    logout: function logout() {
+      var _this2 = this;
+      uni.showModal({
+        title: '提示',
+        content: '确定要退出登录吗？',
+        success: function success(res) {
+          if (res.confirm) {
+            // 清除本地存储
+            uni.removeStorageSync('token');
+            uni.removeStorageSync('userInfo');
+            uni.removeStorageSync('isLoggedIn');
+
+            // 更新状态
+            _this2.isLoggedIn = false;
+            _this2.userInfo = {};
+            uni.showToast({
+              title: '已退出登录',
+              icon: 'success'
+            });
+          }
+        }
+      });
+    },
     navigateTo: function navigateTo(target) {
       // 根据目标导航到不同页面
       uni.showToast({
@@ -439,9 +555,9 @@ exports.default = _default;
 /***/ }),
 
 /***/ 269:
-/*!******************************************************************************************!*\
-  !*** D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=style&index=0&lang=css& ***!
-  \******************************************************************************************/
+/*!********************************************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=style&index=0&lang=css& ***!
+  \********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -455,9 +571,9 @@ __webpack_require__.r(__webpack_exports__);
 /***/ }),
 
 /***/ 270:
-/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/mini-css-extract-plugin/dist/loader.js??ref--6-oneOf-1-0!./node_modules/css-loader/dist/cjs.js??ref--6-oneOf-1-1!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--6-oneOf-1-2!./node_modules/postcss-loader/src??ref--6-oneOf-1-3!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/网易codewave比赛/校园生活管理系统/pages/personal/index.vue?vue&type=style&index=0&lang=css& ***!
-  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/mini-css-extract-plugin/dist/loader.js??ref--6-oneOf-1-0!./node_modules/css-loader/dist/cjs.js??ref--6-oneOf-1-1!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/webpack-preprocess-loader??ref--6-oneOf-1-2!./node_modules/postcss-loader/src??ref--6-oneOf-1-3!./node_modules/@dcloudio/vue-cli-plugin-uni/packages/vue-loader/lib??vue-loader-options!./node_modules/@dcloudio/webpack-uni-mp-loader/lib/style.js!D:/netease-codewave-competition/campus-life-system/pages/personal/index.vue?vue&type=style&index=0&lang=css& ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 

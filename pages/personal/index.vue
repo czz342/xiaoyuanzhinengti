@@ -1,18 +1,37 @@
 <template>
 	<view class="personal-page">
-		<!-- 用户信息卡片 -->
-		<view class="user-card">
+		<!-- 未登录状态 -->
+		<view v-if="!isLoggedIn" class="login-prompt">
+			<view class="prompt-content">
+				<image src="/static/images/login-icon.png" mode="aspectFit" class="prompt-icon"></image>
+				<text class="prompt-title">您还未登录</text>
+				<text class="prompt-desc">登录后可以享受更多功能</text>
+				<view class="prompt-buttons">
+					<button class="prompt-btn login" @tap="goToLogin">立即登录</button>
+					<button class="prompt-btn register" @tap="goToRegister">注册账户</button>
+				</view>
+			</view>
+		</view>
+		
+		<!-- 已登录状态 - 用户信息卡片 -->
+		<view v-else class="user-card">
 			<view class="user-info">
-				<image :src="userInfo.avatar" mode="aspectFill" class="user-avatar"></image>
+				<image :src="userInfo.picture || '/static/images/avatar.png'" mode="aspectFill" class="user-avatar"></image>
 				<view class="user-details">
-					<text class="user-name">{{userInfo.name}}</text>
-					<text class="user-id">学号：{{userInfo.studentId}}</text>
-					<text class="user-college">{{userInfo.college}}</text>
+					<text class="user-name">{{userInfo.displayName || userInfo.userName}}</text>
+					<text class="user-id">学号：{{userInfo.studentId || '未设置'}}</text>
+					<text class="user-email">{{userInfo.email}}</text>
 				</view>
 			</view>
 			<view class="user-status">
-				<text class="status-text">{{userInfo.status}}</text>
-				<image src="/static/images/qrcode.png" mode="aspectFit" class="qrcode-icon" @tap="showMyCode"></image>
+				<view class="status-info">
+					<text class="credit-score">信誉评分：{{userInfo.creditScore || 5.0}}</text>
+					<text class="order-count">完成订单：{{userInfo.completedOrders || 0}}</text>
+				</view>
+				<view class="user-actions">
+					<image src="/static/images/qrcode.png" mode="aspectFit" class="qrcode-icon" @tap="showMyCode"></image>
+					<button class="logout-btn" @tap="logout">退出登录</button>
+				</view>
 			</view>
 		</view>
 		
@@ -181,14 +200,10 @@
 export default {
 	data() {
 		return {
+			// 登录状态
+			isLoggedIn: false,
 			// 用户信息
-			userInfo: {
-				avatar: '/static/images/avatar.png',
-				name: '张同学',
-				studentId: '2020123456',
-				college: '计算机科学与技术学院',
-				status: '在校生'
-			},
+			userInfo: {},
 			
 			// 钱包信息
 			wallet: {
@@ -247,7 +262,94 @@ export default {
 			showQRCode: false
 		}
 	},
+	
+	// 生命周期
+	onShow() {
+		this.checkLoginStatus();
+	},
+	
 	methods: {
+		// 检查登录状态
+		checkLoginStatus() {
+			const token = uni.getStorageSync('token');
+			const userInfo = uni.getStorageSync('userInfo');
+			
+			if (token && userInfo) {
+				this.isLoggedIn = true;
+				this.userInfo = userInfo;
+				// 获取最新的用户信息
+				this.fetchUserInfo();
+			} else {
+				this.isLoggedIn = false;
+				this.userInfo = {};
+			}
+		},
+		
+		// 获取用户信息
+		async fetchUserInfo() {
+			try {
+				const token = uni.getStorageSync('token');
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/auth/me',
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				if (response.data.success) {
+					this.userInfo = response.data.data;
+					// 更新本地存储
+					uni.setStorageSync('userInfo', this.userInfo);
+				}
+			} catch (error) {
+				console.error('获取用户信息失败:', error);
+				// 如果token失效，清除登录状态
+				if (error.statusCode === 401) {
+					this.logout();
+				}
+			}
+		},
+		
+		// 跳转到登录页面
+		goToLogin() {
+			uni.navigateTo({
+				url: '/pages/login/index'
+			});
+		},
+		
+		// 跳转到注册页面
+		goToRegister() {
+			uni.navigateTo({
+				url: '/pages/register/index'
+			});
+		},
+		
+		// 退出登录
+		logout() {
+			uni.showModal({
+				title: '提示',
+				content: '确定要退出登录吗？',
+				success: (res) => {
+					if (res.confirm) {
+						// 清除本地存储
+						uni.removeStorageSync('token');
+						uni.removeStorageSync('userInfo');
+						uni.removeStorageSync('isLoggedIn');
+						
+						// 更新状态
+						this.isLoggedIn = false;
+						this.userInfo = {};
+						
+						uni.showToast({
+							title: '已退出登录',
+							icon: 'success'
+						});
+					}
+				}
+			});
+		},
+		
 		navigateTo(target) {
 			// 根据目标导航到不同页面
 			uni.showToast({
@@ -313,12 +415,72 @@ export default {
 	padding-bottom: 40rpx;
 }
 
+/* 未登录提示样式 */
+.login-prompt {
+	background: #FFFFFF;
+	border-radius: 20rpx;
+	margin: 30rpx;
+	padding: 60rpx 40rpx;
+	box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+	text-align: center;
+}
+
+.prompt-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.prompt-icon {
+	width: 120rpx;
+	height: 120rpx;
+	margin-bottom: 30rpx;
+}
+
+.prompt-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 20rpx;
+}
+
+.prompt-desc {
+	font-size: 28rpx;
+	color: #666;
+	margin-bottom: 40rpx;
+}
+
+.prompt-buttons {
+	display: flex;
+	gap: 20rpx;
+}
+
+.prompt-btn {
+	width: 200rpx;
+	height: 80rpx;
+	border-radius: 40rpx;
+	border: none;
+	font-size: 28rpx;
+	font-weight: bold;
+}
+
+.prompt-btn.login {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #FFFFFF;
+}
+
+.prompt-btn.register {
+	background: #f8f9fa;
+	color: #667eea;
+	border: 2rpx solid #667eea;
+}
+
 /* 用户信息卡片样式 */
 .user-card {
-	background-color: #007AFF;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	padding: 40rpx 30rpx;
 	color: #FFFFFF;
-	box-shadow: 0 4rpx 12rpx rgba(0, 122, 255, 0.3);
+	box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
 }
 
 .user-info {
@@ -366,14 +528,35 @@ export default {
 	border-top: 1rpx solid rgba(255, 255, 255, 0.2);
 }
 
-.status-text {
-	font-size: 28rpx;
-	font-weight: bold;
+.status-info {
+	display: flex;
+	flex-direction: column;
+	gap: 10rpx;
+}
+
+.credit-score, .order-count {
+	font-size: 24rpx;
+	opacity: 0.9;
+}
+
+.user-actions {
+	display: flex;
+	align-items: center;
+	gap: 20rpx;
 }
 
 .qrcode-icon {
 	width: 50rpx;
 	height: 50rpx;
+}
+
+.logout-btn {
+	background: rgba(255, 255, 255, 0.2);
+	color: #FFFFFF;
+	border: 1rpx solid rgba(255, 255, 255, 0.3);
+	border-radius: 20rpx;
+	padding: 10rpx 20rpx;
+	font-size: 24rpx;
 }
 
 /* 通用面板样式 */
