@@ -54,7 +54,7 @@
             <text class="update-time">{{pkg.updateTime}}</text>
           </view>
           <view class="action-area">
-            <view v-if="pkg.status === '待取件'" class="pickup-code-on-card">
+            <view v-if="pkg.status === 'arrived'" class="pickup-code-on-card">
               <text class="pickup-code-label">取件码</text>
               <text class="pickup-code-value">{{ pkg.pickupCode }}</text>
             </view>
@@ -92,11 +92,11 @@
             <text class="detail-label">物品描述</text>
             <text class="detail-value">{{currentPackage.description}}</text>
           </view>
-          <view class="detail-item" v-if="currentPackage.status === '待取件'">
+          <view class="detail-item" v-if="currentPackage.status === 'arrived'">
             <text class="detail-label">驿站位置</text>
             <text class="detail-value">{{currentPackage.location}}</text>
           </view>
-          <view class="detail-item" v-if="currentPackage.status === '待取件'">
+          <view class="detail-item" v-if="currentPackage.status === 'arrived'">
             <text class="detail-label">取件码</text>
             <text class="pickup-code">{{currentPackage.pickupCode}}</text>
           </view>
@@ -107,13 +107,13 @@
           <view v-for="(track, index) in currentPackage.trackingInfo" :key="index" class="timeline-item">
             <view class="timeline-point" :class="{'active': index === 0}"></view>
             <view class="timeline-content">
-              <text class="timeline-status">{{track.status}}</text>
-              <text class="timeline-time">{{track.time}}</text>
+              <text class="timeline-status">{{track.status_description}}</text>
+              <text class="timeline-time">{{formatTrackTime(track.timestamp)}}</text>
             </view>
           </view>
         </view>
 
-        <view class="detail-actions" v-if="currentPackage.status === '待取件'">
+        <view class="detail-actions" v-if="currentPackage.status === 'arrived'">
           <button class="detail-btn navigate" @tap="navigateToPickup">
             <text class="btn-icon">🧭</text>
             <text>导航取件</text>
@@ -178,7 +178,7 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
+// import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
   data() {
@@ -205,39 +205,57 @@ export default {
   },
   computed: {
     inTransitCount() {
-      return this.allPackages.filter(pkg => pkg.status === '运输中').length;
+      return this.allPackages.filter(pkg => pkg.status === 'in_transit').length;
     },
     arrivedCount() {
-      return this.allPackages.filter(pkg => pkg.status === '待取件').length;
+      return this.allPackages.filter(pkg => pkg.status === 'arrived').length;
     },
     completedCount() {
-      return this.allPackages.filter(pkg => pkg.status === '已签收').length;
+      return this.allPackages.filter(pkg => pkg.status === 'delivered').length;
     },
     filteredPackages() {
       if (this.filter === 'all') {
         return this.allPackages;
       }
       const statusMap = {
-        inTransit: '运输中',
-        arrived: '待取件',
-        completed: '已签收'
+        inTransit: 'in_transit',
+        arrived: 'arrived',
+        completed: 'delivered'
       };
-      const chineseStatus = statusMap[this.filter];
-      return this.allPackages.filter(pkg => pkg.status === chineseStatus);
+      const backendStatus = statusMap[this.filter];
+      return this.allPackages.filter(pkg => pkg.status === backendStatus);
     }
   },
   methods: {
     async fetchPackages() {
       try {
-        const response = await KingdeeAgentService.getExpressPackagesByPhone('13735563391');
-        if (response && response.data && response.data.rows) {
-          let packages = response.data.rows.map(pkg => this.formatPackageData(pkg));
+        const token = uni.getStorageSync('token');
+        if (!token) {
+          uni.showToast({
+            title: '请先登录',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const response = await uni.request({
+          url: 'http://localhost:3000/api/express/packages',
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.statusCode === 200 && response.data.success) {
+          let packages = response.data.data.map(pkg => this.formatPackageData(pkg));
           
           // 定义状态的排序优先级
           const statusOrder = {
-            '待取件': 1,
-            '运输中': 2,
-            '已签收': 3
+            'arrived': 1,
+            'in_transit': 2,
+            'picked_up': 3,
+            'delivered': 4,
+            'returned': 5
           };
           
           // 对快递列表进行排序
@@ -248,13 +266,15 @@ export default {
               return orderA - orderB;
             }
             // 如果状态相同，可以根据更新时间降序排
-            return new Date(b.updateTime) - new Date(a.updateTime);
+            return new Date(b.updated_at) - new Date(a.updated_at);
           });
           
           this.allPackages = packages;
-
         } else {
-          uni.showToast({ title: '加载快递信息失败', icon: 'none' });
+          uni.showToast({ 
+            title: response.data.message || '加载快递信息失败', 
+            icon: 'none' 
+          });
         }
       } catch (error) {
         console.error('获取快递列表失败:', error);
@@ -264,9 +284,11 @@ export default {
 
     formatPackageData(pkg) {
       const statusMap = {
-        '待取件': { text: '待取件', class: 'status-arrived' },
-        '运输中': { text: '运输中', class: 'status-transit' },
-        '已签收': { text: '已签收', class: 'status-completed' }
+        'in_transit': { text: '运输中', class: 'status-transit' },
+        'arrived': { text: '待取件', class: 'status-arrived' },
+        'picked_up': { text: '已取件', class: 'status-completed' },
+        'delivered': { text: '已签收', class: 'status-completed' },
+        'returned': { text: '已退回', class: 'status-completed' }
       };
       
       const courierMap = {
@@ -277,64 +299,23 @@ export default {
       };
 
       return {
-        id: pkg.billno,
-        courier: pkg.lb77_courier_name,
-        courierIcon: courierMap[pkg.lb77_courier_name] || '/static/images/default-express.png',
-        trackingNumber: pkg.billno,
-        description: pkg.lb77_package_desc,
-        status: pkg.lb77_status,
-        statusText: statusMap[pkg.lb77_status]?.text || '未知状态',
-        statusClass: statusMap[pkg.lb77_status]?.class || '',
-        updateTime: this.formatTrackTime(pkg.lb77_datetimefield ? new Date(pkg.lb77_datetimefield) : new Date(pkg.modifytime)),
-        location: pkg.lb77_pickup_station_name,
-        pickupCode: pkg.lb77_pickup_code,
+        id: pkg.id,
+        courier: pkg.courier_name,
+        courierIcon: courierMap[pkg.courier_name] || '/static/images/default-express.png',
+        trackingNumber: pkg.tracking_number,
+        description: pkg.package_description,
+        status: pkg.status,
+        statusText: statusMap[pkg.status]?.text || '未知状态',
+        statusClass: statusMap[pkg.status]?.class || '',
+        updateTime: this.formatTrackTime(pkg.actual_arrival ? new Date(pkg.actual_arrival) : new Date(pkg.updated_at)),
+        location: pkg.station_name || '未知驿站',
+        pickupCode: pkg.pickup_code,
         distance: '约' + (Math.floor(Math.random() * 10) * 100 + 100) + '米',
-        trackingInfo: this.generateTrackingInfo(pkg)
+        trackingInfo: pkg.trackingInfo || []
       };
     },
 
-    generateTrackingInfo(pkg) {
-        const info = [];
-        const arrivalTime = pkg.lb77_datetimefield ? new Date(pkg.lb77_datetimefield) : new Date();
-        const format = (date) => this.formatTrackTime(date);
 
-        // 1. 已签收（如果状态是已签收）
-        if (pkg.lb77_status === '已签收') {
-            const signTime = new Date(arrivalTime.getTime() + Math.random() * 2 * 3600 * 1000); // 随机生成签收时间
-            info.push({ status: '您的快递已签收，感谢使用。', time: format(signTime) });
-        }
-
-        // 2. 到达驿站（如果状态是待取件或已签收）
-        if (pkg.lb77_status === '待取件' || pkg.lb77_status === '已签收') {
-            info.push({
-                status: `[${pkg.lb77_pickup_station_name || '未知驿站'}] 快递已到达，请凭取件码 ${pkg.lb77_pickup_code || 'N/A'} 尽快领取。`,
-                time: format(arrivalTime)
-            });
-        }
-
-        // 3. 派送中
-        const dispatchTime = new Date(arrivalTime.getTime() - (2 + Math.random() * 4) * 3600 * 1000);
-        info.push({ status: `[${pkg.lb77_courier_name || '快递员'}] 正在为您派送，联系电话：138****1234。`, time: format(dispatchTime) });
-
-        // 4. 到达集散中心
-        const cityCenterTime = new Date(dispatchTime.getTime() - (1 + Math.random() * 3) * 3600 * 1000);
-        info.push({ status: '快件已到达 [本地集散中心] ，准备进行派送。', time: format(cityCenterTime) });
-
-        // 5. 离开上一站
-        const departureTime = new Date(cityCenterTime.getTime() - (12 + Math.random() * 24) * 3600 * 1000);
-        info.push({ status: '快件已从 [始发地] 发出。', time: format(departureTime) });
-
-        // 6. 已揽收
-        const pickupTime = new Date(departureTime.getTime() - (1 + Math.random() * 5) * 3600 * 1000);
-        info.push({ status: '快件已被揽收。', time: format(pickupTime) });
-        
-        // 如果是运输中，则移除和到达驿站相关的信息
-        if (pkg.lb77_status === '运输中') {
-            return info.filter(item => !item.status.includes('快递已到达') && !item.status.includes('已签收'));
-        }
-
-        return info;
-    },
 
     formatTrackTime(date) {
         if (!date) return 'N/A';
@@ -348,9 +329,7 @@ export default {
                         date.getMonth() === now.getMonth() &&
                         date.getDate() === now.getDate();
 
-        const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString();
-        
-        now.setDate(now.getDate() + 1); // 恢复now的日期
+        const isYesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toDateString() === date.toDateString();
 
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -385,7 +364,7 @@ export default {
     },
     
     // 搜索快递
-    searchPackage() {
+    async searchPackage() {
       if (!this.searchText.trim()) {
         uni.showToast({
           title: '请输入快递单号或手机号',
@@ -394,16 +373,58 @@ export default {
         return;
       }
       
-      // 模拟搜索
-      const found = this.allPackages.find(pkg => 
-        pkg.trackingNumber.includes(this.searchText.trim())
-      );
-      
-      if (found) {
-        this.showPackageDetail(found);
-      } else {
+      try {
+        const token = uni.getStorageSync('token');
+        if (!token) {
+          uni.showToast({
+            title: '请先登录',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const response = await uni.request({
+          url: 'http://localhost:3000/api/express/packages/search',
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          },
+          data: {
+            q: this.searchText.trim()
+          }
+        });
+
+        if (response.statusCode === 200 && response.data.success) {
+          const packages = response.data.data.map(pkg => this.formatPackageData(pkg));
+          
+          if (packages.length > 0) {
+            // 如果只找到一个，直接显示详情
+            if (packages.length === 1) {
+              this.showPackageDetail(packages[0]);
+            } else {
+              // 多个结果，更新列表显示
+              this.allPackages = packages;
+              uni.showToast({
+                title: `找到 ${packages.length} 个相关快递`,
+                icon: 'success'
+              });
+            }
+          } else {
+            uni.showToast({
+              title: '未找到相关快递',
+              icon: 'none'
+            });
+          }
+        } else {
+          uni.showToast({
+            title: response.data.message || '搜索失败',
+            icon: 'none'
+          });
+        }
+      } catch (error) {
+        console.error('搜索快递失败:', error);
         uni.showToast({
-          title: '未找到相关快递',
+          title: '搜索失败，请稍后重试',
           icon: 'none'
         });
       }

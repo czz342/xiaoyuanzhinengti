@@ -8,6 +8,7 @@
     "pages/features/library",
     "pages/features/food",
     "pages/features/food-history",
+    "pages/features/food-delivery-progress",
     "pages/features/express",
     "pages/features/health",
     "pages/features/studyroom",

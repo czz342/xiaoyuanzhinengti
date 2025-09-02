@@ -191,7 +191,7 @@
 </template>
 
 <script>
-import KingdeeAgentService from '../../services/kingdeeAgent.js';
+// 已移除金蝶服务导入，现在使用新的后端API
 
 // 预定义颜色列表，用于课程卡片
 const courseColors = ['#DFEEFF', '#E6FFF2', '#FFF2E6', '#FFF0F0', '#F0F2FF', '#E6FAFF', '#FFFBE6'];
@@ -286,11 +286,47 @@ export default {
 		},
 		async fetchScheduleData() {
 			try {
-				// TODO: studentId 应该从全局状态或缓存中获取
-				const studentId = '645730151'; 
+				// 检查用户登录状态
+				const userInfo = uni.getStorageSync('userInfo');
+				if (!userInfo) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					// 跳转到登录页面
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/index'
+						});
+					}, 1500);
+					return;
+				}
+
+				const studentId = userInfo.studentId || userInfo.userId;
+				if (!studentId) {
+					uni.showToast({
+						title: '用户信息不完整，请重新登录',
+						icon: 'none'
+					});
+					return;
+				}
+
 				uni.showLoading({ title: '正在加载课程表...' });
-				const apiCourses = await KingdeeAgentService.getSchedule(studentId);
-				this.courses = this.mapApiToCourses(apiCourses);
+				
+				// 调用新的后端API
+				const response = await uni.request({
+					url: `http://localhost:3000/api/course/schedule/student/${studentId}`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${uni.getStorageSync('token')}`
+					}
+				});
+
+				if (response.data.success) {
+					this.courses = this.mapApiToCourses(response.data.data);
+				} else {
+					throw new Error(response.data.message || '获取课程表失败');
+				}
 			} catch (error) {
 				console.error('加载课程表失败:', error);
 				uni.showToast({
@@ -306,23 +342,36 @@ export default {
 			if (!Array.isArray(apiCourses)) {
 				return [];
 			}
+			
+			// 预定义课程颜色
+			const courseColors = [
+				'#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+				'#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+			];
+			
 			return apiCourses.map((apiCourse, index) => {
+				// 从课程安排中获取课程信息
+				const courseInfo = apiCourse.course || {};
 				
 				return {
-					id: apiCourse.id || apiCourse.masterid,
-					name: apiCourse.name, // 使用正确的 'name' 字段
-					teacher: apiCourse.lb77_teacher,
-					location: apiCourse.lb77_location,
-					weekday: parseInt(apiCourse.lb77_weekday, 10) - 1, // API周一为'1', 前端为0
-					startTime: formatTimeFromSeconds(apiCourse.lb77_starttime), // 使用新函数转换时间
-					endTime: formatTimeFromSeconds(apiCourse.lb77_endtime),   // 使用新函数转换时间
-					// 您的API没有返回教材信息，这里留空
-					textbook: '', 
-					// 从预定义列表中循环选择颜色
+					id: apiCourse.id,
+					name: courseInfo.courseName || '未知课程',
+					teacher: apiCourse.teacherName || '未知教师',
+					location: apiCourse.location || '未知地点',
+					weekday: parseInt(apiCourse.weekday, 10) - 1, // 后端周一为1，前端为0
+					startTime: apiCourse.startTime || '00:00',
+					endTime: apiCourse.endTime || '00:00',
+					textbook: '', // 暂时留空
 					color: courseColors[index % courseColors.length],
-					// 保存原始周信息，以备将来使用
-					startWeek: apiCourse.lb77_startweek,
-					endWeek: apiCourse.lb77_endweek
+					startWeek: apiCourse.startWeek,
+					endWeek: apiCourse.endWeek,
+					semester: apiCourse.semester,
+					academicYear: apiCourse.academicYear,
+					// 添加更多课程信息
+					courseCode: courseInfo.courseCode,
+					credits: courseInfo.credits,
+					courseType: courseInfo.courseType,
+					department: courseInfo.department
 				};
 			});
 		},

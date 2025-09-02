@@ -1,7 +1,15 @@
 <template>
 	<view class="library-page">
+		<!-- 顶部英雄区 -->
+		<view class="hero">
+			<view class="hero-bg"></view>
+			<view class="hero-content">
+				<text class="hero-title">校园图书馆</text>
+				<text class="hero-subtitle">发现 · 借阅 · 学习</text>
+			</view>
+		</view>
 		<!-- 顶部搜索栏 -->
-		<view class="search-container">
+		<view class="search-container glass-card">
 			<view class="search-bar">
 				<input 
 					type="text" 
@@ -17,6 +25,21 @@
 			<view class="scan-btn" @tap="scanBook">
 				<image src="/static/images/scan.png" mode="aspectFit"></image>
 			</view>
+		</view>
+		
+		<!-- 分类筛选器 -->
+		<view class="category-filter glass-card" v-if="categories.length > 0">
+			<scroll-view scroll-x="true" class="category-scroll">
+				<view 
+					class="category-item pill" 
+					:class="{'active': selectedCategory === category}"
+					v-for="category in categories" 
+					:key="category"
+					@tap="selectCategory(category)"
+				>
+					<text>{{category}}</text>
+				</view>
+			</scroll-view>
 		</view>
 		
 		<!-- AR导航提示 -->
@@ -43,21 +66,26 @@
 			
 			<view class="book-list-wrapper">
 			<scroll-view scroll-y="true" class="book-list">
-				<view 
-					class="book-item" 
-					v-for="(book, index) in displayBooks" 
-					:key="index"
-					@tap="viewBookDetail(book)"
-				>
-					<image :src="book.cover" mode="aspectFill" class="book-cover"></image>
-					<view class="book-info">
-						<text class="book-title">{{book.title}}</text>
-						<text class="book-author">{{book.author}}</text>
-						<view class="book-tags">
-							<text class="book-tag" v-for="(tag, tagIndex) in book.tags" :key="tagIndex">{{tag}}</text>
+				<view class="grid">
+					<view 
+						class="grid-card glass-card" 
+						v-for="(book, index) in displayBooks" 
+						:key="index"
+						@tap="viewBookDetail(book)"
+					>
+						<image :src="book.cover" mode="aspectFill" class="grid-cover"></image>
+						<view class="grid-info">
+							<text class="grid-title">{{book.title}}</text>
+							<text class="grid-author">{{book.author}}</text>
+							<view class="grid-tags">
+								<text class="book-tag pill" v-for="(tag, tagIndex) in book.tags" :key="tagIndex">{{tag}}</text>
+							</view>
 						</view>
-						<view class="book-status" :class="{'available': book.available}">
-							<text>{{book.available ? '可借阅' : '已借出'}}</text>
+						<view class="grid-footer">
+							<view class="book-status chip" :class="{'available': book.available}">
+								<text>{{book.available ? '可借阅' : '已借出'}}</text>
+							</view>
+							<button class="mini-btn" @tap.stop="book.available ? borrowQuick(book) : reserveQuick(book)">{{book.available ? '借阅' : '预约'}}</button>
 						</view>
 					</view>
 				</view>
@@ -75,7 +103,7 @@
 				<scroll-view scroll-y="true" class="book-list">
 					<!-- 复用 book-item 的样式来展示借阅记录 -->
 					<view 
-						class="book-item" 
+						class="book-item glass-card" 
 						v-for="(item) in myBorrowings" 
 						:key="item.billno"
 						@tap="viewBorrowingDetail(item)"
@@ -85,9 +113,14 @@
 							<text class="book-title">{{ item.title }}</text>
 							<text class="book-author">借阅日期: {{ item.borrowDate }}</text>
 							<text class="book-author">应还日期: {{ item.dueDate }}</text>
-							<view class="book-status" :class="item.statusClass">
+							<text class="book-location">馆藏位置: {{ item.location }}</text>
+							<view class="book-status chip" :class="item.statusClass">
 								<text>{{ item.statusText }}</text>
 							</view>
+						</view>
+						<!-- 归还按钮：仅在未归还状态显示 -->
+						<view class="borrow-actions" v-if="item.status !== 'returned'">
+							<button class="btn subtle-danger" @tap.stop="openReturnConfirm(item)">归还图书</button>
 						</view>
 					</view>
 					<view v-if="!myBorrowings.length && !isLoading" class="empty-list">
@@ -97,23 +130,37 @@
 				</scroll-view>
 			</view>
 		</view>
+
+		<!-- 自定义归还确认弹窗 -->
+		<view class="return-confirm-popup" v-if="showReturnConfirm">
+			<view class="popup-mask" @tap="closeReturnConfirm"></view>
+			<view class="return-popup-content">
+				<text class="return-title">归还提示</text>
+				<text class="return-message">请手动归还到</text>
+				<text class="return-location">{{ returnTargetLocation }}</text>
+				<view class="return-actions">
+					<button class="cancel-btn" @tap="closeReturnConfirm">取消</button>
+					<button class="confirm-btn" @tap="performReturn">确认归还</button>
+				</view>
+			</view>
+		</view>
 		
 		<!-- 底部导航栏 -->
-		<view class="tab-bar">
+		<view class="tab-bar glass-card">
 			<view class="tab-item" @tap="switchTab('search')">
 				<image :src="currentTab === 'search' ? '/static/images/search-active.png' : '/static/images/search.png'" mode="aspectFit"></image>
-				<text :class="{'active': currentTab === 'search'}">图书搜索</text>
+				<text :class="{'active': currentTab === 'search'}">图书</text>
 			</view>
 			<view class="tab-item" @tap="switchTab('history')">
 				<image :src="currentTab === 'history' ? '/static/images/history-active.png' : '/static/images/history.png'" mode="aspectFit"></image>
-				<text :class="{'active': currentTab === 'history'}">借阅历史</text>
+				<text :class="{'active': currentTab === 'history'}">历史</text>
 			</view>
 		</view>
 		
 		<!-- 图书详情弹窗 -->
 		<view class="book-detail-popup" v-if="showBookDetail">
 			<view class="popup-mask" @tap="hideBookDetail"></view>
-			<view class="popup-content">
+			<view class="popup-content elevated">
 				<view class="popup-header">
 					<text class="popup-title">图书详情</text>
 					<view class="popup-close" @tap="hideBookDetail">
@@ -146,6 +193,10 @@
 						<view class="detail-availability">
 							<text class="availability-label">借阅状态:</text>
 							<text class="availability-value" :class="{'available': selectedBook.available}">{{selectedBook.available ? '可借阅' : '已借出'}}</text>
+						</view>
+						<view class="detail-inventory" v-if="selectedBook.available">
+							<text class="inventory-label">库存信息:</text>
+							<text class="inventory-value">可借 {{selectedBook.availableCopies}} 册 / 总计 {{selectedBook.totalCopies}} 册</text>
 						</view>
 						<view class="detail-borrow-days" v-if="selectedBook.available">
 							<text class="borrow-days-label">借阅天数:</text>
@@ -213,7 +264,7 @@
 		<!-- 借阅详情弹窗 -->
 		<view class="book-detail-popup" v-if="showBorrowDetail">
 			<view class="popup-mask" @tap="hideBorrowingDetail"></view>
-			<view class="popup-content">
+			<view class="popup-content elevated">
 				<view class="popup-header">
 					<text class="popup-title">借阅详情</text>
 					<view class="popup-close" @tap="hideBorrowingDetail">
@@ -256,7 +307,7 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
+
 
 export default {
 	data() {
@@ -284,7 +335,16 @@ export default {
 			myBorrowings: [],
 			isLoading: false, // 用于防止重复加载
 			showBorrowDetail: false, // 控制借阅详情弹窗
-			selectedBorrowing: {} // 选中的借阅记录
+			selectedBorrowing: {}, // 选中的借阅记录
+			
+			// 分类筛选器相关数据
+			categories: [],
+			selectedCategory: null,
+
+			// 归还弹窗
+			showReturnConfirm: false,
+			returnTargetLocation: '',
+			returnTargetBorrowingId: null
 		}
 	},
 	onLoad(options) {
@@ -293,7 +353,8 @@ export default {
 			this.handleBorrowingDeepLink(options.billno);
 		} else {
 			// 正常加载
-		this.fetchBooks();
+			this.fetchBooks();
+			this.fetchCategories();
 		}
 	},
 	computed: {
@@ -313,6 +374,15 @@ export default {
 		}
 	},
 	methods: {
+		// 网格卡片的快捷操作（与现有借阅/预约API复用）
+		borrowQuick(book) {
+			this.selectedBook = book;
+			this.borrowBook();
+		},
+		reserveQuick(book) {
+			this.selectedBook = book;
+			this.reserveBook();
+		},
 		async handleBorrowingDeepLink(billno) {
 			// 1. 切换到历史记录标签页并等待数据加载
 			await this.switchTab('history');
@@ -338,32 +408,36 @@ export default {
 				title: '加载中...'
 			});
 			try {
-				const response = await KingdeeAgentService.getBooksList();
-				if (response && response.status && response.data && Array.isArray(response.data.rows)) {
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/list',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
 					// 映射API数据到页面格式
-					this.recommendedBooks = response.data.rows.map(book => {
-						// 从完整路径中提取文件名
-						const fullPath = book.lb77_picturefield || '';
-						const fileName = fullPath.split('\\').pop();
-						
+					this.recommendedBooks = response.data.data.map(book => {
 						return {
-							id: book.number, // 使用ISBN作为唯一ID
-							title: book.name,
-							author: book.lb77_author,
-							publisher: book.lb77_press,
-							isbn: book.number,
-							// 将后台返回的文件名与本地静态资源路径拼接
-							cover: fileName ? `/static/images/BookPicture/${fileName}` : '/static/images/book-placeholder.png',
-							tags: book.lb77_type ? book.lb77_type.split(',') : ['综合'],
-							// 假设API返回的状态'C'为可借阅，需要根据实际业务调整
-							available: book.status === 'C',
-							location: book.lb77_addr,
-							description: '暂无简介' // API暂未提供简介字段
+							id: book.id,
+							title: book.title,
+							author: book.author,
+							publisher: book.publisher,
+							isbn: book.isbn,
+							cover: book.coverImage || '/static/images/book-placeholder.png',
+							tags: book.tags || ['综合'],
+							available: book.availableCopies > 0,
+							location: book.location,
+							description: book.description || '暂无简介',
+							availableCopies: book.availableCopies,
+							totalCopies: book.totalCopies,
+							category: book.category
 						};
 					});
 				} else {
 					uni.showToast({
-						title: response.message || '获取图书列表失败',
+						title: response.data.message || '获取图书列表失败',
 						icon: 'none'
 					});
 				}
@@ -382,31 +456,54 @@ export default {
 		async fetchMyBorrowings() {
 			this.isLoading = true;
 			uni.showLoading({ title: '加载中...' });
+			
+			// 检查登录状态
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				this.isLoading = false;
+				uni.hideLoading();
+				return;
+			}
+			
 			try {
-				const studentId = '645730151'; // 根据约定使用硬编码ID
-				const response = await KingdeeAgentService.getPersonalBookBorrowings(studentId);
-				if (response && response.status && response.data && Array.isArray(response.data.rows)) {
-					this.myBorrowings = response.data.rows.map(item => {
-						const dueDate = new Date(item.lb77_endtime);
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/borrowings/my',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.myBorrowings = response.data.data.map(item => {
+						const dueDate = new Date(item.dueDate);
 						const now = new Date();
-						// 注意：API未返回实际归还日期，这里的状态是基于应还日期的推测
 						const isOverdue = now > dueDate;
-						const statusText = isOverdue ? '已到期' : '借阅中';
-						const statusClass = isOverdue ? 'overdue' : 'borrowing';
+						const returned = item.status === 'returned';
+						const statusText = returned ? '已归还' : (isOverdue ? '已到期' : '借阅中');
+						const statusClass = returned ? 'returned' : (isOverdue ? 'overdue' : 'borrowing');
 						
 						return {
-							billno: item.billno,
-							title: item.lb77_name,
-							author: item.lb77_author,
-							cover: item.lb77_picturefield ? `/static/images/BookPicture/${item.lb77_picturefield.split('\\').pop()}` : '/static/images/book-placeholder.png',
-							borrowDate: new Date(item.createtime).toLocaleDateString(),
+							id: item.id,
+							billno: item.borrowingNumber,
+							title: item.bookTitle,
+							author: item.bookAuthor,
+							cover: item.bookCover || '/static/images/book-placeholder.png',
+							borrowDate: new Date(item.borrowDate).toLocaleDateString(),
 							dueDate: dueDate.toLocaleDateString(),
-							statusText: statusText,
-							statusClass: statusClass
+							location: item.bookLocation || '馆内-待补充',
+							status: item.status,
+							statusText,
+							statusClass
 						};
 					});
 				} else {
-					uni.showToast({ title: response.message || '获取借阅记录失败', icon: 'none' });
+					uni.showToast({ title: response.data.message || '获取借阅记录失败', icon: 'none' });
 					this.myBorrowings = [];
 				}
 			} catch (error) {
@@ -418,34 +515,127 @@ export default {
 			}
 		},
 		
+		// 获取图书分类
+		async fetchCategories() {
+			try {
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/categories/list',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.categories = response.data.data;
+				}
+			} catch (error) {
+				console.error('获取图书分类失败:', error);
+			}
+		},
+		
+		// 选择分类
+		selectCategory(category) {
+			if (this.selectedCategory === category) {
+				this.selectedCategory = null; // 取消选择
+			} else {
+				this.selectedCategory = category;
+			}
+			this.fetchBooksByCategory();
+		},
+		
+		// 根据分类获取图书
+		async fetchBooksByCategory() {
+			if (!this.selectedCategory) {
+				this.fetchBooks(); // 如果没有选择分类，获取推荐图书
+				return;
+			}
+			
+			uni.showLoading({
+				title: '加载中...'
+			});
+			
+			try {
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/list',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					},
+					data: {
+						category: this.selectedCategory
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.recommendedBooks = response.data.data.map(book => ({
+						id: book.id,
+						title: book.title,
+						author: book.author,
+						publisher: book.publisher,
+						isbn: book.isbn,
+						cover: book.coverImage || '/static/images/book-placeholder.png',
+						tags: book.tags || ['综合'],
+						available: book.availableCopies > 0,
+						location: book.location,
+						description: book.description || '暂无简介',
+						availableCopies: book.availableCopies,
+						totalCopies: book.totalCopies,
+						category: book.category
+					}));
+					this.isSearchMode = false;
+				}
+			} catch (error) {
+				console.error('根据分类获取图书失败:', error);
+				uni.showToast({
+					title: '获取图书失败',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
+			}
+		},
+		
 		// 借阅图书
 		async borrowBook() {
+			// 检查登录状态
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				return;
+			}
+			
 			uni.showLoading({ title: '正在提交...' });
 			
 			try {
-				// 注意：学生ID应从登录信息中动态获取，此处为测试用例
-				const studentId = '645730151';
-				
-				// 自动生成一个唯一的单据编号
-				const billno = `borrow-${Date.now()}`;
-		
 				const borrowingData = {
-					billno: billno,
-					lb77_day: this.borrowingDays, // 使用v-model绑定的天数
-					lb77_books_number: this.selectedBook.isbn,
-					lb77_students_number: studentId
+					bookId: this.selectedBook.id,
+					borrowDays: this.borrowingDays,
+					notes: ''
 				};
 		
-				const response = await KingdeeAgentService.createBookBorrowingRequest(borrowingData);
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/borrow',
+					method: 'POST',
+					header: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					},
+					data: borrowingData
+				});
 		
-				if (response && response.status && response.data && response.data.successCount > 0) {
+				if (response.statusCode === 200 && response.data.success) {
 					uni.showToast({ title: '借阅成功!', icon: 'success' });
 					this.hideBookDetail();
 					// 借阅成功后刷新列表
 					this.fetchBooks();
+					// 刷新借阅记录
+					this.fetchMyBorrowings();
 				} else {
-					// 尝试获取更详细的错误信息
-					const errorMsg = response?.data?.result?.[0]?.errors?.[0]?.msg || response.message || '借阅失败';
+					const errorMsg = response.data.message || '借阅失败';
 					uni.showToast({ title: errorMsg, icon: 'none', duration: 3000 });
 				}
 		
@@ -454,28 +644,64 @@ export default {
 				uni.showToast({ title: '请求异常，请稍后重试', icon: 'none' });
 			} finally {
 				uni.hideLoading();
-		}
-	},
+			}
+		},
 		
 		// 搜索图书
-		searchBooks() {
+		async searchBooks() {
 			if (!this.searchKeyword.trim()) {
 				this.isSearchMode = false;
 				return;
 			}
 			
-			// 模拟搜索请求
 			uni.showLoading({
 				title: '搜索中...'
 			});
 			
-			setTimeout(() => {
-				// 模拟搜索结果
-				this.searchResults = this.mockSearchResults(this.searchKeyword);
-				this.isSearchMode = true;
+			try {
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/book/search',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					},
+					data: {
+						keyword: this.searchKeyword.trim()
+					}
+				});
 				
+				if (response.statusCode === 200 && response.data.success) {
+					this.searchResults = response.data.data.map(book => ({
+						id: book.id,
+						title: book.title,
+						author: book.author,
+						publisher: book.publisher,
+						isbn: book.isbn,
+						cover: book.coverImage || '/static/images/book-placeholder.png',
+						tags: book.tags || ['综合'],
+						available: book.availableCopies > 0,
+						location: book.location,
+						description: book.description || '暂无简介',
+						availableCopies: book.availableCopies,
+						totalCopies: book.totalCopies,
+						category: book.category
+					}));
+					this.isSearchMode = true;
+				} else {
+					uni.showToast({
+						title: response.data.message || '搜索失败',
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error('搜索图书失败:', error);
+				uni.showToast({
+					title: '搜索失败，请稍后重试',
+					icon: 'none'
+				});
+			} finally {
 				uni.hideLoading();
-			}, 1000);
+			}
 		},
 		
 		// 模拟搜索结果
@@ -549,6 +775,55 @@ export default {
 		hideBorrowingDetail() {
 			this.showBorrowDetail = false;
 		},
+		// 打开归还确认弹窗
+		openReturnConfirm(item) {
+			this.returnTargetLocation = item.location;
+			this.returnTargetBorrowingId = item.id;
+			this.showReturnConfirm = true;
+		},
+		// 关闭归还确认弹窗
+		closeReturnConfirm() {
+			this.showReturnConfirm = false;
+			this.returnTargetBorrowingId = null;
+			this.returnTargetLocation = '';
+		},
+		// 执行归还
+		async performReturn() {
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({ title: '请先登录', icon: 'none' });
+				return;
+			}
+			if (!this.returnTargetBorrowingId) {
+				this.closeReturnConfirm();
+				return;
+			}
+			uni.showLoading({ title: '正在归还...' });
+			try {
+				const response = await uni.request({
+					url: `http://localhost:3000/api/book/return/${this.returnTargetBorrowingId}`,
+					method: 'PUT',
+					header: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					},
+					data: { returnDate: new Date().toISOString().split('T')[0] }
+				});
+				if (response.statusCode === 200 && response.data.success) {
+					uni.showToast({ title: '归还成功', icon: 'success' });
+					this.closeReturnConfirm();
+					// 刷新历史列表
+					await this.fetchMyBorrowings();
+				} else {
+					uni.showToast({ title: response.data.message || '归还失败', icon: 'none' });
+				}
+			} catch (e) {
+				console.error('归还失败:', e);
+				uni.showToast({ title: '网络异常，请稍后重试', icon: 'none' });
+			} finally {
+				uni.hideLoading();
+			}
+		},
 		
 		// 预约图书
 		reserveBook() {
@@ -609,9 +884,38 @@ export default {
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
-	background-color: #F8F8F8;
+	background: linear-gradient(180deg, #f5f7ff 0%, #ffffff 40%);
 	padding-bottom: 20rpx; /* 为底部导航栏预留空间 */
 	box-sizing: border-box;
+}
+
+/* 英雄区 */
+.hero {
+	height: 240rpx;
+	position: relative;
+	margin-bottom: 16rpx;
+}
+.hero-bg {
+	position: absolute;
+	left: 0; right: 0; top: 0; bottom: 0;
+	background: linear-gradient(135deg, #6a8dff 0%, #8e7dff 50%, #b26dff 100%);
+	filter: saturate(110%);
+	border-bottom-left-radius: 28rpx;
+	border-bottom-right-radius: 28rpx;
+}
+.hero-content {
+	position: relative;
+	padding: 36rpx 28rpx 0;
+	color: #ffffff;
+}
+.hero-title {
+	font-size: 40rpx;
+	font-weight: 700;
+}
+.hero-subtitle {
+	margin-top: 8rpx;
+	font-size: 24rpx;
+	opacity: 0.9;
 }
 
 /* 搜索栏样式 */
@@ -619,7 +923,11 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 20rpx;
-	background-color: #FFFFFF;
+	background-color: rgba(255,255,255,0.6);
+	backdrop-filter: blur(10px);
+	border-radius: 16rpx;
+	margin: -60rpx 20rpx 10rpx;
+	box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.06);
 }
 
 .search-bar {
@@ -665,6 +973,42 @@ export default {
 .scan-btn image {
 	width: 40rpx;
 	height: 40rpx;
+}
+
+/* 分类筛选器样式 */
+.category-filter {
+	padding: 16rpx 20rpx;
+	background-color: rgba(255,255,255,0.7);
+	backdrop-filter: blur(10px);
+	border-radius: 16rpx;
+	margin: 10rpx 20rpx 16rpx;
+	border: 1rpx solid rgba(0,0,0,0.04);
+}
+
+.category-scroll {
+	white-space: nowrap;
+}
+
+.category-item {
+	display: inline-block;
+	padding: 14rpx 28rpx;
+	margin-right: 16rpx;
+	background: rgba(255,255,255,0.8);
+	border-radius: 999rpx;
+	font-size: 26rpx;
+	color: #555;
+	border: 1rpx solid rgba(0,0,0,0.06);
+	transition: all 0.25s ease;
+}
+
+.category-item.active {
+	background: linear-gradient(135deg, #6a8dff, #8e7dff);
+	color: #fff;
+	border-color: transparent;
+}
+
+.category-item:last-child {
+	margin-right: 0;
 }
 
 /* AR导航提示样式 */
@@ -759,6 +1103,72 @@ export default {
 	bottom: 0;
 }
 
+/* 两列网格布局 */
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-gap: 20rpx;
+	padding-bottom: 20rpx;
+}
+
+.grid-card {
+	background: rgba(255,255,255,0.7);
+	border: 1rpx solid rgba(0,0,0,0.04);
+	border-radius: 16rpx;
+	overflow: hidden;
+	box-shadow: 0 12rpx 30rpx rgba(20,33,61,0.06);
+	display: flex;
+	flex-direction: column;
+}
+
+.grid-cover {
+	width: 100%;
+	height: 300rpx;
+	object-fit: cover;
+}
+
+.grid-info {
+	padding: 16rpx 16rpx 8rpx;
+}
+.grid-title {
+	font-size: 26rpx;
+	font-weight: 700;
+	color: #2a2a2a;
+	max-height: 76rpx;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+.grid-author {
+	margin-top: 6rpx;
+	font-size: 22rpx;
+	color: #6b6b6b;
+}
+.grid-tags {
+	margin-top: 8rpx;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8rpx;
+}
+
+.grid-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8rpx 16rpx 14rpx;
+}
+
+.mini-btn {
+	border: 1rpx solid rgba(0,0,0,0.08);
+	background: #ffffff;
+	border-radius: 10rpx;
+	height: 56rpx;
+	line-height: 56rpx;
+	padding: 0 22rpx;
+	font-size: 24rpx;
+}
+
 .book-item {
 	display: flex;
 	padding: 20rpx;
@@ -794,6 +1204,12 @@ export default {
 	margin-bottom: 10rpx;
 }
 
+.book-location {
+	font-size: 24rpx;
+	color: #aa2e25; /* 偏红色提醒 */
+	margin-bottom: 10rpx;
+}
+
 .book-tags {
 	display: flex;
 	flex-wrap: wrap;
@@ -821,8 +1237,9 @@ export default {
 }
 
 .book-status.available {
-	color: #4CD964;
-	background-color: #E6FFF2;
+	color: #2bb673;
+	background-color: #e9fbf2;
+	border: 1rpx solid rgba(43,182,115,0.18);
 }
 
 /* 底部导航栏样式 */
@@ -882,7 +1299,7 @@ export default {
 .popup-content {
 	width: 90%;
 	max-height: 90%;
-	background-color: #FFFFFF;
+	background-color: rgba(255,255,255,0.88);
 	border-radius: 20rpx;
 	overflow: hidden;
 	z-index: 10000;
@@ -983,6 +1400,22 @@ export default {
 
 .availability-value.available {
 	color: #4CD964;
+}
+
+.detail-inventory {
+	margin-top: 20rpx;
+}
+
+.inventory-label {
+	font-size: 28rpx;
+	color: #666;
+	margin-right: 20rpx;
+}
+
+.inventory-value {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: bold;
 }
 
 .action-buttons {
@@ -1129,5 +1562,72 @@ export default {
 
 .book-status.returned {
 	background-color: #6c757d; /* 灰色状态 */
+}
+
+/* 借阅操作区域 */
+.borrow-actions {
+	display: flex;
+	align-items: center;
+	margin-left: 20rpx;
+}
+
+.return-btn {
+	background-color: #ffecec;
+	color: #d32f2f; /* 偏红色文字 */
+	border: 1rpx solid #ffcdd2;
+	border-radius: 8rpx;
+	height: 64rpx;
+	line-height: 64rpx;
+	padding: 0 24rpx;
+	font-size: 26rpx;
+}
+
+/* 归还确认弹窗样式 */
+.return-confirm-popup .return-popup-content {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 80%;
+	background: #fff;
+	border-radius: 16rpx;
+	padding: 30rpx;
+}
+
+.return-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	text-align: center;
+	margin-bottom: 16rpx;
+}
+
+.return-message {
+	font-size: 26rpx;
+	color: #333;
+}
+
+.return-location {
+	font-size: 28rpx;
+	color: #d32f2f; /* 偏红色提醒 */
+	font-weight: 600;
+	display: block;
+	margin: 12rpx 0 24rpx;
+}
+
+.return-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 10rpx;
+}
+
+.cancel-btn {
+	background: #f5f5f5;
+	color: #333;
+	margin-right: 16rpx;
+}
+
+.confirm-btn {
+	background: #d32f2f;
+	color: #fff;
 }
 </style> 

@@ -110,22 +110,34 @@ var render = function () {
       g0: g0,
     }
   })
-  var l1 = _vm.selectedRoom
+  var l1 = _vm.__map(_vm.currentFloorRooms, function (room, index) {
+    var $orig = _vm.__get_orig(room)
+    var m0 = _vm.hasEquipment(room, "投影仪")
+    var m1 = _vm.hasEquipment(room, "电脑")
+    var m2 = _vm.hasEquipment(room, "空调")
+    return {
+      $orig: $orig,
+      m0: m0,
+      m1: m1,
+      m2: m2,
+    }
+  })
+  var l2 = _vm.selectedRoom
     ? _vm.__map(_vm.timeSlots, function (slot, index) {
         var $orig = _vm.__get_orig(slot)
         var g1 = _vm.selectedTimeSlots.includes(index)
-        var m0 = _vm.isSlotAvailable(slot)
-        var m1 = _vm.isSlotAvailable(slot)
+        var m3 = _vm.isSlotAvailable(slot)
+        var m4 = _vm.isSlotAvailable(slot)
         return {
           $orig: $orig,
           g1: g1,
-          m0: m0,
-          m1: m1,
+          m3: m3,
+          m4: m4,
         }
       })
     : null
   var g2 = _vm.selectedRoom ? _vm.selectedTimeSlots.length : null
-  var m2 = _vm.selectedRoom && g2 > 0 ? _vm.getSelectedTimeRange() : null
+  var m5 = _vm.selectedRoom && g2 > 0 ? _vm.getSelectedTimeRange() : null
   var g3 = _vm.selectedRoom ? _vm.selectedTimeSlots.length : null
   _vm.$mp.data = Object.assign(
     {},
@@ -133,8 +145,9 @@ var render = function () {
       $root: {
         l0: l0,
         l1: l1,
+        l2: l2,
         g2: g2,
-        m2: m2,
+        m5: m5,
         g3: g3,
       },
     }
@@ -183,10 +196,197 @@ var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _toConsumableArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/toConsumableArray */ 18));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
   data: function data() {
     return {
@@ -213,8 +413,8 @@ var _default = {
 
       // 时间段选择
       selectedTimeSlots: [],
-      // 模拟的楼层教室数据 - 将由API填充
-      roomsData: {},
+      // 教室数据
+      classrooms: [],
       // 当天所有教室的预定记录
       dailyBookings: [],
       // 时间段数据
@@ -282,17 +482,17 @@ var _default = {
       var _this2 = this;
       var building = this.buildings[this.currentBuildingIndex];
       var floor = this.floors[this.currentFloorIndex];
-      if (this.roomsData[building] && this.roomsData[building][floor]) {
-        var rooms = this.roomsData[building][floor];
+      if (building && floor) {
+        var rooms = this.classrooms.filter(function (room) {
+          return room.building === building && room.floor === floor;
+        });
 
         // 如果有选中的设备，则进行筛选
         if (this.selectedEquipments.length > 0) {
           rooms = rooms.filter(function (room) {
             // 检查该教室是否包含所有选中的设备
             return _this2.selectedEquipments.every(function (equipment) {
-              // 我们需要一种方式来检查room是否含有该equipment
-              // 假设 room.equipment 是一个像 "投影仪,电脑" 这样的字符串
-              return room.equipment && room.equipment.includes(equipment);
+              return _this2.hasEquipment(room, equipment);
             });
           });
         }
@@ -315,11 +515,17 @@ var _default = {
                 });
                 _context.prev = 1;
                 _context.next = 4;
-                return _kingdeeAgent.default.getClassroomList();
+                return uni.request({
+                  url: 'http://localhost:3000/api/classroom/list',
+                  method: 'GET',
+                  header: {
+                    'Content-Type': 'application/json'
+                  }
+                });
               case 4:
                 response = _context.sent;
-                if (response && response.data && Array.isArray(response.data.rows)) {
-                  _this3.processClassroomData(response.data.rows);
+                if (response.statusCode === 200 && response.data.success) {
+                  _this3.processClassroomData(response.data.data);
                 } else {
                   console.error("获取到的教室数据格式不正确", response);
                   uni.showToast({
@@ -349,61 +555,29 @@ var _default = {
         }, _callee, null, [[1, 8, 12, 15]]);
       }))();
     },
-    processClassroomData: function processClassroomData(apiRows) {
-      var roomsData = {};
-      var buildings = new Set();
-      apiRows.forEach(function (row) {
-        var buildingName = row.lb77_building_name;
-        if (buildingName) {
-          buildings.add(buildingName);
-          if (!roomsData[buildingName]) {
-            roomsData[buildingName] = {};
-          }
-          var floorName = row.lb77_floor;
-          if (floorName) {
-            if (!roomsData[buildingName][floorName]) {
-              roomsData[buildingName][floorName] = [];
-            }
-            var equipment = row.lb77_equipment || '';
-            roomsData[buildingName][floorName].push({
-              id: row.masterid,
-              code: row.number,
-              name: row.name,
-              capacity: row.lb77_capacity,
-              status: row.lb77_status || '可用',
-              hasProjector: equipment.includes('投影仪'),
-              hasComputer: equipment.includes('电脑'),
-              hasAirConditioner: equipment.includes('空调'),
-              equipment: equipment,
-              // 直接保存设备字符串，用于筛选
-              position: {
-                x: row.lb77_position_x || 0,
-                y: row.lb77_position_y || 0
-              },
-              // 暂定所有时间段可用
-              availableTimeSlots: Array.from({
-                length: 12
-              }, function (_, i) {
-                return i;
-              })
-            });
-          }
-        }
-      });
-      this.buildings = Array.from(buildings);
-      this.roomsData = roomsData;
+    processClassroomData: function processClassroomData(classrooms) {
+      this.classrooms = classrooms;
+
+      // 提取所有教学楼
+      var buildings = (0, _toConsumableArray2.default)(new Set(classrooms.map(function (room) {
+        return room.building;
+      })));
+      this.buildings = buildings.sort();
 
       // 初始化楼层数据
       this.updateFloorsForCurrentBuilding();
     },
     updateFloorsForCurrentBuilding: function updateFloorsForCurrentBuilding() {
       var currentBuildingName = this.buildings[this.currentBuildingIndex];
-      if (currentBuildingName && this.roomsData[currentBuildingName]) {
-        var floorKeys = Object.keys(this.roomsData[currentBuildingName]);
-        floorKeys.sort(function (a, b) {
+      if (currentBuildingName) {
+        var floors = (0, _toConsumableArray2.default)(new Set(this.classrooms.filter(function (room) {
+          return room.building === currentBuildingName;
+        }).map(function (room) {
+          return room.floor;
+        })));
+        this.floors = floors.sort(function (a, b) {
           return parseInt(a) - parseInt(b);
         });
-        this.floors = floorKeys;
       } else {
         this.floors = [];
       }
@@ -510,10 +684,10 @@ var _default = {
         for (_iterator.s(); !(_step = _iterator.n()).done;) {
           var booking = _step.value;
           // 3. 检查这条预定记录是否属于当前选中的教室
-          if (booking.lb77_classroom_id_number === this.selectedRoom.code) {
+          if (booking.classroomId === this.selectedRoom.id) {
             // 4. 将预定记录的开始/结束时间从秒转换为小时
-            var bookingStartHour = booking.lb77_start_time / 3600;
-            var bookingEndHour = booking.lb77_end_time / 3600;
+            var bookingStartHour = booking.startTime / 3600;
+            var bookingEndHour = booking.endTime / 3600;
 
             // 5. 判断当前时间段的开始小时，是否落在 [预定开始小时, 预定结束小时) 这个区间内
             if (slotStartHour >= bookingStartHour && slotStartHour < bookingEndHour) {
@@ -541,19 +715,20 @@ var _default = {
       var endTime = endSlot.time.split('-')[1];
       return "".concat(startTime, "-").concat(endTime);
     },
-    generateRandomString: function generateRandomString(length) {
-      var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      var result = '';
-      var charactersLength = characters.length;
-      for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    hasEquipment: function hasEquipment(room, equipment) {
+      if (!room.equipment) return false;
+      try {
+        var equipmentList = JSON.parse(room.equipment);
+        return Array.isArray(equipmentList) && equipmentList.includes(equipment);
+      } catch (e) {
+        // 如果解析失败，尝试字符串匹配
+        return room.equipment.includes(equipment);
       }
-      return result;
     },
     submitBooking: function submitBooking() {
       var _this4 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var timeRange, _timeRange$split, _timeRange$split2, startTimeStr, endTimeStr, startTimeInHours, endTimeInHours, startTime, endTime, bookingData, response, _response$data, _response$data$result, _errorResult$errors, _errorResult$errors$, errorResult, errorMessage;
+        var token, timeRange, _timeRange$split, _timeRange$split2, startTimeStr, endTimeStr, startTimeInHours, endTimeInHours, startTime, endTime, bookingData, response, errorMessage;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -568,6 +743,18 @@ var _default = {
                 });
                 return _context2.abrupt("return");
               case 3:
+                // 检查登录状态
+                token = uni.getStorageSync('token');
+                if (token) {
+                  _context2.next = 7;
+                  break;
+                }
+                uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+                });
+                return _context2.abrupt("return");
+              case 7:
                 uni.showLoading({
                   title: '正在提交预约...'
                 });
@@ -578,25 +765,28 @@ var _default = {
                 startTime = startTimeInHours * 3600; // 将小时转换为秒
                 endTime = endTimeInHours * 3600; // 将小时转换为秒
                 bookingData = {
-                  number: _this4.generateRandomString(5),
-                  // 随机生成一个5位数的单据编号
-                  name: "\u9884\u7EA6-".concat(_this4.selectedRoom.name, "-").concat(_this4.currentDate),
-                  lb77_booking_date: _this4.currentDate,
-                  lb77_start_time: startTime,
-                  // 发送换算后的秒数, e.g., 28800
-                  lb77_end_time: endTime,
-                  // 发送换算后的秒数, e.g., 32400
-                  lb77_status: 'confirmed',
-                  // 状态直接设置为 confirmed
-                  lb77_classroom_id_number: _this4.selectedRoom.code // 关联教室的编号
+                  classroomId: _this4.selectedRoom.id,
+                  reservationDate: _this4.currentDate,
+                  startTime: startTime,
+                  endTime: endTime,
+                  purpose: "\u9884\u7EA6-".concat(_this4.selectedRoom.name, "-").concat(_this4.currentDate),
+                  notes: ''
                 };
-                _context2.prev = 11;
-                _context2.next = 14;
-                return _kingdeeAgent.default.saveClassroomBooking(bookingData);
-              case 14:
+                _context2.prev = 15;
+                _context2.next = 18;
+                return uni.request({
+                  url: 'http://localhost:3000/api/classroom/reservations',
+                  method: 'POST',
+                  header: {
+                    'Content-Type': 'application/json',
+                    'Authorization': "Bearer ".concat(token)
+                  },
+                  data: bookingData
+                });
+              case 18:
                 response = _context2.sent;
                 uni.hideLoading();
-                if (response && response.data && response.data.successCount > 0) {
+                if (response.statusCode === 200 && response.data.success) {
                   uni.showModal({
                     title: '预约成功',
                     content: "\u60A8\u5DF2\u6210\u529F\u9884\u7EA6".concat(_this4.selectedRoom.name, "\uFF0C\u65E5\u671F\uFF1A").concat(_this4.currentDate, "\uFF0C\u65F6\u95F4\uFF1A").concat(timeRange),
@@ -613,32 +803,30 @@ var _default = {
                     }
                   });
                 } else {
-                  // 尝试从金蝶返回的复杂结构中提取更详细的错误信息
-                  errorResult = response === null || response === void 0 ? void 0 : (_response$data = response.data) === null || _response$data === void 0 ? void 0 : (_response$data$result = _response$data.result) === null || _response$data$result === void 0 ? void 0 : _response$data$result[0];
-                  errorMessage = (errorResult === null || errorResult === void 0 ? void 0 : (_errorResult$errors = errorResult.errors) === null || _errorResult$errors === void 0 ? void 0 : (_errorResult$errors$ = _errorResult$errors[0]) === null || _errorResult$errors$ === void 0 ? void 0 : _errorResult$errors$.msg) || '未知错误，请联系管理员';
+                  errorMessage = response.data.message || '预约失败，请稍后重试';
                   uni.showToast({
-                    title: "\u9884\u7EA6\u5931\u8D25: ".concat(errorMessage),
+                    title: errorMessage,
                     icon: 'none',
                     duration: 3000
                   });
                 }
-                _context2.next = 24;
+                _context2.next = 28;
                 break;
-              case 19:
-                _context2.prev = 19;
-                _context2.t0 = _context2["catch"](11);
+              case 23:
+                _context2.prev = 23;
+                _context2.t0 = _context2["catch"](15);
                 uni.hideLoading();
                 console.error('提交预约请求失败:', _context2.t0);
                 uni.showToast({
                   title: '网络错误，提交失败',
                   icon: 'none'
                 });
-              case 24:
+              case 28:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[11, 19]]);
+        }, _callee2, null, [[15, 23]]);
       }))();
     },
     onMapChange: function onMapChange(e) {
@@ -657,11 +845,17 @@ var _default = {
                 _this5.dailyBookings = []; // 查询前先清空
                 _context3.prev = 1;
                 _context3.next = 4;
-                return _kingdeeAgent.default.getClassroomBookings(date);
+                return uni.request({
+                  url: "http://localhost:3000/api/classroom/reservations/date/".concat(date),
+                  method: 'GET',
+                  header: {
+                    'Content-Type': 'application/json'
+                  }
+                });
               case 4:
                 response = _context3.sent;
-                if (response && response.data && Array.isArray(response.data.rows)) {
-                  _this5.dailyBookings = response.data.rows;
+                if (response.statusCode === 200 && response.data.success) {
+                  _this5.dailyBookings = response.data.data;
                   console.log("\u83B7\u53D6\u5230 ".concat(date, " \u7684 ").concat(_this5.dailyBookings.length, " \u6761\u9884\u5B9A\u8BB0\u5F55\u3002"));
                 }
                 _context3.next = 11;

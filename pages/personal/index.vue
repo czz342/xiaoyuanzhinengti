@@ -16,7 +16,7 @@
 		<!-- 已登录状态 - 用户信息卡片 -->
 		<view v-else class="user-card">
 			<view class="user-info">
-				<image :src="userInfo.picture || '/static/images/avatar.png'" mode="aspectFill" class="user-avatar"></image>
+				<image :src="userInfo.picture || '/static/images/avatar.png'" mode="aspectFill" class="user-avatar" @tap="onAvatarClick"></image>
 				<view class="user-details">
 					<text class="user-name">{{userInfo.displayName || userInfo.userName}}</text>
 					<text class="user-id">学号：{{userInfo.studentId || '未设置'}}</text>
@@ -403,6 +403,54 @@ export default {
 					icon: 'success'
 				});
 			}, 1000);
+		},
+		// 点击头像上传
+		onAvatarClick() {
+			if (!this.isLoggedIn) {
+				this.goToLogin();
+				return;
+			}
+			uni.showActionSheet({
+				itemList: ['从相册选择', '拍照上传'],
+				success: (res) => {
+					const sourceType = res.tapIndex === 1 ? ['camera'] : ['album'];
+					this.pickAndUpload(sourceType);
+				}
+			});
+		},
+		async pickAndUpload(sourceType) {
+			try {
+				const chooseRes = await uni.chooseImage({
+					count: 1,
+					sizeType: ['compressed'],
+					sourceType
+				});
+				if (!chooseRes.tempFilePaths || !chooseRes.tempFilePaths.length) return;
+				const filePath = chooseRes.tempFilePaths[0];
+
+				uni.showLoading({ title: '上传中...' });
+				const token = uni.getStorageSync('token');
+				const uploadRes = await uni.uploadFile({
+					url: 'http://localhost:3000/api/user/avatar',
+					filePath,
+					name: 'file',
+					header: { 'Authorization': `Bearer ${token}` }
+				});
+
+				uni.hideLoading();
+				let data;
+				try { data = JSON.parse(uploadRes.data); } catch (e) { data = uploadRes.data; }
+				if (data && data.success && data.data && data.data.pictureUrl) {
+					this.userInfo.picture = data.data.pictureUrl;
+					uni.setStorageSync('userInfo', this.userInfo);
+					uni.showToast({ title: '头像已更新', icon: 'success' });
+				} else {
+					uni.showToast({ title: (data && data.message) || '上传失败', icon: 'none' });
+				}
+			} catch (err) {
+				uni.hideLoading();
+				uni.showToast({ title: '上传失败，请重试', icon: 'none' });
+			}
 		}
 	}
 }
@@ -410,19 +458,21 @@ export default {
 
 <style>
 .personal-page {
-	background-color: #f5f5f5;
+	background: linear-gradient(180deg, #f8f9ff 0%, #f0f2ff 50%, #e8ecff 100%);
 	min-height: 100vh;
 	padding-bottom: 40rpx;
 }
 
 /* 未登录提示样式 */
 .login-prompt {
-	background: #FFFFFF;
-	border-radius: 20rpx;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 24rpx;
 	margin: 30rpx;
 	padding: 60rpx 40rpx;
-	box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+	box-shadow: 0 15rpx 40rpx rgba(102, 126, 234, 0.15);
 	text-align: center;
+	backdrop-filter: blur(20rpx);
+	border: 1rpx solid rgba(102, 126, 234, 0.08);
 }
 
 .prompt-content {
@@ -467,20 +517,37 @@ export default {
 .prompt-btn.login {
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: #FFFFFF;
+	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.3);
 }
 
 .prompt-btn.register {
-	background: #f8f9fa;
+	background: rgba(255, 255, 255, 0.9);
 	color: #667eea;
 	border: 2rpx solid #667eea;
+	backdrop-filter: blur(10rpx);
 }
 
 /* 用户信息卡片样式 */
 .user-card {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
 	padding: 40rpx 30rpx;
 	color: #FFFFFF;
-	box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+	box-shadow: 0 20rpx 40rpx rgba(102, 126, 234, 0.25);
+	border-radius: 24rpx;
+	margin: 30rpx;
+	position: relative;
+	overflow: hidden;
+}
+
+.user-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%);
+	pointer-events: none;
 }
 
 .user-info {
@@ -492,11 +559,16 @@ export default {
 	width: 120rpx;
 	height: 120rpx;
 	border-radius: 60rpx;
-	border: 4rpx solid rgba(255, 255, 255, 0.3);
+	border: 4rpx solid rgba(255, 255, 255, 0.4);
+	box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.15);
+	position: relative;
+	z-index: 1;
 }
 
 .user-details {
 	margin-left: 30rpx;
+	position: relative;
+	z-index: 1;
 }
 
 .user-name {
@@ -525,7 +597,9 @@ export default {
 	align-items: center;
 	margin-top: 30rpx;
 	padding-top: 20rpx;
-	border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+	border-top: 1rpx solid rgba(255, 255, 255, 0.25);
+	position: relative;
+	z-index: 1;
 }
 
 .status-info {
@@ -551,35 +625,48 @@ export default {
 }
 
 .logout-btn {
-	background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.15);
 	color: #FFFFFF;
 	border: 1rpx solid rgba(255, 255, 255, 0.3);
 	border-radius: 20rpx;
-	padding: 10rpx 20rpx;
+	padding: 12rpx 24rpx;
 	font-size: 24rpx;
+	backdrop-filter: blur(10rpx);
+	transition: all 0.3s ease;
+}
+
+.logout-btn:active {
+	background: rgba(255, 255, 255, 0.25);
+	transform: scale(0.95);
 }
 
 /* 通用面板样式 */
 .account-panel, .notification-panel, .system-panel {
 	margin: 30rpx;
-	background-color: #FFFFFF;
-	border-radius: 20rpx;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 24rpx;
 	overflow: hidden;
-	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.12);
+	border: 1rpx solid rgba(102, 126, 234, 0.08);
+	backdrop-filter: blur(20rpx);
 }
 
 .panel-header {
 	padding: 30rpx;
-	border-bottom: 1rpx solid #f0f0f0;
+	border-bottom: 1rpx solid rgba(102, 126, 234, 0.1);
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	background: linear-gradient(90deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.06) 100%);
 }
 
 .panel-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }
 
 .panel-more {
@@ -621,19 +708,19 @@ export default {
 }
 
 .item-icon.wallet {
-	background-color: #e6f2ff;
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
 }
 
 .item-icon.credits {
-	background-color: #e6fff2;
+	background: linear-gradient(135deg, rgba(118, 75, 162, 0.12) 0%, rgba(240, 147, 251, 0.08) 100%);
 }
 
 .item-icon.awards {
-	background-color: #fff2e6;
+	background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(102, 126, 234, 0.06) 100%);
 }
 
 .item-icon.certificates {
-	background-color: #f0e6ff;
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.18) 0%, rgba(118, 75, 162, 0.12) 100%);
 }
 
 .item-icon image {
@@ -697,15 +784,15 @@ export default {
 }
 
 .notification-icon.system {
-	background-color: #e6f2ff;
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
 }
 
 .notification-icon.course {
-	background-color: #e6fff2;
+	background: linear-gradient(135deg, rgba(118, 75, 162, 0.12) 0%, rgba(240, 147, 251, 0.08) 100%);
 }
 
 .notification-icon.activity {
-	background-color: #fff2e6;
+	background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(102, 126, 234, 0.06) 100%);
 }
 
 .notification-icon image {
@@ -748,7 +835,8 @@ export default {
 	width: 16rpx;
 	height: 16rpx;
 	border-radius: 50%;
-	background-color: #FF3B30;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.4);
 }
 
 /* 系统功能样式 */
@@ -903,8 +991,9 @@ export default {
 }
 
 .action-btn.primary {
-	background-color: #007AFF;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: #FFFFFF;
+	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.3);
 }
 
 .action-btn.secondary {

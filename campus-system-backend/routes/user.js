@@ -1,4 +1,7 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { success, error, paginated } = require('../utils/response');
@@ -7,6 +10,65 @@ const router = express.Router();
 
 // 所有路由都需要认证
 router.use(authenticateToken);
+
+// 头像上传配置
+const avatarsDir = path.join(__dirname, '..', 'uploads', 'avatars');
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, avatarsDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeUserId = req.user.userId || `uid-${req.user.id}`;
+    const filename = `${safeUserId}-${Date.now()}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const allowedMime = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!allowedMime.has(file.mimetype)) {
+      return cb(new Error('不支持的文件类型'));
+    }
+    cb(null, true);
+  }
+});
+
+// 更新头像
+router.post('/avatar', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json(error('未选择文件'));
+    }
+
+    const relPath = path.posix.join('uploads', 'avatars', path.basename(req.file.path));
+    const host = req.get('host');
+    const protocol = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
+    const baseUrl = `${protocol}://${host}`;
+    const pictureUrl = `${baseUrl}/${relPath.replace(/\\/g, '/')}`;
+
+    // 更新数据库中的头像地址
+    const updated = await User.update(req.user.id, { picture: pictureUrl });
+    if (!updated) {
+      return res.status(500).json(error('更新头像失败'));
+    }
+
+    return res.json(success('头像更新成功', { pictureUrl }));
+  } catch (err) {
+    console.error('上传头像错误:', err);
+    if (err.message && err.message.includes('文件类型')) {
+      return res.status(415).json(error('不支持的文件类型'));
+    }
+    return res.status(500).json(error('上传失败'));
+  }
+});
 
 // 获取用户列表（管理员功能）
 router.get('/list', async (req, res) => {

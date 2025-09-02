@@ -60,7 +60,7 @@
 </template>
 
 <script>
-	import KingdeeAgentService from '@/services/kingdeeAgent.js';
+	
 
 	export default {
 		data() {
@@ -100,20 +100,35 @@
 			async fetchReservations() {
 				this.loading = true;
 				try {
-					// TODO: 替换为从全局状态或本地存储中获取的真实学号
-					const studentId = '645730151';
+					// 检查登录状态
+					const token = uni.getStorageSync('token');
+					if (!token) {
+						uni.showToast({
+							title: '请先登录',
+							icon: 'none'
+						});
+						this.loading = false;
+						return;
+					}
 
-					const response = await KingdeeAgentService.getPersonalClassroomBookings(studentId, this.selectedDate);
+					const response = await uni.request({
+						url: 'http://localhost:3000/api/classroom/reservations/my',
+						method: 'GET',
+						header: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${token}`
+						}
+					});
 
-					if (response && response.status === true) {
-						this.reservations = response.data.rows.map(item => {
+					if (response.statusCode === 200 && response.data.success) {
+						this.reservations = response.data.data.map(item => {
 							return {
-								id: item.number,
-								classroomName: item.lb77_classroom_id_name,
-								date: item.lb77_booking_date.split(' ')[0],
-								time: this.formatTimeRange(item.lb77_start_time, item.lb77_end_time),
-								purpose: item.name,
-								status: this.getBookingStatus(item.lb77_booking_date, item.lb77_end_time)
+								id: item.id,
+								classroomName: item.classroomName,
+								date: item.reservationDate,
+								time: this.formatTimeRange(item.startTime, item.endTime),
+								purpose: item.purpose,
+								status: this.getBookingStatus(item.reservationDate, item.endTime, item.status)
 							};
 						});
 
@@ -129,7 +144,7 @@
 							this.bookingNumberFromLink = null; // 处理后重置
 						}
 					} else {
-						throw new Error(response.message || '获取预约记录失败');
+						throw new Error(response.data.message || '获取预约记录失败');
 					}
 				} catch (error) {
 					console.error('fetchReservations error:', error);
@@ -150,15 +165,20 @@
 				return `${year}-${month}-${day}`;
 			},
 
-			getBookingStatus(dateStr, endTimeSeconds) {
+			getBookingStatus(dateStr, endTimeSeconds, status) {
+				// 如果状态是已取消，直接返回
+				if (status === 'cancelled') {
+					return '已取消';
+				}
+				
 				const now = new Date();
-				const endDateTime = new Date(`${dateStr.split(' ')[0]}T00:00:00`);
+				const endDateTime = new Date(`${dateStr}T00:00:00`);
 				endDateTime.setSeconds(endTimeSeconds);
 
 				if (now > endDateTime) {
 					return '已结束';
 				}
-				// 这里的API似乎不返回已取消的状态，所以我们只处理已预约和已结束
+				
 				return '已预约';
 			},
 

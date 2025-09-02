@@ -3,14 +3,16 @@
 		<view class="header">
 			<text class="title">我的自习室预约</text>
 		</view>
-		<view class="filter-section">
+		<!-- 暂时移除日期筛选，因为新API返回所有预约记录 -->
+		<!-- <view class="filter-section">
 			<uni-datetime-picker type="date" :value="selectedDate" @change="onDateChange" />
-		</view>
+		</view> -->
 		<view v-if="loading" class="loading-container">
 			<text>正在加载预约记录...</text>
 		</view>
 		<view v-else-if="reservations.length === 0" class="empty-container">
 			<text>暂无预约记录</text>
+			<text class="empty-tip">快去预约一个座位吧！</text>
 		</view>
 		<scroll-view v-else scroll-y="true" class="list-container">
 			<view v-for="item in reservations" :key="item.id" class="reservation-card" @click="showQrCodeModal(item)">
@@ -60,7 +62,7 @@
 </template>
 
 <script>
-	import KingdeeAgentService from '@/services/kingdeeAgent.js';
+	// 移除 KingdeeAgentService 导入，使用新的后端API
 
 	export default {
 		data() {
@@ -72,16 +74,7 @@
 			};
 		},
 		onLoad(options) {
-			const {
-				reservationId,
-				date
-			} = options;
-
-			if (date) {
-				this.selectedDate = date;
-			} else {
-				this.selectedDate = this.getFormattedDate(new Date());
-			}
+			const { reservationId } = options;
 
 			this.fetchReservations().then(() => {
 				if (reservationId && this.reservations.length > 0) {
@@ -89,9 +82,9 @@
 					if (reservation) {
 						this.showQrCodeModal(reservation);
 					} else {
-						console.warn(`[my-studyroom-reservations] Reservation with id ${reservationId} not found on date ${this.selectedDate}`);
+						console.warn(`[my-studyroom-reservations] Reservation with id ${reservationId} not found`);
 						uni.showToast({
-							title: '未在指定日期找到预约记录',
+							title: '未找到预约记录',
 							icon: 'none'
 						});
 					}
@@ -99,19 +92,14 @@
 			});
 		},
 		methods: {
-			onDateChange(date) {
-				this.selectedDate = date;
-				this.fetchReservations();
-			},
+			// 暂时移除日期筛选功能
+			// onDateChange(date) {
+			// 	this.selectedDate = date;
+			// 	this.fetchReservations();
+			// },
 
 			showQrCodeModal(reservation) {
-				if (reservation.status !== '已预约') {
-					uni.showToast({
-						title: '只有"已预约"的记录才能查看凭证',
-						icon: 'none'
-					});
-					return;
-				}
+				// 允许查看所有状态的预约记录
 				this.selectedReservation = reservation;
 				this.$refs.qrPopup.open();
 			},
@@ -119,24 +107,38 @@
 			async fetchReservations() {
 				this.loading = true;
 				try {
-					// TODO: 替换为从全局状态或本地存储中获取的真实学号
-					const studentId = '645730151';
+					// 检查用户是否已登录
+					const token = uni.getStorageSync('token');
+					if (!token) {
+						uni.showToast({
+							title: '请先登录',
+							icon: 'none'
+						});
+						this.reservations = [];
+						return;
+					}
 
-					const response = await KingdeeAgentService.getPersonalStudyRoomBookings(studentId, this.selectedDate);
+					const response = await uni.request({
+						url: 'http://localhost:3000/api/studyroom/my',
+						method: 'GET',
+						header: {
+							'Authorization': `Bearer ${token}`
+						}
+					});
 
-					if (response && response.status === true) {
-						this.reservations = response.data.rows.map(item => {
+					if (response.statusCode === 200 && response.data.success) {
+						this.reservations = response.data.data.map(item => {
 							return {
-								id: item.number,
-                                studyRoomName: item.lb77_seat_id_lb77_studyroom_id_name,
-                                seatLabel: item.lb77_seat_id_name ? item.lb77_seat_id_name.split('-').slice(-2).join('-') : 'N/A',
-								date: item.lb77_booking_date.split(' ')[0],
-								time: this.formatTimeRange(item.lb77_start_time, item.lb77_end_time),
-								status: this.getBookingStatus(item.lb77_booking_date, item.lb77_end_time)
+								id: item.id,
+								studyRoomName: item.room_name || '未知自习室',
+								seatLabel: item.seat_label || '未知座位',
+								date: this.formatDate(item.booking_date),
+								time: this.formatTimeRange(item.start_time_sec, item.end_time_sec),
+								status: this.getBookingStatus(item.booking_date, item.end_time_sec, item.status)
 							};
 						});
 					} else {
-						throw new Error(response.message || '获取预约记录失败');
+						throw new Error(response.data.message || '获取预约记录失败');
 					}
 				} catch (error) {
 					console.error('fetchReservations error:', error);
@@ -157,9 +159,25 @@
 				return `${year}-${month}-${day}`;
 			},
 
-			getBookingStatus(dateStr, endTimeSeconds) {
+			formatDate(dateStr) {
+				// 处理日期字符串，只显示日期部分
+				if (!dateStr) return '';
+				// 如果是ISO格式，只取日期部分
+				if (dateStr.includes('T')) {
+					return dateStr.split('T')[0];
+				}
+				// 如果已经是日期格式，直接返回
+				return dateStr;
+			},
+
+			getBookingStatus(dateStr, endTimeSeconds, status) {
+				// 如果状态是已取消，直接返回
+				if (status === 'cancelled') {
+					return '已取消';
+				}
+
 				const now = new Date();
-				const endDateTime = new Date(`${dateStr.split(' ')[0]}T00:00:00`);
+				const endDateTime = new Date(`${dateStr}T00:00:00`);
 				endDateTime.setSeconds(endTimeSeconds);
 
 				if (now > endDateTime) {
@@ -181,7 +199,7 @@
 				if (status === '已预约') return 'status-booked';
 				if (status === '已结束') return 'status-finished';
 				if (status === '已取消') return 'status-cancelled';
-				return '';
+				return 'status-booked'; // 默认样式
 			}
 		}
 	};
@@ -216,10 +234,17 @@
 	.empty-container {
 		flex: 1;
 		display: flex;
+		flex-direction: column;
 		justify-content: center;
 		align-items: center;
 		color: #888;
 		font-size: 30rpx;
+		gap: 20rpx;
+	}
+
+	.empty-tip {
+		font-size: 26rpx;
+		color: #aaa;
 	}
 
 	.list-container {

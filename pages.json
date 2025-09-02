@@ -50,6 +50,12 @@
 			}
 		},
 		{
+			"path": "pages/features/food-delivery-progress",
+			"style": {
+				"navigationBarTitleText": "外卖配送进度"
+			}
+		},
+		{
 			"path": "pages/features/express",
 			"style": {
 				"navigationBarTitleText": "快递服务"

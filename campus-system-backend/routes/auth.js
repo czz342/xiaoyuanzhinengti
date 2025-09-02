@@ -10,10 +10,17 @@ const router = express.Router();
 // 用户注册
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, real_name, student_id, phone } = req.body;
+    const { username, email, password, real_name, student_id, phone, userName, displayName, studentId } = req.body;
+    
+    // 支持两种字段名
+    const actualUsername = username || userName;
+    const actualEmail = email;
+    const actualPassword = password;
+    const actualDisplayName = real_name || displayName || actualUsername;
+    const actualStudentId = student_id || studentId;
 
     // 输入验证
-    if (!username || !email || !password) {
+    if (!actualUsername || !actualEmail || !actualPassword) {
       return res.status(400).json(error('用户名、邮箱和密码为必填项', 400));
     }
 
@@ -22,13 +29,13 @@ router.post('/register', async (req, res) => {
     }
 
     // 检查用户名是否已存在
-    const existingUser = await User.findByUsername(username);
+    const existingUser = await User.findByUsername(actualUsername);
     if (existingUser) {
       return res.status(400).json(error('用户名已存在', 400));
     }
 
     // 检查邮箱是否已存在
-    const existingEmail = await User.findByEmail(email);
+    const existingEmail = await User.findByEmail(actualEmail);
     if (existingEmail) {
       return res.status(400).json(error('邮箱已被注册', 400));
     }
@@ -39,11 +46,11 @@ router.post('/register', async (req, res) => {
     // 创建用户
     const newUser = await User.create({
       userId,
-      userName: username,
-      email,
-      password,
-      displayName: real_name || username,
-      studentId: student_id,
+      userName: actualUsername,
+      email: actualEmail,
+      password: actualPassword,
+      displayName: actualDisplayName,
+      studentId: actualStudentId,
       phone,
       picture: null
     });
@@ -53,7 +60,8 @@ router.post('/register', async (req, res) => {
       { 
         id: newUser.id, 
         userId: newUser.userId,
-        userName: newUser.userName
+        userName: newUser.userName,
+        studentId: newUser.studentId
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
@@ -83,15 +91,18 @@ router.post('/register', async (req, res) => {
 // 用户登录
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, userName } = req.body;
+    
+    // 支持两种字段名
+    const actualUsername = username || userName;
 
     // 输入验证
-    if (!username || !password) {
+    if (!actualUsername || !password) {
       return res.status(400).json(error('用户名和密码为必填项', 400));
     }
 
     // 查找用户
-    const user = await User.findByUsername(username);
+    const user = await User.findByUsername(actualUsername);
     if (!user) {
       return res.status(401).json(error('用户名或密码错误', 401));
     }
@@ -112,7 +123,8 @@ router.post('/login', async (req, res) => {
       { 
         id: user.id, 
         userId: user.userId,
-        userName: user.userName
+        userName: user.userName,
+        studentId: user.studentId
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }

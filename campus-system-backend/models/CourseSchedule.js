@@ -107,7 +107,32 @@ class CourseSchedule {
     
     try {
       const rows = await query(sql, values);
-      return rows;
+      
+      // 格式化数据，将课程信息放在course对象中
+      return rows.map(row => ({
+        id: row.id,
+        courseId: row.courseId,
+        studentId: row.studentId,
+        teacherName: row.teacherName,
+        location: row.location,
+        weekday: row.weekday,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        startWeek: row.startWeek,
+        endWeek: row.endWeek,
+        semester: row.semester,
+        academicYear: row.academicYear,
+        status: row.status,
+        createdTime: row.createdTime,
+        updated_at: row.updated_at,
+        course: {
+          courseName: row.courseName,
+          courseCode: row.courseCode,
+          credits: row.credits,
+          courseType: row.courseType,
+          department: row.department
+        }
+      }));
     } catch (error) {
       console.error('Error getting student schedule:', error);
       throw error;

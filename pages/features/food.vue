@@ -133,11 +133,94 @@
 				</view>
 			</view>
 		</uni-popup>
+
+		<!-- 用餐类型选择弹窗 -->
+		<uni-popup ref="diningTypePopup" type="bottom">
+			<view class="dining-type-popup-container">
+				<view class="popup-header">
+					<text class="popup-title">选择用餐方式</text>
+					<view class="popup-close-btn" @tap="closeDiningTypePopup">
+						<uni-icons type="close" color="#333" size="24"></uni-icons>
+					</view>
+				</view>
+				<view class="dining-options">
+					<view class="dining-option" @tap="selectDiningType('dine_in')">
+						<view class="option-icon">🍽️</view>
+						<view class="option-content">
+							<text class="option-title">堂食</text>
+							<text class="option-desc">在食堂内用餐</text>
+						</view>
+						<uni-icons type="right" color="#999" size="16"></uni-icons>
+					</view>
+					<view class="dining-option" @tap="selectDiningType('takeaway')">
+						<view class="option-icon">🥡</view>
+						<view class="option-content">
+							<text class="option-title">外带</text>
+							<text class="option-desc">打包带走</text>
+						</view>
+						<uni-icons type="right" color="#999" size="16"></uni-icons>
+					</view>
+					<view class="dining-option" @tap="selectDiningType('delivery')">
+						<view class="option-icon">🚚</view>
+						<view class="option-content">
+							<text class="option-title">外卖</text>
+							<text class="option-desc">配送到指定地点</text>
+						</view>
+						<uni-icons type="right" color="#999" size="16"></uni-icons>
+					</view>
+				</view>
+			</view>
+		</uni-popup>
+
+		<!-- 外卖地址填写弹窗 -->
+		<uni-popup ref="deliveryAddressPopup" type="bottom">
+			<view class="delivery-address-popup-container">
+				<view class="popup-header">
+					<text class="popup-title">填写配送信息</text>
+					<view class="popup-close-btn" @tap="closeDeliveryAddressPopup">
+						<uni-icons type="close" color="#333" size="24"></uni-icons>
+					</view>
+				</view>
+				<view class="form-content">
+					<view class="form-item">
+						<text class="form-label">配送地址</text>
+						<input 
+							class="form-input" 
+							v-model="deliveryForm.address" 
+							placeholder="请输入详细地址"
+							maxlength="100"
+						/>
+					</view>
+					<view class="form-item">
+						<text class="form-label">联系电话</text>
+						<input 
+							class="form-input" 
+							v-model="deliveryForm.phone" 
+							placeholder="请输入手机号码"
+							type="number"
+							maxlength="11"
+						/>
+					</view>
+					<view class="form-item">
+						<text class="form-label">配送备注</text>
+						<textarea 
+							class="form-textarea" 
+							v-model="deliveryForm.notes" 
+							placeholder="请输入配送备注（选填）"
+							maxlength="200"
+						/>
+					</view>
+				</view>
+				<view class="popup-footer">
+					<button class="confirm-btn" @tap="confirmDeliveryInfo">确认下单</button>
+				</view>
+			</view>
+		</uni-popup>
 	</view>
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
+// 移除金蝶服务，使用新的后端API
 
 export default {
 	data() {
@@ -148,7 +231,13 @@ export default {
 			canteens: [],
 			filters: ['全部', '特价', '热销', '套餐', '素食'],
 			foodItems: [],
-			selectedFoodItem: null // 用于菜品详情弹窗
+			selectedFoodItem: null, // 用于菜品详情弹窗
+			selectedDiningType: '', // 选择的用餐类型
+			deliveryForm: {
+				address: '',
+				phone: '',
+				notes: ''
+			}
 		}
 	},
 	computed: {
@@ -173,26 +262,28 @@ export default {
 	methods: {
 		async fetchCanteens() {
 			try {
-				const response = await KingdeeAgentService.getCanteenList();
-				console.log('获取食堂列表响应:', response);
-				if (response && response.data && response.data.rows) {
-					const canteens = response.data.rows;
-
-					// 准备时间参数：当前时间 和 一小时前
-					const now = new Date();
-					const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-					const endTime = this.formatDateTime(now);
-					const startTime = this.formatDateTime(oneHourAgo);
-
-					// 并行获取每个食堂的人流量
-					const statusPromises = canteens.map(async (canteen) => {
-						const trafficResponse = await KingdeeAgentService.getTodaysCanteenOrders(canteen.number, startTime, endTime);
-						const count = (trafficResponse && trafficResponse.data) ? parseInt(trafficResponse.data.totalCount, 10) : 0;
-						canteen.status = this.calculateStatus(count);
-						return canteen;
+				const token = uni.getStorageSync('token');
+				if (!token) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
 					});
-					
-					this.canteens = await Promise.all(statusPromises);
+					return;
+				}
+
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/food/canteens',
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+
+				if (response.statusCode === 200 && response.data.success) {
+					this.canteens = response.data.data.map(canteen => ({
+						...canteen,
+						status: canteen.current_status || 'open'
+					}));
 
 					// 如果食堂列表不为空，则默认加载第一个食堂的菜单
 					if (this.canteens.length > 0) {
@@ -239,25 +330,43 @@ export default {
 		},
 		async fetchDishes(canteenId) {
 			try {
-				const response = await KingdeeAgentService.getDishList(canteenId);
-				console.log(`获取食堂[${canteenId}]的菜品列表响应:`, response);
-				if (response && response.data && response.data.rows) {
-					this.foodItems = response.data.rows.map(item => {
-						let imageName = 'default.png';
-						if (item.lb77_description) {
-							const parts = item.lb77_description.split('\\');
-							imageName = parts[parts.length - 1];
-						}
-						item.image = `/static/images/FoodList/${imageName}`;
-
-						item.price = item.lb77_price;
-						item.tags = item.lb77_tags ? item.lb77_tags.split(',') : [];
-
-						item.monthlySales = Math.floor(Math.random() * 500) + 50;
-
-						return item;
+				const token = uni.getStorageSync('token');
+				console.log('获取菜品，食堂ID:', canteenId, 'token:', token);
+				
+				if (!token) {
+					console.log('没有找到token，请先登录');
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
 					});
+					return;
+				}
+
+				console.log('开始获取食堂菜品...');
+				const response = await uni.request({
+					url: `http://localhost:3000/api/food/canteens/${canteenId}/foods`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+
+				console.log('菜品API响应:', response);
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.foodItems = response.data.data.map(item => ({
+						...item,
+						number: item.number,
+						name: item.name,
+						image: item.image || 'http://localhost:3000/static/images/FoodList/default.png',
+						price: parseFloat(item.price),
+						tags: item.tags ? (Array.isArray(item.tags) ? item.tags : JSON.parse(item.tags)) : [],
+						monthlySales: item.monthly_sales || Math.floor(Math.random() * 500) + 50
+					}));
+					
+					console.log('处理后的菜品数据:', this.foodItems);
 				} else {
+					console.log('菜品API返回错误:', response.data);
 					this.foodItems = [];
 					uni.showToast({
 						title: '该食堂暂无菜品',
@@ -335,54 +444,108 @@ export default {
 				return;
 			}
 
-			uni.showModal({
-				title: '确认订单',
-				content: `总计 ¥${this.cartTotal.toFixed(2)}，是否确认下单？`,
-				success: async (res) => {
-					if (res.confirm) {
-						this.submitOrder();
-					}
-				}
-			});
+			// 显示用餐类型选择弹窗
+			this.$refs.diningTypePopup.open();
+		},
+		// 选择用餐类型
+		selectDiningType(type) {
+			this.selectedDiningType = type;
+			this.$refs.diningTypePopup.close();
+			
+			if (type === 'delivery') {
+				// 如果是外卖，显示地址填写弹窗
+				this.$refs.deliveryAddressPopup.open();
+			} else {
+				// 如果是堂食或外带，直接提交订单
+				this.submitOrder();
+			}
+		},
+		// 关闭用餐类型选择弹窗
+		closeDiningTypePopup() {
+			this.$refs.diningTypePopup.close();
+		},
+		// 关闭外卖地址填写弹窗
+		closeDeliveryAddressPopup() {
+			this.$refs.deliveryAddressPopup.close();
+		},
+		// 确认外卖信息并下单
+		confirmDeliveryInfo() {
+			if (!this.deliveryForm.address || !this.deliveryForm.phone) {
+				uni.showToast({
+					title: '请填写配送地址和联系电话',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			this.$refs.deliveryAddressPopup.close();
+			this.submitOrder();
 		},
 		async submitOrder() {
 			uni.showLoading({ title: '正在提交订单...' });
 			
-			// 准备API需要的数据
-			const selectedCanteenInfo = this.canteens[this.selectedCanteen];
-			const orderData = {
-				billno: `food_order_${new Date().getTime()}`, // 动态生成唯一订单号
-				lb77_canteen_number: selectedCanteenInfo.number, // 当前选择的食堂编码
-				lb77_student_number: '645730151', //  TODO: 替换为真实的学生ID
-				lb77_dining_type: '堂食', // 暂时固定为堂食
-				lb77_total_price: this.cartTotal, // 订单总价
-				lb77_entryentity: this.cart.map(item => {
-					return {
-						lb77_food_item_id_number: item.number, // 菜品编码
-						lb77_quantity: item.quantity, // 购买数量
-						// lb77_notes: '' // 备注（可选）
-					};
-				})
-			};
-
 			try {
+				const token = uni.getStorageSync('token');
+				if (!token) {
+					throw new Error('请先登录');
+				}
+
+				// 准备API需要的数据
+				const selectedCanteenInfo = this.canteens[this.selectedCanteen];
+				const orderData = {
+					canteenId: selectedCanteenInfo.id,
+					diningType: this.selectedDiningType,
+					items: this.cart.map(item => ({
+						foodId: item.id,
+						foodName: item.name,
+						foodImage: item.image,
+						quantity: item.quantity,
+						unitPrice: item.price,
+						notes: ''
+					})),
+					deliveryAddress: this.selectedDiningType === 'delivery' ? this.deliveryForm.address : null,
+					deliveryPhone: this.selectedDiningType === 'delivery' ? this.deliveryForm.phone : null,
+					deliveryNotes: this.selectedDiningType === 'delivery' ? this.deliveryForm.notes : null,
+					notes: ''
+				};
+
 				// 关闭购物车弹窗
 				if (this.$refs.cartPopup) {
 					this.$refs.cartPopup.close();
 				}
 
-				const response = await KingdeeAgentService.createCanteenOrder(orderData);
-				console.log('创建食堂订单响应:', response);
-				if (response && response.data && response.data.successCount > 0) {
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/food/orders',
+					method: 'POST',
+					header: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json'
+					},
+					data: orderData
+				});
+
+				if (response.statusCode === 200 && response.data.success) {
 					uni.hideLoading();
-					uni.showToast({
-						title: '下单成功！',
-						icon: 'success'
-					});
-					// 清空购物车
+					
+					const orderResult = response.data.data;
+					
+					// 根据用餐类型处理不同的结果
+					if (this.selectedDiningType === 'delivery') {
+						// 外卖：跳转到外卖进度页面
+						uni.navigateTo({
+							url: `/pages/features/food-delivery-progress?orderId=${orderResult.order.id}`
+						});
+					} else {
+						// 堂食和外带：显示取餐二维码
+						this.showPickupQRCode(orderResult.order);
+					}
+					
+					// 清空购物车和表单
 					this.cart = [];
+					this.deliveryForm = { address: '', phone: '', notes: '' };
+					this.selectedDiningType = '';
 				} else {
-					throw new Error(response.message || '下单失败，请重试');
+					throw new Error(response.data.message || '下单失败，请重试');
 				}
 			} catch (error) {
 				uni.hideLoading();
@@ -392,6 +555,23 @@ export default {
 					icon: 'none'
 				});
 			}
+		},
+
+		// 显示取餐二维码
+		showPickupQRCode(order) {
+			// 这里可以显示取餐二维码弹窗
+			uni.showModal({
+				title: '下单成功！',
+				content: `取餐码：${order.pickupCode || 'A12345'}\n请到${order.canteen_name}取餐`,
+				showCancel: false,
+				confirmText: '知道了',
+				success: () => {
+					// 跳转到我的订单页面并传递订单ID，自动弹出详情窗口
+					uni.navigateTo({
+						url: `/pages/features/food-history?orderId=${order.id}`
+					});
+				}
+			});
 		},
 		goToHistory() {
 			uni.navigateTo({
@@ -841,5 +1021,114 @@ export default {
 	font-size: 28rpx;
 	font-weight: bold;
 	box-shadow: 0 6rpx 15rpx rgba(0, 122, 255, 0.4);
+}
+
+/* 用餐类型选择弹窗样式 */
+.dining-type-popup-container {
+	background-color: #ffffff;
+	border-top-left-radius: 30rpx;
+	border-top-right-radius: 30rpx;
+	padding: 30rpx;
+	padding-bottom: calc(40rpx + constant(safe-area-inset-bottom));
+	padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.dining-options {
+	margin-top: 30rpx;
+}
+
+.dining-option {
+	display: flex;
+	align-items: center;
+	padding: 30rpx 0;
+	border-bottom: 1rpx solid #f5f5f5;
+}
+
+.dining-option:last-child {
+	border-bottom: none;
+}
+
+.option-icon {
+	font-size: 40rpx;
+	margin-right: 20rpx;
+}
+
+.option-content {
+	flex-grow: 1;
+}
+
+.option-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	margin-bottom: 8rpx;
+	display: block;
+}
+
+.option-desc {
+	font-size: 24rpx;
+	color: #666;
+}
+
+/* 外卖地址弹窗样式 */
+.delivery-address-popup-container {
+	background-color: #ffffff;
+	border-top-left-radius: 30rpx;
+	border-top-right-radius: 30rpx;
+	padding: 30rpx;
+	padding-bottom: calc(40rpx + constant(safe-area-inset-bottom));
+	padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+	max-height: 80vh;
+}
+
+.form-content {
+	margin-top: 30rpx;
+}
+
+.form-item {
+	margin-bottom: 30rpx;
+}
+
+.form-label {
+	font-size: 28rpx;
+	font-weight: bold;
+	margin-bottom: 15rpx;
+	display: block;
+	color: #333;
+}
+
+.form-input {
+	width: 100%;
+	height: 80rpx;
+	border: 2rpx solid #e5e5e5;
+	border-radius: 10rpx;
+	padding: 0 20rpx;
+	font-size: 28rpx;
+	box-sizing: border-box;
+}
+
+.form-textarea {
+	width: 100%;
+	height: 120rpx;
+	border: 2rpx solid #e5e5e5;
+	border-radius: 10rpx;
+	padding: 20rpx;
+	font-size: 28rpx;
+	box-sizing: border-box;
+	resize: none;
+}
+
+.popup-footer {
+	margin-top: 40rpx;
+}
+
+.confirm-btn {
+	width: 100%;
+	height: 80rpx;
+	background-color: #007AFF;
+	color: #ffffff;
+	border: none;
+	border-radius: 10rpx;
+	font-size: 32rpx;
+	font-weight: bold;
 }
 </style> 

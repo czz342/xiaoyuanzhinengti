@@ -72,7 +72,7 @@
 					v-for="(room, index) in currentFloorRooms" 
 					:key="index"
 					:class="room.status"
-					:style="{ left: room.position.x + 'rpx', top: room.position.y + 'rpx' }"
+					:style="{ left: room.position_x + 'rpx', top: room.position_y + 'rpx' }"
 					@tap="selectRoom(room)"
 				>
 					<text class="room-code">{{room.code}}</text>
@@ -110,13 +110,13 @@
 						<text class="room-capacity">容量: {{room.capacity}}人</text>
 					</view>
 					<view class="room-equipment">
-						<view class="equipment-icon" v-if="room.hasProjector">
+						<view class="equipment-icon" v-if="hasEquipment(room, '投影仪')">
 							<image src="/static/images/projector.png" mode="aspectFit"></image>
 						</view>
-						<view class="equipment-icon" v-if="room.hasComputer">
+						<view class="equipment-icon" v-if="hasEquipment(room, '电脑')">
 							<image src="/static/images/computer.png" mode="aspectFit"></image>
 						</view>
-						<view class="equipment-icon" v-if="room.hasAirConditioner">
+						<view class="equipment-icon" v-if="hasEquipment(room, '空调')">
 							<image src="/static/images/ac.png" mode="aspectFit"></image>
 						</view>
 					</view>
@@ -187,8 +187,6 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
-
 export default {
 	data() {
 		return {
@@ -214,8 +212,8 @@ export default {
 			// 时间段选择
 			selectedTimeSlots: [],
 			
-			// 模拟的楼层教室数据 - 将由API填充
-			roomsData: {},
+			// 教室数据
+			classrooms: [],
 
 			// 当天所有教室的预定记录
 			dailyBookings: [],
@@ -268,17 +266,17 @@ export default {
 			const building = this.buildings[this.currentBuildingIndex];
 			const floor = this.floors[this.currentFloorIndex];
 			
-			if (this.roomsData[building] && this.roomsData[building][floor]) {
-				let rooms = this.roomsData[building][floor];
+			if (building && floor) {
+				let rooms = this.classrooms.filter(room => 
+					room.building === building && room.floor === floor
+				);
 				
 				// 如果有选中的设备，则进行筛选
 				if (this.selectedEquipments.length > 0) {
 					rooms = rooms.filter(room => {
 						// 检查该教室是否包含所有选中的设备
 						return this.selectedEquipments.every(equipment => {
-							// 我们需要一种方式来检查room是否含有该equipment
-							// 假设 room.equipment 是一个像 "投影仪,电脑" 这样的字符串
-							return room.equipment && room.equipment.includes(equipment);
+							return this.hasEquipment(room, equipment);
 						});
 					});
 				}
@@ -292,9 +290,16 @@ export default {
 		async fetchClassrooms() {
 			uni.showLoading({ title: '加载教室中...' });
 			try {
-				const response = await KingdeeAgentService.getClassroomList();
-				if (response && response.data && Array.isArray(response.data.rows)) {
-					this.processClassroomData(response.data.rows);
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/classroom/list',
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.processClassroomData(response.data.data);
 				} else {
 					console.error("获取到的教室数据格式不正确", response);
 					uni.showToast({ title: '教室数据加载失败', icon: 'none' });
@@ -307,48 +312,12 @@ export default {
 			}
 		},
 		
-		processClassroomData(apiRows) {
-			const roomsData = {};
-			const buildings = new Set();
+		processClassroomData(classrooms) {
+			this.classrooms = classrooms;
 			
-			apiRows.forEach(row => {
-				const buildingName = row.lb77_building_name;
-				if (buildingName) {
-					buildings.add(buildingName);
-					if (!roomsData[buildingName]) {
-						roomsData[buildingName] = {};
-					}
-
-					const floorName = row.lb77_floor;
-					if (floorName) {
-						if (!roomsData[buildingName][floorName]) {
-							roomsData[buildingName][floorName] = [];
-						}
-						
-						const equipment = row.lb77_equipment || '';
-						roomsData[buildingName][floorName].push({
-							id: row.masterid,
-							code: row.number,
-							name: row.name,
-							capacity: row.lb77_capacity,
-							status: row.lb77_status || '可用',
-							hasProjector: equipment.includes('投影仪'),
-							hasComputer: equipment.includes('电脑'),
-							hasAirConditioner: equipment.includes('空调'),
-							equipment: equipment, // 直接保存设备字符串，用于筛选
-							position: {
-								x: row.lb77_position_x || 0,
-								y: row.lb77_position_y || 0
-							},
-							// 暂定所有时间段可用
-							availableTimeSlots: Array.from({ length: 12 }, (_, i) => i) 
-						});
-					}
-				}
-			});
-
-			this.buildings = Array.from(buildings);
-			this.roomsData = roomsData;
+			// 提取所有教学楼
+			const buildings = [...new Set(classrooms.map(room => room.building))];
+			this.buildings = buildings.sort();
 			
 			// 初始化楼层数据
 			this.updateFloorsForCurrentBuilding();
@@ -356,10 +325,13 @@ export default {
 
 		updateFloorsForCurrentBuilding() {
 			const currentBuildingName = this.buildings[this.currentBuildingIndex];
-			if (currentBuildingName && this.roomsData[currentBuildingName]) {
-				const floorKeys = Object.keys(this.roomsData[currentBuildingName]);
-				floorKeys.sort((a, b) => parseInt(a) - parseInt(b));
-				this.floors = floorKeys;
+			if (currentBuildingName) {
+				const floors = [...new Set(
+					this.classrooms
+						.filter(room => room.building === currentBuildingName)
+						.map(room => room.floor)
+				)];
+				this.floors = floors.sort((a, b) => parseInt(a) - parseInt(b));
 			} else {
 				this.floors = [];
 			}
@@ -462,10 +434,10 @@ export default {
 			// 2. 遍历当天的所有预定记录
 			for (const booking of this.dailyBookings) {
 				// 3. 检查这条预定记录是否属于当前选中的教室
-				if (booking.lb77_classroom_id_number === this.selectedRoom.code) {
+				if (booking.classroomId === this.selectedRoom.id) {
 					// 4. 将预定记录的开始/结束时间从秒转换为小时
-					const bookingStartHour = booking.lb77_start_time / 3600;
-					const bookingEndHour = booking.lb77_end_time / 3600;
+					const bookingStartHour = booking.startTime / 3600;
+					const bookingEndHour = booking.endTime / 3600;
 					
 					// 5. 判断当前时间段的开始小时，是否落在 [预定开始小时, 预定结束小时) 这个区间内
 					if (slotStartHour >= bookingStartHour && slotStartHour < bookingEndHour) {
@@ -490,20 +462,31 @@ export default {
 			return `${startTime}-${endTime}`;
 		},
 		
-		generateRandomString(length) {
-			const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-			let result = '';
-			const charactersLength = characters.length;
-			for (let i = 0; i < length; i++) {
-				result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		hasEquipment(room, equipment) {
+			if (!room.equipment) return false;
+			try {
+				const equipmentList = JSON.parse(room.equipment);
+				return Array.isArray(equipmentList) && equipmentList.includes(equipment);
+			} catch (e) {
+				// 如果解析失败，尝试字符串匹配
+				return room.equipment.includes(equipment);
 			}
-			return result;
 		},
 
 		async submitBooking() {
 			if (this.selectedTimeSlots.length === 0) {
 				uni.showToast({
 					title: '请选择时间段',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 检查登录状态
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({
+					title: '请先登录',
 					icon: 'none'
 				});
 				return;
@@ -524,41 +507,47 @@ export default {
 			const endTime = endTimeInHours * 3600;   // 将小时转换为秒
 			
 			const bookingData = {
-				number: this.generateRandomString(5), // 随机生成一个5位数的单据编号
-				name: `预约-${this.selectedRoom.name}-${this.currentDate}`,
-				lb77_booking_date: this.currentDate,
-				lb77_start_time: startTime, // 发送换算后的秒数, e.g., 28800
-				lb77_end_time: endTime,     // 发送换算后的秒数, e.g., 32400
-				lb77_status: 'confirmed', // 状态直接设置为 confirmed
-				lb77_classroom_id_number: this.selectedRoom.code // 关联教室的编号
+				classroomId: this.selectedRoom.id,
+				reservationDate: this.currentDate,
+				startTime: startTime,
+				endTime: endTime,
+				purpose: `预约-${this.selectedRoom.name}-${this.currentDate}`,
+				notes: ''
 			};
 
 			try {
-				const response = await KingdeeAgentService.saveClassroomBooking(bookingData);
+				const response = await uni.request({
+					url: 'http://localhost:3000/api/classroom/reservations',
+					method: 'POST',
+					header: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					},
+					data: bookingData
+				});
+				
 				uni.hideLoading();
 
-				if (response && response.data && response.data.successCount > 0) {
-				uni.showModal({
-					title: '预约成功',
+				if (response.statusCode === 200 && response.data.success) {
+					uni.showModal({
+						title: '预约成功',
 						content: `您已成功预约${this.selectedRoom.name}，日期：${this.currentDate}，时间：${timeRange}`,
-					showCancel: false,
-					success: (res) => {
-						if (res.confirm) {
+						showCancel: false,
+						success: (res) => {
+							if (res.confirm) {
 								// 刷新当天的预定数据，以立即反映出刚刚完成的预定
 								this.fetchBookingsForDate(this.currentDate); 
 								
-							// 重置选择
-							this.selectedRoom = null;
-							this.selectedTimeSlots = [];
+								// 重置选择
+								this.selectedRoom = null;
+								this.selectedTimeSlots = [];
+							}
 						}
-					}
-				});
+					});
 				} else {
-					// 尝试从金蝶返回的复杂结构中提取更详细的错误信息
-					const errorResult = response?.data?.result?.[0];
-					const errorMessage = errorResult?.errors?.[0]?.msg || '未知错误，请联系管理员';
+					const errorMessage = response.data.message || '预约失败，请稍后重试';
 					uni.showToast({
-						title: `预约失败: ${errorMessage}`,
+						title: errorMessage,
 						icon: 'none',
 						duration: 3000
 					});
@@ -581,9 +570,16 @@ export default {
 			this.dailyBookings = []; // 查询前先清空
 			try {
 				// 这里不显示loading，因为是后台更新，避免频繁闪烁
-				const response = await KingdeeAgentService.getClassroomBookings(date);
-				if (response && response.data && Array.isArray(response.data.rows)) {
-					this.dailyBookings = response.data.rows;
+				const response = await uni.request({
+					url: `http://localhost:3000/api/classroom/reservations/date/${date}`,
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.dailyBookings = response.data.data;
 					console.log(`获取到 ${date} 的 ${this.dailyBookings.length} 条预定记录。`);
 				}
 			} catch (error) {

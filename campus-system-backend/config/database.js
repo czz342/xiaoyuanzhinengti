@@ -69,8 +69,22 @@ async function ensureDatabase() {
   }
 }
 
+// 为了兼容现有代码，导出execute方法
+const db = {
+  execute: async (sql, params = []) => {
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return [rows];
+    } catch (error) {
+      console.error('❌ 查询执行失败:', error.message);
+      throw error;
+    }
+  }
+};
+
 module.exports = {
   pool,
+  db,
   testConnection,
   query,
   ensureDatabase

@@ -1,4 +1,5 @@
 ﻿const express = require("express");
+const path = require('path');
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { testConnection } = require('./config/database');
@@ -18,6 +19,12 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
   next();
 });
+
+// 静态资源：上传目录
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// 静态资源：静态文件目录
+app.use('/static', express.static(path.join(__dirname, '..', 'static')));
 
 // 健康检查
 app.get("/health", (req, res) => {
@@ -47,6 +54,11 @@ app.get("/api", (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/course', require('./routes/course'));
+app.use('/api/classroom', require('./routes/classroom'));
+app.use('/api/book', require('./routes/book'));
+app.use('/api/studyroom', require('./routes/studyroom'));
+app.use('/api/food', require('./routes/food'));
+app.use('/api/express', require('./routes/express'));
 
 // 404处理
 app.use(notFound);

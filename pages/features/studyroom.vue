@@ -85,7 +85,7 @@
                 :class="['seat', seat.status]"
                 @tap="selectSeat(seat)"
               >
-                {{seat.label}}
+                {{seat.displayLabel}}
               </view>
             </view>
           </view>
@@ -185,8 +185,6 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
-
 export default {
   data() {
     return {
@@ -243,8 +241,8 @@ export default {
 
       // 遍历所有预定记录
       this.allDailyBookings.forEach(booking => {
-          const bookingStartSec = booking.lb77_start_time;
-          const bookingEndSec = booking.lb77_end_time;
+          const bookingStartSec = booking.start_time_sec;
+          const bookingEndSec = booking.end_time_sec;
 
           // 检查这个预定与哪个时间槽重叠
           for (let i = 0; i < totalSlots; i++) {
@@ -318,6 +316,21 @@ export default {
     }
   },
   onLoad() {
+    // 检查登录状态
+    const token = uni.getStorageSync('token');
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/index'
+        });
+      }, 1500);
+      return;
+    }
+
     // 初始化日期和时间
     const now = new Date();
     this.currentDate = this.formatDate(now);
@@ -385,7 +398,7 @@ export default {
 
       const bookingsByRoomId = {};
       this.allDailyBookings.forEach(booking => {
-        const roomId = booking.lb77_seat_id_lb77_studyroom_id_number;
+        const roomId = booking.room_id;
         if (!bookingsByRoomId[roomId]) {
           bookingsByRoomId[roomId] = [];
         }
@@ -393,31 +406,30 @@ export default {
       });
       
       this.rooms = this.baseRooms.map(room => {
-        const roomBookings = bookingsByRoomId[room.number] || [];
+        const roomBookings = bookingsByRoomId[room.id] || [];
         const occupiedSeats = new Set();
 
         roomBookings.forEach(booking => {
           // Check for time overlap: (StartA < EndB) and (EndA > StartB)
-          if (booking.lb77_start_time < targetEndSec && booking.lb77_end_time > targetStartSec) {
-            occupiedSeats.add(booking.lb77_seat_id_number);
+          if (booking.start_time_sec < targetEndSec && booking.end_time_sec > targetStartSec) {
+            occupiedSeats.add(booking.seat_id);
           }
         });
 
-        const availableCount = room.lb77_total_seats - occupiedSeats.size;
-        const occupancy = room.lb77_total_seats > 0 ? (occupiedSeats.size / room.lb77_total_seats) : 1;
+        const availableCount = room.total_seats - occupiedSeats.size;
+        const occupancy = room.total_seats > 0 ? (occupiedSeats.size / room.total_seats) : 1;
         
         let level = 'full';
         if (occupancy < 1) level = 'high';
         if (occupancy <= 0.7) level = 'medium';
         if (occupancy <= 0.4) level = 'low';
 
-
         return {
           ...room,
-          id: room.number,
+          id: room.id,
           name: room.name,
-          location: room.lb77_location,
-          total: room.lb77_total_seats,
+          location: room.location,
+          total: room.total_seats,
           available: availableCount,
           level: availableCount === 0 ? 'full' : level
         };
@@ -431,22 +443,36 @@ export default {
       }
       try {
         // 1. 获取自习室基础列表
-        const roomRes = await KingdeeAgentService.getStudyRoomList();
-        if (!roomRes || !roomRes.data || !roomRes.data.rows) {
+        const token = uni.getStorageSync('token');
+        const roomRes = await uni.request({
+          url: 'http://localhost:3000/api/studyroom/list',
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (roomRes.statusCode !== 200 || !roomRes.data.success) {
           throw new Error('获取自习室列表失败');
         }
-        this.baseRooms = roomRes.data.rows;
+        this.baseRooms = roomRes.data.data;
 
-        // 2. 并行获取所有自习室当天的预约记录
-        const bookingPromises = this.baseRooms.map(room =>
-          KingdeeAgentService.getSeatBookingsByDate(room.number, this.currentDate)
-        );
-        const bookingResults = await Promise.all(bookingPromises);
+        // 2. 获取当天所有预约记录
+        const bookingRes = await uni.request({
+          url: `http://localhost:3000/api/studyroom/bookings/date/${this.currentDate}`,
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         
-        // 3. 将所有预约记录扁平化存储
-        this.allDailyBookings = bookingResults.flatMap(res => (res && res.data && res.data.rows) ? res.data.rows : []);
+        if (bookingRes.statusCode === 200 && bookingRes.data.success) {
+          this.allDailyBookings = bookingRes.data.data || [];
+        } else {
+          this.allDailyBookings = [];
+        }
 
-        // 4. 根据默认筛选器（"当前"）更新一次视图
+        // 3. 根据默认筛选器（"当前"）更新一次视图
         this.processRoomsWithBookings();
 
       } catch (error) {
@@ -475,19 +501,19 @@ export default {
         // 2. 为每个座位创建一个预订时间的查找表，以提高效率
         const bookingsBySeat = {};
         this.dailyBookings.forEach(booking => {
-            if (!bookingsBySeat[booking.lb77_seat_id_number]) {
-                bookingsBySeat[booking.lb77_seat_id_number] = [];
+            if (!bookingsBySeat[booking.seat_id]) {
+                bookingsBySeat[booking.seat_id] = [];
             }
-            bookingsBySeat[booking.lb77_seat_id_number].push({
-                start: booking.lb77_start_time,
-                end: booking.lb77_end_time
+            bookingsBySeat[booking.seat_id].push({
+                start: booking.start_time_sec,
+                end: booking.end_time_sec
             });
         });
 
         // 3. 映射所有座位，计算其状态和属性
         const allSeatsWithStatus = this.allSeatsInSelectedRoom.map(seat => {
             let isOccupied = false;
-            const seatBookings = bookingsBySeat[seat.number];
+            const seatBookings = bookingsBySeat[seat.id];
             if (seatBookings) {
                 for (const booking of seatBookings) {
                     // 检查时间重叠: (StartA < EndB) and (EndA > StartB)
@@ -498,20 +524,18 @@ export default {
                 }
             }
             
-            const parts = seat.name.split('-');
-            const row = parseInt(parts[parts.length - 2], 10);
-            
             let status = isOccupied ? 'occupied' : 'available';
             // 如果是当前选中的座位且未被占用，则保持'selected'状态
-            if (this.selectedSeat && this.selectedSeat.id === seat.number && !isOccupied) {
+            if (this.selectedSeat && this.selectedSeat.id === seat.id && !isOccupied) {
                 status = 'selected';
             }
 
             return {
-                id: seat.number,
-                label: parts.slice(-2).join('-'),
+                id: seat.id,
+                label: seat.label,
+                displayLabel: `${seat.row_no}-${seat.col_no}`, // 简化的显示标签
                 status: status,
-                row: isNaN(row) ? -1 : row
+                row: seat.row_no
             };
         });
         
@@ -558,36 +582,44 @@ export default {
       uni.showLoading({ title: '加载座位...' });
       try {
         // 1. 获取该自习室的所有座位
-        const seatRes = await KingdeeAgentService.getSeatListByRoom(room.id);
-        if (!seatRes || !seatRes.data || !seatRes.data.rows) {
+        const token = uni.getStorageSync('token');
+        const seatRes = await uni.request({
+          url: `http://localhost:3000/api/studyroom/${room.id}/seats`,
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (seatRes.statusCode !== 200 || !seatRes.data.success) {
           throw new Error("获取座位列表失败");
         }
         
         // 2. 对座位进行排序（按行、列）
-        const sortedSeats = seatRes.data.rows.sort((a, b) => {
-          const partsA = a.name.split('-');
-          const partsB = b.name.split('-');
-          
-          if (partsA.length < 2 || partsB.length < 2) return 0;
-
-          const rowA = parseInt(partsA[partsA.length - 2], 10);
-          const colA = parseInt(partsA[partsA.length - 1], 10);
-          const rowB = parseInt(partsB[partsB.length - 2], 10);
-          const colB = parseInt(partsB[partsB.length - 1], 10);
-          
-          if (isNaN(rowA) || isNaN(colA) || isNaN(rowB) || isNaN(colB)) return 0;
-
-          if (rowA !== rowB) {
-            return rowA - rowB;
+        const sortedSeats = seatRes.data.data.sort((a, b) => {
+          if (a.row_no !== b.row_no) {
+            return a.row_no - b.row_no;
           }
-          return colA - colB;
+          return a.col_no - b.col_no;
         });
         
         this.allSeatsInSelectedRoom = sortedSeats;
 
         // 3. 获取当天的预定记录
-        const bookingRes = await KingdeeAgentService.getSeatBookingsByDate(room.id, this.currentDate);
-        this.dailyBookings = (bookingRes && bookingRes.data && bookingRes.data.rows) ? bookingRes.data.rows : [];
+        const bookingRes = await uni.request({
+          url: `http://localhost:3000/api/studyroom/${room.id}/bookings/date/${this.currentDate}`,
+          method: 'GET',
+          header: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (bookingRes.statusCode === 200 && bookingRes.data.success) {
+          // 直接使用返回的预约记录，因为API已经过滤了房间
+          this.dailyBookings = bookingRes.data.data || [];
+        } else {
+          this.dailyBookings = [];
+        }
         
         // 4. 根据默认时间更新座位状态
         this.updateSeatStatuses();
@@ -649,31 +681,37 @@ export default {
         return;
       }
       
-      // uni.showLoading({ title: '正在提交预约...' }); // 移除加载弹窗
+      uni.showLoading({ title: '正在提交预约...' });
 
       // 提前将需要的变量存储起来，防止后续被清空
       const roomName = this.selectedRoom.name;
-      const seatLabel = this.selectedSeat.label;
+      const seatLabel = this.selectedSeat.displayLabel || this.selectedSeat.label; // 优先使用简化的显示标签
       const seatId = this.selectedSeat.id;
       const startTime = this.timeRange[0][this.timeIndex[0]];
       const endTime = this.timeRange[1][this.timeIndex[1]];
 
       try {
         const bookingData = {
-          number: `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: `预约单-${roomName}-${seatLabel}`,
-          lb77_booking_date: this.currentDate,
-          lb77_start_time: this.timeToSeconds(startTime),
-          lb77_end_time: this.timeToSeconds(endTime),
-          lb77_status: "已预约",
-          lb77_seat_id_number: seatId,
-          lb77_student_id_number: "645730151" //  暂时硬编码学生ID
+          roomId: this.selectedRoom.id,
+          seatId: seatId,
+          date: this.currentDate,
+          startTimeSec: this.timeToSeconds(startTime),
+          endTimeSec: this.timeToSeconds(endTime)
         };
 
-        const res = await KingdeeAgentService.saveSeatBooking(bookingData);
+        const token = uni.getStorageSync('token');
+        const res = await uni.request({
+          url: 'http://localhost:3000/api/studyroom/book',
+          method: 'POST',
+          data: bookingData,
+          header: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-        if (res && res.data && res.data.successCount > 0) {
-          // uni.hideLoading(); // 移除加载弹窗
+        if (res.statusCode === 200 && res.data.success) {
+          uni.hideLoading();
           uni.showToast({ title: '预约成功！', icon: 'success' });
 
           this.closeSeatSelector();
@@ -685,17 +723,19 @@ export default {
             time: `${startTime} - ${endTime}`,
             expire: endTime
           };
-      this.showVoucher = true;
+          this.showVoucher = true;
           
           // 重新加载所有房间的预订，静默刷新，不显示loading
           this.fetchAndProcessRooms(false); 
           
         } else {
-          throw new Error((res && res.message) || '预约失败，请稍后再试');
+          // 处理HTTP错误或业务逻辑错误
+          const errorMessage = res.data && res.data.message ? res.data.message : '预约失败，请稍后再试';
+          throw new Error(errorMessage);
         }
 
       } catch (error) {
-        // uni.hideLoading(); // 移除加载弹窗
+        uni.hideLoading();
         console.error("确认预约失败:", error);
         uni.showToast({
           title: error.message || '提交预约时发生错误',

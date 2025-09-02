@@ -101,7 +101,7 @@ var components
 try {
   components = {
     uniCalendar: function () {
-      return Promise.all(/*! import() | uni_modules/uni-calendar/components/uni-calendar/uni-calendar */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/uni-calendar/components/uni-calendar/uni-calendar")]).then(__webpack_require__.bind(null, /*! @/uni_modules/uni-calendar/components/uni-calendar/uni-calendar.vue */ 337))
+      return Promise.all(/*! import() | uni_modules/uni-calendar/components/uni-calendar/uni-calendar */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/uni-calendar/components/uni-calendar/uni-calendar")]).then(__webpack_require__.bind(null, /*! @/uni_modules/uni-calendar/components/uni-calendar/uni-calendar.vue */ 353))
     },
   }
 } catch (e) {
@@ -230,7 +230,6 @@ exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! ../../services/kingdeeAgent.js */ 43));
 //
 //
 //
@@ -423,6 +422,8 @@ var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! ../../service
 //
 //
 //
+
+// 已移除金蝶服务导入，现在使用新的后端API
 
 // 预定义颜色列表，用于课程卡片
 var courseColors = ['#DFEEFF', '#E6FFF2', '#FFF2E6', '#FFF0F0', '#F0F2FF', '#E6FAFF', '#FFFBE6'];
@@ -543,68 +544,119 @@ var _default = {
     fetchScheduleData: function fetchScheduleData() {
       var _this = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
-        var studentId, apiCourses;
+        var userInfo, studentId, response;
         return _regenerator.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
                 _context.prev = 0;
-                // TODO: studentId 应该从全局状态或缓存中获取
-                studentId = '645730151';
+                // 检查用户登录状态
+                userInfo = uni.getStorageSync('userInfo');
+                if (userInfo) {
+                  _context.next = 6;
+                  break;
+                }
+                uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+                });
+                // 跳转到登录页面
+                setTimeout(function () {
+                  uni.navigateTo({
+                    url: '/pages/login/index'
+                  });
+                }, 1500);
+                return _context.abrupt("return");
+              case 6:
+                studentId = userInfo.studentId || userInfo.userId;
+                if (studentId) {
+                  _context.next = 10;
+                  break;
+                }
+                uni.showToast({
+                  title: '用户信息不完整，请重新登录',
+                  icon: 'none'
+                });
+                return _context.abrupt("return");
+              case 10:
                 uni.showLoading({
                   title: '正在加载课程表...'
                 });
-                _context.next = 5;
-                return _kingdeeAgent.default.getSchedule(studentId);
-              case 5:
-                apiCourses = _context.sent;
-                _this.courses = _this.mapApiToCourses(apiCourses);
+
+                // 调用新的后端API
                 _context.next = 13;
+                return uni.request({
+                  url: "http://localhost:3000/api/course/schedule/student/".concat(studentId),
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(uni.getStorageSync('token'))
+                  }
+                });
+              case 13:
+                response = _context.sent;
+                if (!response.data.success) {
+                  _context.next = 18;
+                  break;
+                }
+                _this.courses = _this.mapApiToCourses(response.data.data);
+                _context.next = 19;
                 break;
-              case 9:
-                _context.prev = 9;
+              case 18:
+                throw new Error(response.data.message || '获取课程表失败');
+              case 19:
+                _context.next = 25;
+                break;
+              case 21:
+                _context.prev = 21;
                 _context.t0 = _context["catch"](0);
                 console.error('加载课程表失败:', _context.t0);
                 uni.showToast({
                   title: '加载失败，请稍后重试',
                   icon: 'none'
                 });
-              case 13:
-                _context.prev = 13;
+              case 25:
+                _context.prev = 25;
                 uni.hideLoading();
-                return _context.finish(13);
-              case 16:
+                return _context.finish(25);
+              case 28:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[0, 9, 13, 16]]);
+        }, _callee, null, [[0, 21, 25, 28]]);
       }))();
     },
     mapApiToCourses: function mapApiToCourses(apiCourses) {
       if (!Array.isArray(apiCourses)) {
         return [];
       }
+
+      // 预定义课程颜色
+      var courseColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
       return apiCourses.map(function (apiCourse, index) {
+        // 从课程安排中获取课程信息
+        var courseInfo = apiCourse.course || {};
         return {
-          id: apiCourse.id || apiCourse.masterid,
-          name: apiCourse.name,
-          // 使用正确的 'name' 字段
-          teacher: apiCourse.lb77_teacher,
-          location: apiCourse.lb77_location,
-          weekday: parseInt(apiCourse.lb77_weekday, 10) - 1,
-          // API周一为'1', 前端为0
-          startTime: formatTimeFromSeconds(apiCourse.lb77_starttime),
-          // 使用新函数转换时间
-          endTime: formatTimeFromSeconds(apiCourse.lb77_endtime),
-          // 使用新函数转换时间
-          // 您的API没有返回教材信息，这里留空
+          id: apiCourse.id,
+          name: courseInfo.courseName || '未知课程',
+          teacher: apiCourse.teacherName || '未知教师',
+          location: apiCourse.location || '未知地点',
+          weekday: parseInt(apiCourse.weekday, 10) - 1,
+          // 后端周一为1，前端为0
+          startTime: apiCourse.startTime || '00:00',
+          endTime: apiCourse.endTime || '00:00',
           textbook: '',
-          // 从预定义列表中循环选择颜色
+          // 暂时留空
           color: courseColors[index % courseColors.length],
-          // 保存原始周信息，以备将来使用
-          startWeek: apiCourse.lb77_startweek,
-          endWeek: apiCourse.lb77_endweek
+          startWeek: apiCourse.startWeek,
+          endWeek: apiCourse.endWeek,
+          semester: apiCourse.semester,
+          academicYear: apiCourse.academicYear,
+          // 添加更多课程信息
+          courseCode: courseInfo.courseCode,
+          credits: courseInfo.credits,
+          courseType: courseInfo.courseType,
+          department: courseInfo.department
         };
       });
     },

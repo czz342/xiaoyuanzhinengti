@@ -3,6 +3,7 @@ const router = express.Router();
 const Course = require('../models/Course');
 const CourseSchedule = require('../models/CourseSchedule');
 const CourseTimeTemplate = require('../models/CourseTimeTemplate');
+const User = require('../models/User');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { success, error, paginated } = require('../utils/response');
 
@@ -158,8 +159,34 @@ router.get('/schedule/student/:studentId', optionalAuth, async (req, res) => {
     const { semester } = req.query;
     
     // 如果用户已登录，验证权限
-    if (req.user && req.user.userId !== studentId && req.user.role !== 'admin') {
-      return res.status(403).json(error('权限不足'));
+    if (req.user) {
+      // 解析当前登录用户的学号（支持旧token无studentId的情况）
+      let currentStudentId = req.user.studentId || null;
+      if (!currentStudentId && req.user.id) {
+        try {
+          const dbUser = await User.findById(req.user.id);
+          currentStudentId = dbUser ? dbUser.studentId : null;
+        } catch (e) {
+          console.log('解析studentId失败:', e.message);
+        }
+      }
+
+      // 添加调试信息
+      console.log('权限检查调试信息:');
+      console.log('req.user:', req.user);
+      console.log('studentId from URL:', studentId);
+      console.log('resolved currentStudentId:', currentStudentId);
+      console.log('req.user.role:', req.user.role);
+      
+      // 检查用户是否有权限查看该学生的课程表
+      const hasPermission = (currentStudentId && currentStudentId === studentId) || 
+                           req.user.role === 'admin';
+      
+      console.log('hasPermission:', hasPermission);
+      
+      if (!hasPermission) {
+        return res.status(403).json(error('权限不足，只能查看自己的课程表'));
+      }
     }
     
     const schedule = await CourseSchedule.getStudentSchedule(studentId, semester);
@@ -181,8 +208,17 @@ router.get('/schedule/date/:studentId', optionalAuth, async (req, res) => {
     }
     
     // 如果用户已登录，验证权限
-    if (req.user && req.user.userId !== studentId && req.user.role !== 'admin') {
-      return res.status(403).json(error('权限不足'));
+    if (req.user) {
+      let currentStudentId = req.user.studentId || null;
+      if (!currentStudentId && req.user.id) {
+        try {
+          const dbUser = await User.findById(req.user.id);
+          currentStudentId = dbUser ? dbUser.studentId : null;
+        } catch {}
+      }
+      if (((!currentStudentId) || currentStudentId !== studentId) && req.user.role !== 'admin') {
+        return res.status(403).json(error('权限不足'));
+      }
     }
     
     const targetDate = new Date(date);
@@ -209,8 +245,17 @@ router.get('/schedule/week/:studentId', optionalAuth, async (req, res) => {
     }
     
     // 如果用户已登录，验证权限
-    if (req.user && req.user.userId !== studentId && req.user.role !== 'admin') {
-      return res.status(403).json(error('权限不足'));
+    if (req.user) {
+      let currentStudentId = req.user.studentId || null;
+      if (!currentStudentId && req.user.id) {
+        try {
+          const dbUser = await User.findById(req.user.id);
+          currentStudentId = dbUser ? dbUser.studentId : null;
+        } catch {}
+      }
+      if (((!currentStudentId) || currentStudentId !== studentId) && req.user.role !== 'admin') {
+        return res.status(403).json(error('权限不足'));
+      }
     }
     
     const weekNum = parseInt(week);
@@ -383,8 +428,17 @@ router.get('/schedule/stats/:studentId', optionalAuth, async (req, res) => {
     }
     
     // 如果用户已登录，验证权限
-    if (req.user && req.user.userId !== studentId && req.user.role !== 'admin') {
-      return res.status(403).json(error('权限不足'));
+    if (req.user) {
+      let currentStudentId = req.user.studentId || null;
+      if (!currentStudentId && req.user.id) {
+        try {
+          const dbUser = await User.findById(req.user.id);
+          currentStudentId = dbUser ? dbUser.studentId : null;
+        } catch {}
+      }
+      if (((!currentStudentId) || currentStudentId !== studentId) && req.user.role !== 'admin') {
+        return res.status(403).json(error('权限不足'));
+      }
     }
     
     const stats = await CourseSchedule.getStudentStats(studentId, semester);
