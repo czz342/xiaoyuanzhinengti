@@ -56,7 +56,6 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -86,6 +85,17 @@ export default {
 		this.loadRecords(true);
 	},
 	methods: {
+		formatDateTime(iso) {
+			if (!iso) return '';
+			const d = new Date(iso);
+			const y = d.getFullYear();
+			const m = String(d.getMonth() + 1).padStart(2, '0');
+			const day = String(d.getDate()).padStart(2, '0');
+			const hh = String(d.getHours()).padStart(2, '0');
+			const mm = String(d.getMinutes()).padStart(2, '0');
+			const ss = String(d.getSeconds()).padStart(2, '0');
+			return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+		},
 		async loadRecords(isRefresh = false) {
 			if (isRefresh) {
 				this.pageNo = 1;
@@ -103,8 +113,13 @@ export default {
 			this.loadMoreStatus = 'loading';
 			
 			try {
-				const res = await KingdeeAgentService.getMyPrintJobs(this.studentId, this.pageSize, this.pageNo);
-				const fetchedRecords = res?.data?.rows ?? [];
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/printing/jobs',
+					method: 'GET',
+					header: { 'Authorization': `Bearer ${token}` }
+				});
+				const fetchedRecords = res.data.success ? res.data.data : [];
 
 				if (fetchedRecords.length < this.pageSize) {
 					this.hasMore = false;
@@ -113,23 +128,23 @@ export default {
 
 				const formattedRecords = fetchedRecords.map(r => {
 					// 模拟状态：5分钟内的订单视为"待取件"
-					const createTime = new Date(r.createtime);
+					const createTime = new Date(r.created_at);
 					const now = new Date();
 					const isPending = (now - createTime) < 5 * 60 * 1000;
 
 					return {
-						id: r.billno,
-						fileName: `打印任务-${r.billno}`, // API未返回文件名，使用订单号代替
+						id: r.id,
+						fileName: r.file_name || `打印任务-${r.job_number}`,
 						status: isPending ? 'pending' : 'completed',
 						statusText: isPending ? '待取件' : '已完成',
-						location: r.lb77_device_lb77_location,
-						printer: r.lb77_device_name,
-						time: r.createtime,
-						pages: r.lb77_pages,
+						location: r.device_location,
+						printer: r.device_name,
+						time: this.formatDateTime(r.created_at),
+						pages: r.pages,
 						copies: 1, // API未返回份数，默认为1
-						color: r.lb77_laundry_mode_name, // 使用打印类型名称
-						cost: r.lb77_cost.toFixed(2),
-						pickupCode: r.billno.slice(-4) // 使用订单号后4位做为模拟取件码
+						color: r.print_type,
+						cost: Number(r.actual_cost ?? r.estimated_cost ?? 0).toFixed(2),
+						pickupCode: (r.job_number || '').slice(-4)
 					};
 				});
 

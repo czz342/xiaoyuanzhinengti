@@ -185,7 +185,6 @@ exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 //
 //
 //
@@ -479,7 +478,7 @@ var _default = {
     loadPageData: function loadPageData() {
       var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var _devicesRes$data$rows, _devicesRes$data, _busyRes$data$rows, _busyRes$data, _pricingRes$data$rows, _pricingRes$data, _yield$Promise$all, _yield$Promise$all2, devicesRes, busyRes, pricingRes, allPrinters, busyPrinterIds;
+        var token, _yield$Promise$all, _yield$Promise$all2, devicesRes, busyRes, pricingRes, allPrinters, busyPrinterIds;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -488,34 +487,57 @@ var _default = {
                   title: '加载中...'
                 });
                 _context2.prev = 1;
-                _context2.next = 4;
-                return Promise.all([_kingdeeAgent.default.getDevicesByType('打印机', 200), _kingdeeAgent.default.getBusyPrinterDeviceIds(_this3.formatDate(new Date())), _kingdeeAgent.default.getServicePricing('打印', 100)]);
-              case 4:
+                token = uni.getStorageSync('token');
+                _context2.next = 5;
+                return Promise.all([uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices?deviceType=打印机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                }), uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=打印机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                }), uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/pricing?serviceType=打印&deviceType=打印机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                })]);
+              case 5:
                 _yield$Promise$all = _context2.sent;
                 _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 3);
                 devicesRes = _yield$Promise$all2[0];
                 busyRes = _yield$Promise$all2[1];
                 pricingRes = _yield$Promise$all2[2];
-                allPrinters = (_devicesRes$data$rows = devicesRes === null || devicesRes === void 0 ? void 0 : (_devicesRes$data = devicesRes.data) === null || _devicesRes$data === void 0 ? void 0 : _devicesRes$data.rows) !== null && _devicesRes$data$rows !== void 0 ? _devicesRes$data$rows : [];
-                busyPrinterIds = new Set(((_busyRes$data$rows = busyRes === null || busyRes === void 0 ? void 0 : (_busyRes$data = busyRes.data) === null || _busyRes$data === void 0 ? void 0 : _busyRes$data.rows) !== null && _busyRes$data$rows !== void 0 ? _busyRes$data$rows : []).map(function (d) {
-                  return d.lb77_device_number;
-                }));
-                _this3.colorOptions = ((_pricingRes$data$rows = pricingRes === null || pricingRes === void 0 ? void 0 : (_pricingRes$data = pricingRes.data) === null || _pricingRes$data === void 0 ? void 0 : _pricingRes$data.rows) !== null && _pricingRes$data$rows !== void 0 ? _pricingRes$data$rows : []).sort(function (a, b) {
-                  return a.lb77_unit_price - b.lb77_unit_price;
+                allPrinters = devicesRes.data.success ? devicesRes.data.data : [];
+                busyPrinterIds = new Set(busyRes.data.success ? busyRes.data.data : []);
+                _this3.colorOptions = (pricingRes.data.success ? pricingRes.data.data : []).sort(function (a, b) {
+                  return Number(a.unit_price) - Number(b.unit_price);
+                }).map(function (p) {
+                  return {
+                    id: p.id,
+                    name: p.service_name,
+                    unit_price: p.unit_price
+                  };
                 });
                 if (_this3.colorOptions.length > 0) {
-                  _this3.startingPrice = _this3.colorOptions[0].lb77_unit_price.toFixed(2);
+                  _this3.startingPrice = Number(_this3.colorOptions[0].unit_price).toFixed(2);
                   _this3.selectedColor = _this3.colorOptions[0];
-                  _this3.unitPrice = _this3.colorOptions[0].lb77_unit_price;
+                  _this3.unitPrice = Number(_this3.colorOptions[0].unit_price);
                 }
                 _this3.printers = allPrinters.map(function (device) {
                   var status = '';
                   var statusClass = '';
-                  if (device.lb77_status !== '正常') {
+                  if (device.status !== '正常') {
                     status = '故障';
                     statusClass = 'status-fault';
                   } else {
-                    if (busyPrinterIds.has(device.number)) {
+                    if (busyPrinterIds.has(device.id)) {
                       status = '使用中';
                       statusClass = 'status-busy';
                     } else {
@@ -524,45 +546,43 @@ var _default = {
                     }
                   }
                   return {
-                    id: device.number,
-                    name: device.name,
-                    type: device.lb77_brand_model,
-                    location: device.lb77_location,
+                    id: device.id,
+                    name: device.device_name,
+                    type: device.device_model,
+                    location: device.location,
                     status: status,
                     statusClass: statusClass,
                     speed: 30,
                     // 模拟
                     image: '/static/images/printer-icon.png',
                     features: ['双面打印', '彩色'],
-                    // 模拟
-                    rating: (Math.random() * 0.5 + 4.5).toFixed(1) // 模拟
+                    rating: (Math.random() * 0.5 + 4.5).toFixed(1)
                   };
                 });
-
                 _this3.busyPrinters = _this3.printers.filter(function (p) {
                   return p.status === '使用中';
                 });
                 _this3.refreshRecommendation();
-                _context2.next = 22;
+                _context2.next = 23;
                 break;
-              case 18:
-                _context2.prev = 18;
+              case 19:
+                _context2.prev = 19;
                 _context2.t0 = _context2["catch"](1);
                 console.error("加载打印页数据失败:", _context2.t0);
                 uni.showToast({
                   title: '数据加载失败',
                   icon: 'error'
                 });
-              case 22:
-                _context2.prev = 22;
+              case 23:
+                _context2.prev = 23;
                 uni.hideLoading();
-                return _context2.finish(22);
-              case 25:
+                return _context2.finish(23);
+              case 26:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[1, 18, 22, 25]]);
+        }, _callee2, null, [[1, 19, 23, 26]]);
       }))();
     },
     formatDate: function formatDate(date) {
@@ -613,7 +633,7 @@ var _default = {
     },
     selectColor: function selectColor(colorOption) {
       this.selectedColor = colorOption;
-      this.unitPrice = colorOption.lb77_unit_price;
+      this.unitPrice = Number(colorOption.unit_price);
     },
     toggleDoubleSided: function toggleDoubleSided(e) {
       this.doubleSided = e.detail.value;
@@ -645,7 +665,8 @@ var _default = {
     confirmPrint: function confirmPrint() {
       var _this4 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
-        var jobData, res;
+        var _this4$currentFile, _this4$selectedColor, _this4$selectedColor$, _this4$selectedColor2, _this4$selectedColor3, _this4$selectedColor4, _this4$selectedColor5;
+        var token, totalPages, totalCost, jobData, res, _res$data;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
@@ -663,22 +684,47 @@ var _default = {
                 uni.showLoading({
                   title: '正在提交...'
                 });
+                token = uni.getStorageSync('token');
+                totalPages = _this4.pageCount * _this4.copies;
+                totalCost = (_this4.unitPrice * totalPages).toFixed(2);
                 jobData = {
-                  billno: "DY".concat(Date.now()),
-                  lb77_device_number: _this4.recommendedPrinter.id,
-                  lb77_user_number: '645730151',
-                  // @TODO: 动态获取
-                  lb77_laundry_mode_number: _this4.selectedColor.number,
-                  // 使用价目表编码
-                  lb77_pages: _this4.pageCount * _this4.copies // @TODO: 确认是总页数还是单份页数
+                  deviceId: _this4.recommendedPrinter.id,
+                  deviceNumber: String(_this4.recommendedPrinter.id),
+                  deviceName: _this4.recommendedPrinter.name,
+                  deviceLocation: _this4.recommendedPrinter.location,
+                  fileName: ((_this4$currentFile = _this4.currentFile) === null || _this4$currentFile === void 0 ? void 0 : _this4$currentFile.name) || '打印任务.pdf',
+                  filePath: '/uploads/virtual/打印任务.pdf',
+                  fileSize: 0,
+                  fileType: 'pdf',
+                  printType: (_this4$selectedColor = _this4.selectedColor) !== null && _this4$selectedColor !== void 0 && (_this4$selectedColor$ = _this4$selectedColor.name) !== null && _this4$selectedColor$ !== void 0 && _this4$selectedColor$.includes('彩色') ? '彩色' : '黑白',
+                  paperSize: 'A4',
+                  paperType: '普通纸',
+                  printQuality: '标准',
+                  copies: _this4.copies,
+                  pages: totalPages,
+                  duplex: _this4.doubleSided ? '双面' : '单面',
+                  colorPages: (_this4$selectedColor2 = _this4.selectedColor) !== null && _this4$selectedColor2 !== void 0 && (_this4$selectedColor3 = _this4$selectedColor2.name) !== null && _this4$selectedColor3 !== void 0 && _this4$selectedColor3.includes('彩色') ? totalPages : 0,
+                  blackPages: (_this4$selectedColor4 = _this4.selectedColor) !== null && _this4$selectedColor4 !== void 0 && (_this4$selectedColor5 = _this4$selectedColor4.name) !== null && _this4$selectedColor5 !== void 0 && _this4$selectedColor5.includes('彩色') ? 0 : totalPages,
+                  estimatedCost: Number(totalCost),
+                  actualCost: Number(totalCost),
+                  status: '待支付',
+                  paymentMethod: '微信支付'
                 };
-                _context3.prev = 5;
-                _context3.next = 8;
-                return _kingdeeAgent.default.createPrintJob(jobData);
-              case 8:
+                _context3.prev = 8;
+                _context3.next = 11;
+                return uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/printing/jobs',
+                  method: 'POST',
+                  header: {
+                    'Authorization': "Bearer ".concat(token),
+                    'Content-Type': 'application/json'
+                  },
+                  data: jobData
+                });
+              case 11:
                 res = _context3.sent;
-                if (!(res && res.data && res.data.successCount > 0)) {
-                  _context3.next = 16;
+                if (!(res.data && res.data.success)) {
+                  _context3.next = 19;
                   break;
                 }
                 uni.hideLoading();
@@ -692,27 +738,27 @@ var _default = {
                     url: '/pages/features/printing-history?filter=pending'
                   });
                 }, 1500);
-                _context3.next = 17;
-                break;
-              case 16:
-                throw new Error(res.message || '提交失败');
-              case 17:
-                _context3.next = 23;
+                _context3.next = 20;
                 break;
               case 19:
-                _context3.prev = 19;
-                _context3.t0 = _context3["catch"](5);
+                throw new Error(((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.message) || '提交失败');
+              case 20:
+                _context3.next = 26;
+                break;
+              case 22:
+                _context3.prev = 22;
+                _context3.t0 = _context3["catch"](8);
                 uni.hideLoading();
                 uni.showToast({
                   title: _context3.t0.message || '提交失败，请重试',
                   icon: 'error'
                 });
-              case 23:
+              case 26:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[5, 19]]);
+        }, _callee3, null, [[8, 22]]);
       }))();
     }
   }

@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
+// import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -168,76 +168,107 @@ export default {
 		async loadPageData() {
 			uni.showLoading({ title: '加载中...' });
 			try {
-				// 1. 获取所有设备
-				const allDevicesRes = await KingdeeAgentService.getAllSharedDevices(200);
-				const allDevices = allDevicesRes?.data?.rows ?? [];
+				// 检查登录状态
+				const token = uni.getStorageSync('token');
+				if (!token) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/login'
+						});
+					}, 1500);
+					return;
+				}
 
-				// 2. 获取当前时间用于查询繁忙设备
-				const queryTime = this.formatDate(new Date());
-
-				// 3. 并行获取繁忙的洗衣机和打印机
-				const [busyLaundryRes, busyPrinterRes] = await Promise.all([
-					KingdeeAgentService.getBusyLaundryDeviceIds(queryTime),
-					KingdeeAgentService.getBusyPrinterDeviceIds(queryTime)
-				]);
-
-				const busyLaundryIds = new Set((busyLaundryRes?.data?.rows ?? []).map(d => d.lb77_device_number));
-				const busyPrinterIds = new Set((busyPrinterRes?.data?.rows ?? []).map(d => d.lb77_device_number));
-
-				// 4. 计算统计数据和设备列表
-				let totalLaundry = 0;
-				let availableLaundry = 0;
-				let totalPrinters = 0;
-				let availablePrinters = 0;
-				let normalDevices = 0;
-				
-				const processedDevices = allDevices.map(device => {
-					let status = '';
-					let statusClass = '';
-
-					const isLaundry = device.lb77_device_type === '洗衣机';
-					const isPrinter = device.lb77_device_type === '打印机';
-
-					if (isLaundry) totalLaundry++;
-					if (isPrinter) totalPrinters++;
-
-					if (device.lb77_status !== '正常') {
-						status = '故障';
-						statusClass = 'status-fault'; // 需要定义这个新class
-					} else {
-						normalDevices++;
-						let isBusy = false;
-						if (isLaundry) isBusy = busyLaundryIds.has(device.number);
-						if (isPrinter) isBusy = busyPrinterIds.has(device.number);
-
-						if (isBusy) {
-							status = '使用中';
-							statusClass = 'status-busy';
-						} else {
-							status = '空闲中';
-							statusClass = 'status-available';
-							if (isLaundry) availableLaundry++;
-							if (isPrinter) availablePrinters++;
-						}
+				// 1. 获取设备统计信息
+				const statsRes = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/devices/stats',
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
 					}
-
-					return {
-						id: device.number,
-						icon: isLaundry ? '/static/images/washer-icon.png' : '/static/images/printer-icon.png',
-						name: device.name,
-						location: device.lb77_location,
-						status: status,
-						statusClass: statusClass,
-					};
 				});
 
-				this.stats.availableLaundry = availableLaundry;
-				this.stats.availablePrinters = availablePrinters;
-				this.stats.deviceIntegrity = allDevices.length > 0
-					? `${Math.round((normalDevices / allDevices.length) * 100)}%`
-					: '100%';
+				if (statsRes.data.success) {
+					const statsData = statsRes.data.data;
+					this.stats.availableLaundry = statsData.laundry.available;
+					this.stats.availablePrinters = statsData.printers.available;
+					this.stats.deviceIntegrity = statsData.deviceIntegrity;
+				}
 
-				this.nearbyDevices = processedDevices;
+				// 2. 获取所有设备
+				const devicesRes = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/devices',
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+
+				if (devicesRes.data.success) {
+					const allDevices = devicesRes.data.data;
+					
+					// 3. 获取繁忙设备ID列表
+					const [busyLaundryRes, busyPrinterRes] = await Promise.all([
+						uni.request({
+							url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=洗衣机',
+							method: 'GET',
+							header: {
+								'Authorization': `Bearer ${token}`
+							}
+						}),
+						uni.request({
+							url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=打印机',
+							method: 'GET',
+							header: {
+								'Authorization': `Bearer ${token}`
+							}
+						})
+					]);
+
+					const busyLaundryIds = new Set((busyLaundryRes.data.success ? busyLaundryRes.data.data : []).map(id => Number(id)));
+					const busyPrinterIds = new Set((busyPrinterRes.data.success ? busyPrinterRes.data.data : []).map(id => Number(id)));
+
+					// 4. 处理设备数据
+					const processedDevices = allDevices.map(device => {
+						let status = '';
+						let statusClass = '';
+
+						const isLaundry = device.device_type === '洗衣机';
+						const isPrinter = device.device_type === '打印机';
+
+						if (device.status !== '正常') {
+							status = device.status === '故障' ? '故障' : '维护中';
+							statusClass = 'status-fault';
+						} else {
+							let isBusy = false;
+							if (isLaundry) isBusy = (device.usage_status === '使用中') || busyLaundryIds.has(device.id);
+							if (isPrinter) isBusy = (device.usage_status === '使用中') || busyPrinterIds.has(device.id);
+
+							if (isBusy) {
+								status = '使用中';
+								statusClass = 'status-busy';
+							} else {
+								status = '空闲中';
+								statusClass = 'status-available';
+							}
+						}
+
+						return {
+							id: device.id,
+							icon: isLaundry ? '/static/images/washer-icon.png' : '/static/images/printer-icon.png',
+							name: device.device_name,
+							location: device.location,
+							status: status,
+							statusClass: statusClass,
+						};
+					});
+
+					this.nearbyDevices = processedDevices;
+				}
 
 			} catch (error) {
 				console.error("加载共享设备页面数据失败:", error);

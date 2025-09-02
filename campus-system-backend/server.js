@@ -59,6 +59,8 @@ app.use('/api/book', require('./routes/book'));
 app.use('/api/studyroom', require('./routes/studyroom'));
 app.use('/api/food', require('./routes/food'));
 app.use('/api/express', require('./routes/express'));
+app.use('/api/shared-devices', require('./routes/shared-devices'));
+app.use('/api/psych', require('./routes/psych'));
 
 // 404处理
 app.use(notFound);

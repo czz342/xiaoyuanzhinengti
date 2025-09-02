@@ -191,9 +191,205 @@ var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime
 var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// import KingdeeAgentService from '@/services/kingdeeAgent.js';
 var _default = {
   data: function data() {
     return {
@@ -251,7 +447,7 @@ var _default = {
     loadPageData: function loadPageData() {
       var _this2 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
-        var _devicesRes$data$rows, _devicesRes$data, _busyRes$data$rows, _busyRes$data, _pricingRes$data$rows, _pricingRes$data, _yield$Promise$all, _yield$Promise$all2, devicesRes, busyRes, pricingRes, allLaundryMachines, busyMachineIds;
+        var token, _yield$Promise$all, _yield$Promise$all2, devicesRes, busyRes, pricingRes, allLaundryMachines, busyMachineIds;
         return _regenerator.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -260,33 +456,78 @@ var _default = {
                   title: '加载中...'
                 });
                 _context.prev = 1;
-                _context.next = 4;
-                return Promise.all([_kingdeeAgent.default.getDevicesByType('洗衣机', 200), _kingdeeAgent.default.getBusyLaundryDeviceIds(_this2.formatDate(new Date())), _kingdeeAgent.default.getServicePricing('洗衣', 100)]);
-              case 4:
+                // 检查登录状态
+                token = uni.getStorageSync('token');
+                if (token) {
+                  _context.next = 7;
+                  break;
+                }
+                uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+                });
+                setTimeout(function () {
+                  uni.navigateTo({
+                    url: '/pages/login/login'
+                  });
+                }, 1500);
+                return _context.abrupt("return");
+              case 7:
+                _context.next = 9;
+                return Promise.all([uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices?deviceType=洗衣机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                }), uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=洗衣机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                }), uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/pricing?serviceType=洗衣&deviceType=洗衣机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                })]);
+              case 9:
                 _yield$Promise$all = _context.sent;
                 _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 3);
                 devicesRes = _yield$Promise$all2[0];
                 busyRes = _yield$Promise$all2[1];
                 pricingRes = _yield$Promise$all2[2];
-                allLaundryMachines = (_devicesRes$data$rows = devicesRes === null || devicesRes === void 0 ? void 0 : (_devicesRes$data = devicesRes.data) === null || _devicesRes$data === void 0 ? void 0 : _devicesRes$data.rows) !== null && _devicesRes$data$rows !== void 0 ? _devicesRes$data$rows : [];
-                busyMachineIds = new Set(((_busyRes$data$rows = busyRes === null || busyRes === void 0 ? void 0 : (_busyRes$data = busyRes.data) === null || _busyRes$data === void 0 ? void 0 : _busyRes$data.rows) !== null && _busyRes$data$rows !== void 0 ? _busyRes$data$rows : []).map(function (d) {
-                  return d.lb77_device_number;
+                allLaundryMachines = devicesRes.data.success ? devicesRes.data.data : [];
+                busyMachineIds = new Set((busyRes.data.success ? busyRes.data.data : []).map(function (id) {
+                  return Number(id);
                 }));
-                _this2.washingModes = ((_pricingRes$data$rows = pricingRes === null || pricingRes === void 0 ? void 0 : (_pricingRes$data = pricingRes.data) === null || _pricingRes$data === void 0 ? void 0 : _pricingRes$data.rows) !== null && _pricingRes$data$rows !== void 0 ? _pricingRes$data$rows : []).sort(function (a, b) {
-                  return a.lb77_unit_price - b.lb77_unit_price;
-                });
+                _this2.washingModes = pricingRes.data.success ? pricingRes.data.data.sort(function (a, b) {
+                  return Number(a.base_price) - Number(b.base_price);
+                }).map(function (p) {
+                  return {
+                    id: p.id,
+                    name: p.service_name,
+                    pricing_type: p.pricing_type,
+                    base_price: p.base_price,
+                    unit_price: p.unit_price,
+                    unit_name: p.unit_name
+                  };
+                }) : [];
                 if (_this2.washingModes.length > 0) {
-                  _this2.startingPrice = _this2.washingModes[0].lb77_unit_price.toFixed(2);
+                  _this2.startingPrice = Number(_this2.washingModes[0].base_price).toFixed(2);
                   _this2.selectedMode = _this2.washingModes[0];
                 }
                 _this2.machines = allLaundryMachines.map(function (device) {
+                  var _device$rating;
                   var status = '';
                   var statusClass = '';
-                  if (device.lb77_status !== '正常') {
-                    status = '故障';
+                  if (device.status !== '正常') {
+                    status = device.status === '故障' ? '故障' : '维护中';
                     statusClass = 'status-fault';
                   } else {
-                    if (busyMachineIds.has(device.number)) {
+                    if (device.usage_status === '使用中' || busyMachineIds.has(device.id)) {
                       status = '使用中';
                       statusClass = 'status-busy';
                     } else {
@@ -295,41 +536,41 @@ var _default = {
                     }
                   }
                   return {
-                    id: device.number,
-                    name: device.name,
-                    type: device.lb77_brand_model,
-                    location: device.lb77_location,
+                    id: device.id,
+                    name: device.device_name,
+                    type: device.device_model,
+                    location: device.location,
                     status: status,
                     statusClass: statusClass,
                     image: '/static/images/washer-icon.png',
-                    features: ['智能杀菌', '大容量'],
-                    rating: (Math.random() * 0.5 + 4.5).toFixed(1)
+                    features: device.features || ['智能杀菌', '大容量'],
+                    rating: Number((_device$rating = device.rating) !== null && _device$rating !== void 0 ? _device$rating : 0).toFixed(1)
                   };
                 });
                 _this2.busyMachines = _this2.machines.filter(function (m) {
                   return m.status === '使用中';
                 });
                 _this2.refreshRecommendation();
-                _context.next = 22;
+                _context.next = 27;
                 break;
-              case 18:
-                _context.prev = 18;
+              case 23:
+                _context.prev = 23;
                 _context.t0 = _context["catch"](1);
                 console.error("加载洗衣页数据失败:", _context.t0);
                 uni.showToast({
                   title: '数据加载失败',
                   icon: 'error'
                 });
-              case 22:
-                _context.prev = 22;
+              case 27:
+                _context.prev = 27;
                 uni.hideLoading();
-                return _context.finish(22);
-              case 25:
+                return _context.finish(27);
+              case 30:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[1, 18, 22, 25]]);
+        }, _callee, null, [[1, 23, 27, 30]]);
       }))();
     },
     formatDate: function formatDate(date) {
@@ -417,12 +658,13 @@ var _default = {
       this.notifications = e.detail.value;
     },
     calculatePrice: function calculatePrice() {
-      return this.selectedMode ? this.selectedMode.lb77_unit_price.toFixed(2) : '0.00';
+      return this.selectedMode ? Number(this.selectedMode.base_price).toFixed(2) : '0.00';
     },
     confirmBooking: function confirmBooking() {
       var _this4 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var orderData, res;
+        var _this4$paymentMethods;
+        var token, priceRes, estimatedCost, durationMinutes, payMethodName, orderData, res;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -440,19 +682,73 @@ var _default = {
                 uni.showLoading({
                   title: '预约中...'
                 });
+                token = uni.getStorageSync('token');
+                if (token) {
+                  _context2.next = 9;
+                  break;
+                }
+                uni.hideLoading();
+                uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+                });
+                return _context2.abrupt("return");
+              case 9:
+                _context2.next = 11;
+                return uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/pricing/calculate',
+                  method: 'POST',
+                  header: {
+                    'Authorization': "Bearer ".concat(token),
+                    'Content-Type': 'application/json'
+                  },
+                  data: {
+                    serviceType: '洗衣',
+                    deviceType: '洗衣机',
+                    params: {
+                      pricingType: _this4.selectedMode.pricing_type,
+                      duration: 30 // 默认30分钟
+                    }
+                  }
+                });
+              case 11:
+                priceRes = _context2.sent;
+                estimatedCost = priceRes.data.success ? priceRes.data.data.totalPrice : _this4.selectedMode.base_price;
+                durationMinutes = priceRes.data.success ? priceRes.data.data.durationMinutes || 30 : 30;
+                payMethodName = ((_this4$paymentMethods = _this4.paymentMethods.find(function (m) {
+                  return m.id === _this4.selectedPayment;
+                })) === null || _this4$paymentMethods === void 0 ? void 0 : _this4$paymentMethods.name) || '微信支付';
                 orderData = {
-                  billno: "LX".concat(Date.now()),
-                  lb77_user_number: "645730151",
-                  lb77_laundry_mode_number: _this4.selectedMode.number,
-                  lb77_device_number: _this4.selectedMachine.id
+                  deviceId: _this4.selectedMachine.id,
+                  deviceNumber: _this4.selectedMachine.id.toString(),
+                  deviceName: _this4.selectedMachine.name,
+                  deviceLocation: _this4.selectedMachine.location,
+                  washType: '标准洗',
+                  washTemperature: '温水',
+                  washDuration: durationMinutes,
+                  spinSpeed: '中转速',
+                  detergentType: '普通洗衣液',
+                  specialRequirements: '',
+                  estimatedCost: estimatedCost,
+                  actualCost: estimatedCost,
+                  status: '待支付',
+                  paymentMethod: payMethodName
                 };
-                _context2.prev = 5;
-                _context2.next = 8;
-                return _kingdeeAgent.default.createLaundryOrder(orderData);
-              case 8:
+                _context2.prev = 16;
+                _context2.next = 19;
+                return uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/laundry/orders',
+                  method: 'POST',
+                  header: {
+                    'Authorization': "Bearer ".concat(token),
+                    'Content-Type': 'application/json'
+                  },
+                  data: orderData
+                });
+              case 19:
                 res = _context2.sent;
-                if (!(res && res.data && res.data.successCount > 0)) {
-                  _context2.next = 16;
+                if (!res.data.success) {
+                  _context2.next = 27;
                   break;
                 }
                 uni.hideLoading();
@@ -462,31 +758,31 @@ var _default = {
                 });
                 _this4.showBookingPopup = false;
 
-                // 跳转到订单历史页面，并筛选“进行中”
+                // 跳转到订单历史页面，并筛选"进行中"
                 uni.redirectTo({
                   url: '/pages/features/laundry-history?filter=processing'
                 });
-                _context2.next = 17;
+                _context2.next = 28;
                 break;
-              case 16:
-                throw new Error(res.message || '预约失败');
-              case 17:
-                _context2.next = 23;
+              case 27:
+                throw new Error(res.data.message || '预约失败');
+              case 28:
+                _context2.next = 34;
                 break;
-              case 19:
-                _context2.prev = 19;
-                _context2.t0 = _context2["catch"](5);
+              case 30:
+                _context2.prev = 30;
+                _context2.t0 = _context2["catch"](16);
                 uni.hideLoading();
                 uni.showToast({
                   title: _context2.t0.message || '预约失败，请重试',
                   icon: 'error'
                 });
-              case 23:
+              case 34:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[5, 19]]);
+        }, _callee2, null, [[16, 30]]);
       }))();
     }
   }

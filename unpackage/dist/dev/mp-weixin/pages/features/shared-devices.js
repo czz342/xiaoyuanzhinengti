@@ -168,7 +168,6 @@ exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 //
 //
 //
@@ -301,6 +300,7 @@ var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/ki
 //
 //
 //
+// import KingdeeAgentService from '@/services/kingdeeAgent.js';
 var _default = {
   data: function data() {
     return {
@@ -332,7 +332,7 @@ var _default = {
     loadPageData: function loadPageData() {
       var _this = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
-        var _allDevicesRes$data$r, _allDevicesRes$data, _busyLaundryRes$data$, _busyLaundryRes$data, _busyPrinterRes$data$, _busyPrinterRes$data, allDevicesRes, allDevices, queryTime, _yield$Promise$all, _yield$Promise$all2, busyLaundryRes, busyPrinterRes, busyLaundryIds, busyPrinterIds, totalLaundry, availableLaundry, totalPrinters, availablePrinters, normalDevices, processedDevices;
+        var token, statsRes, statsData, devicesRes, allDevices, _yield$Promise$all, _yield$Promise$all2, busyLaundryRes, busyPrinterRes, busyLaundryIds, busyPrinterIds, processedDevices;
         return _regenerator.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -341,88 +341,132 @@ var _default = {
                   title: '加载中...'
                 });
                 _context.prev = 1;
-                _context.next = 4;
-                return _kingdeeAgent.default.getAllSharedDevices(200);
-              case 4:
-                allDevicesRes = _context.sent;
-                allDevices = (_allDevicesRes$data$r = allDevicesRes === null || allDevicesRes === void 0 ? void 0 : (_allDevicesRes$data = allDevicesRes.data) === null || _allDevicesRes$data === void 0 ? void 0 : _allDevicesRes$data.rows) !== null && _allDevicesRes$data$r !== void 0 ? _allDevicesRes$data$r : []; // 2. 获取当前时间用于查询繁忙设备
-                queryTime = _this.formatDate(new Date()); // 3. 并行获取繁忙的洗衣机和打印机
+                // 检查登录状态
+                token = uni.getStorageSync('token');
+                if (token) {
+                  _context.next = 7;
+                  break;
+                }
+                uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+                });
+                setTimeout(function () {
+                  uni.navigateTo({
+                    url: '/pages/login/login'
+                  });
+                }, 1500);
+                return _context.abrupt("return");
+              case 7:
                 _context.next = 9;
-                return Promise.all([_kingdeeAgent.default.getBusyLaundryDeviceIds(queryTime), _kingdeeAgent.default.getBusyPrinterDeviceIds(queryTime)]);
+                return uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices/stats',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                });
               case 9:
+                statsRes = _context.sent;
+                if (statsRes.data.success) {
+                  statsData = statsRes.data.data;
+                  _this.stats.availableLaundry = statsData.laundry.available;
+                  _this.stats.availablePrinters = statsData.printers.available;
+                  _this.stats.deviceIntegrity = statsData.deviceIntegrity;
+                }
+
+                // 2. 获取所有设备
+                _context.next = 13;
+                return uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                });
+              case 13:
+                devicesRes = _context.sent;
+                if (!devicesRes.data.success) {
+                  _context.next = 26;
+                  break;
+                }
+                allDevices = devicesRes.data.data; // 3. 获取繁忙设备ID列表
+                _context.next = 18;
+                return Promise.all([uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=洗衣机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                }), uni.request({
+                  url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=打印机',
+                  method: 'GET',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                })]);
+              case 18:
                 _yield$Promise$all = _context.sent;
                 _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2);
                 busyLaundryRes = _yield$Promise$all2[0];
                 busyPrinterRes = _yield$Promise$all2[1];
-                busyLaundryIds = new Set(((_busyLaundryRes$data$ = busyLaundryRes === null || busyLaundryRes === void 0 ? void 0 : (_busyLaundryRes$data = busyLaundryRes.data) === null || _busyLaundryRes$data === void 0 ? void 0 : _busyLaundryRes$data.rows) !== null && _busyLaundryRes$data$ !== void 0 ? _busyLaundryRes$data$ : []).map(function (d) {
-                  return d.lb77_device_number;
+                busyLaundryIds = new Set((busyLaundryRes.data.success ? busyLaundryRes.data.data : []).map(function (id) {
+                  return Number(id);
                 }));
-                busyPrinterIds = new Set(((_busyPrinterRes$data$ = busyPrinterRes === null || busyPrinterRes === void 0 ? void 0 : (_busyPrinterRes$data = busyPrinterRes.data) === null || _busyPrinterRes$data === void 0 ? void 0 : _busyPrinterRes$data.rows) !== null && _busyPrinterRes$data$ !== void 0 ? _busyPrinterRes$data$ : []).map(function (d) {
-                  return d.lb77_device_number;
-                })); // 4. 计算统计数据和设备列表
-                totalLaundry = 0;
-                availableLaundry = 0;
-                totalPrinters = 0;
-                availablePrinters = 0;
-                normalDevices = 0;
+                busyPrinterIds = new Set((busyPrinterRes.data.success ? busyPrinterRes.data.data : []).map(function (id) {
+                  return Number(id);
+                })); // 4. 处理设备数据
                 processedDevices = allDevices.map(function (device) {
                   var status = '';
                   var statusClass = '';
-                  var isLaundry = device.lb77_device_type === '洗衣机';
-                  var isPrinter = device.lb77_device_type === '打印机';
-                  if (isLaundry) totalLaundry++;
-                  if (isPrinter) totalPrinters++;
-                  if (device.lb77_status !== '正常') {
-                    status = '故障';
-                    statusClass = 'status-fault'; // 需要定义这个新class
+                  var isLaundry = device.device_type === '洗衣机';
+                  var isPrinter = device.device_type === '打印机';
+                  if (device.status !== '正常') {
+                    status = device.status === '故障' ? '故障' : '维护中';
+                    statusClass = 'status-fault';
                   } else {
-                    normalDevices++;
                     var isBusy = false;
-                    if (isLaundry) isBusy = busyLaundryIds.has(device.number);
-                    if (isPrinter) isBusy = busyPrinterIds.has(device.number);
+                    if (isLaundry) isBusy = device.usage_status === '使用中' || busyLaundryIds.has(device.id);
+                    if (isPrinter) isBusy = device.usage_status === '使用中' || busyPrinterIds.has(device.id);
                     if (isBusy) {
                       status = '使用中';
                       statusClass = 'status-busy';
                     } else {
                       status = '空闲中';
                       statusClass = 'status-available';
-                      if (isLaundry) availableLaundry++;
-                      if (isPrinter) availablePrinters++;
                     }
                   }
                   return {
-                    id: device.number,
+                    id: device.id,
                     icon: isLaundry ? '/static/images/washer-icon.png' : '/static/images/printer-icon.png',
-                    name: device.name,
-                    location: device.lb77_location,
+                    name: device.device_name,
+                    location: device.location,
                     status: status,
                     statusClass: statusClass
                   };
                 });
-                _this.stats.availableLaundry = availableLaundry;
-                _this.stats.availablePrinters = availablePrinters;
-                _this.stats.deviceIntegrity = allDevices.length > 0 ? "".concat(Math.round(normalDevices / allDevices.length * 100), "%") : '100%';
                 _this.nearbyDevices = processedDevices;
-                _context.next = 31;
+              case 26:
+                _context.next = 32;
                 break;
-              case 27:
-                _context.prev = 27;
+              case 28:
+                _context.prev = 28;
                 _context.t0 = _context["catch"](1);
                 console.error("加载共享设备页面数据失败:", _context.t0);
                 uni.showToast({
                   title: '数据加载失败',
                   icon: 'error'
                 });
-              case 31:
-                _context.prev = 31;
+              case 32:
+                _context.prev = 32;
                 uni.hideLoading();
-                return _context.finish(31);
-              case 34:
+                return _context.finish(32);
+              case 35:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[1, 27, 31, 34]]);
+        }, _callee, null, [[1, 28, 32, 35]]);
       }))();
     },
     formatDate: function formatDate(date) {

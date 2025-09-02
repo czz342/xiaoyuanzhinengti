@@ -61,7 +61,8 @@ router.post('/register', async (req, res) => {
         id: newUser.id, 
         userId: newUser.userId,
         userName: newUser.userName,
-        studentId: newUser.studentId
+        studentId: newUser.studentId,
+        phone: newUser.phone
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
@@ -124,7 +125,8 @@ router.post('/login', async (req, res) => {
         id: user.id, 
         userId: user.userId,
         userName: user.userName,
-        studentId: user.studentId
+        studentId: user.studentId,
+        phone: user.phone
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
@@ -180,7 +182,9 @@ router.post('/refresh', authenticateToken, async (req, res) => {
       { 
         id: user.id, 
         userId: user.userId,
-        userName: user.userName
+        userName: user.userName,
+        studentId: user.studentId,
+        phone: user.phone
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }

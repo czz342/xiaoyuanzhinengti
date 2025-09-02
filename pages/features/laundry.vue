@@ -142,7 +142,7 @@
 								<text 
 									v-for="(mode, index) in washingModes" 
 									:key="index"
-									:class="['mode-option', selectedMode.number === mode.number ? 'active' : '']"
+									:class="['mode-option', (selectedMode && selectedMode.id === mode.id) ? 'active' : '']"
 									@tap="selectMode(mode)">
 									{{mode.name}}
 								</text>
@@ -195,7 +195,7 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
+// import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -243,18 +243,62 @@ export default {
 		async loadPageData() {
 			uni.showLoading({ title: '加载中...' });
 			try {
+				// 检查登录状态
+				const token = uni.getStorageSync('token');
+				if (!token) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/login'
+						});
+					}, 1500);
+					return;
+				}
+
 				const [devicesRes, busyRes, pricingRes] = await Promise.all([
-					KingdeeAgentService.getDevicesByType('洗衣机', 200),
-					KingdeeAgentService.getBusyLaundryDeviceIds(this.formatDate(new Date())),
-					KingdeeAgentService.getServicePricing('洗衣', 100)
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/devices?deviceType=洗衣机',
+						method: 'GET',
+						header: {
+							'Authorization': `Bearer ${token}`
+						}
+					}),
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=洗衣机',
+						method: 'GET',
+						header: {
+							'Authorization': `Bearer ${token}`
+						}
+					}),
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/pricing?serviceType=洗衣&deviceType=洗衣机',
+						method: 'GET',
+						header: {
+							'Authorization': `Bearer ${token}`
+						}
+					})
 				]);
 
-				const allLaundryMachines = devicesRes?.data?.rows ?? [];
-				const busyMachineIds = new Set((busyRes?.data?.rows ?? []).map(d => d.lb77_device_number));
-				this.washingModes = (pricingRes?.data?.rows ?? []).sort((a, b) => a.lb77_unit_price - b.lb77_unit_price);
+				const allLaundryMachines = devicesRes.data.success ? devicesRes.data.data : [];
+				const busyMachineIds = new Set((busyRes.data.success ? busyRes.data.data : []).map(id => Number(id)));
+				this.washingModes = pricingRes.data.success
+					? pricingRes.data.data
+						.sort((a, b) => Number(a.base_price) - Number(b.base_price))
+						.map(p => ({
+							id: p.id,
+							name: p.service_name,
+							pricing_type: p.pricing_type,
+							base_price: p.base_price,
+							unit_price: p.unit_price,
+							unit_name: p.unit_name
+						}))
+					: [];
 				
 				if (this.washingModes.length > 0) {
-					this.startingPrice = this.washingModes[0].lb77_unit_price.toFixed(2);
+					this.startingPrice = Number(this.washingModes[0].base_price).toFixed(2);
 					this.selectedMode = this.washingModes[0];
 				}
 
@@ -262,11 +306,11 @@ export default {
 					let status = '';
 					let statusClass = '';
 
-					if (device.lb77_status !== '正常') {
-						status = '故障';
+					if (device.status !== '正常') {
+						status = device.status === '故障' ? '故障' : '维护中';
 						statusClass = 'status-fault';
 					} else {
-						if (busyMachineIds.has(device.number)) {
+						if (device.usage_status === '使用中' || busyMachineIds.has(device.id)) {
 							status = '使用中';
 							statusClass = 'status-busy';
 						} else {
@@ -276,15 +320,15 @@ export default {
 					}
 					
 					return {
-						id: device.number,
-						name: device.name,
-						type: device.lb77_brand_model,
-						location: device.lb77_location,
+						id: device.id,
+						name: device.device_name,
+						type: device.device_model,
+						location: device.location,
 						status: status,
 						statusClass: statusClass,
 						image: '/static/images/washer-icon.png',
-						features: ['智能杀菌', '大容量'],
-						rating: (Math.random() * 0.5 + 4.5).toFixed(1)
+						features: device.features || ['智能杀菌', '大容量'],
+						rating: Number(device.rating ?? 0).toFixed(1)
 					};
 				});
 
@@ -369,7 +413,7 @@ export default {
 			this.notifications = e.detail.value;
 		},
 		calculatePrice() {
-			return this.selectedMode ? this.selectedMode.lb77_unit_price.toFixed(2) : '0.00';
+			return this.selectedMode ? Number(this.selectedMode.base_price).toFixed(2) : '0.00';
 		},
 		async confirmBooking() {
 			if (!this.selectedMachine || !this.selectedMode) {
@@ -378,27 +422,74 @@ export default {
 			}
 			uni.showLoading({ title: '预约中...' });
 			
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.hideLoading();
+				uni.showToast({ title: '请先登录', icon: 'none' });
+				return;
+			}
+
+			// 计算价格
+			const priceRes = await uni.request({
+				url: 'http://localhost:3000/api/shared-devices/pricing/calculate',
+				method: 'POST',
+				header: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				data: {
+					serviceType: '洗衣',
+					deviceType: '洗衣机',
+					params: {
+						pricingType: this.selectedMode.pricing_type,
+						duration: 30 // 默认30分钟
+					}
+				}
+			});
+
+			const estimatedCost = priceRes.data.success ? priceRes.data.data.totalPrice : this.selectedMode.base_price;
+			const durationMinutes = priceRes.data.success ? (priceRes.data.data.durationMinutes || 30) : 30;
+
+			const payMethodName = (this.paymentMethods.find(m => m.id === this.selectedPayment)?.name) || '微信支付';
 			const orderData = {
-				billno: `LX${Date.now()}`,
-				lb77_user_number: "645730151",
-				lb77_laundry_mode_number: this.selectedMode.number,
-				lb77_device_number: this.selectedMachine.id
+				deviceId: this.selectedMachine.id,
+				deviceNumber: this.selectedMachine.id.toString(),
+				deviceName: this.selectedMachine.name,
+				deviceLocation: this.selectedMachine.location,
+				washType: '标准洗',
+				washTemperature: '温水',
+				washDuration: durationMinutes,
+				spinSpeed: '中转速',
+				detergentType: '普通洗衣液',
+				specialRequirements: '',
+				estimatedCost: estimatedCost,
+				actualCost: estimatedCost,
+				status: '待支付',
+				paymentMethod: payMethodName
 			};
 
 			try {
-				const res = await KingdeeAgentService.createLaundryOrder(orderData);
-				if (res && res.data && res.data.successCount > 0) {
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/laundry/orders',
+					method: 'POST',
+					header: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json'
+					},
+					data: orderData
+				});
+
+				if (res.data.success) {
 					uni.hideLoading();
 					uni.showToast({ title: '预约成功', icon: 'success' });
 					this.showBookingPopup = false;
 					
-					// 跳转到订单历史页面，并筛选“进行中”
+					// 跳转到订单历史页面，并筛选"进行中"
 					uni.redirectTo({
 						url: '/pages/features/laundry-history?filter=processing'
 					});
-
 				} else {
-					throw new Error(res.message || '预约失败');
+					throw new Error(res.data.message || '预约失败');
 				}
 			} catch (error) {
 				uni.hideLoading();

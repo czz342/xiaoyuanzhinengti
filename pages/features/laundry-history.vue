@@ -59,7 +59,6 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -89,6 +88,17 @@ export default {
 		this.loadOrders(true);
 	},
 	methods: {
+		formatDateTime(iso) {
+			if (!iso) return '';
+			const d = new Date(iso);
+			const y = d.getFullYear();
+			const m = String(d.getMonth() + 1).padStart(2, '0');
+			const day = String(d.getDate()).padStart(2, '0');
+			const hh = String(d.getHours()).padStart(2, '0');
+			const mm = String(d.getMinutes()).padStart(2, '0');
+			const ss = String(d.getSeconds()).padStart(2, '0');
+			return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+		},
 		async loadOrders(isRefresh = false) {
 			if (isRefresh) {
 				this.pageNo = 1;
@@ -106,8 +116,13 @@ export default {
 			this.loadMoreStatus = 'loading';
 			
 			try {
-				const res = await KingdeeAgentService.getMyLaundryOrders(this.studentId, this.pageSize, this.pageNo);
-				const fetchedOrders = res?.data?.rows ?? [];
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/laundry/orders',
+					method: 'GET',
+					header: { 'Authorization': `Bearer ${token}` }
+				});
+				const fetchedOrders = res.data.success ? res.data.data : [];
 
 				if (fetchedOrders.length < this.pageSize) {
 					this.hasMore = false;
@@ -116,19 +131,19 @@ export default {
 
 				const formattedOrders = fetchedOrders.map(o => {
 					const now = new Date();
-					const endTime = new Date(o.lb77_end_time);
+					const endTime = new Date(o.end_time || o.created_at);
 					const isProcessing = now < endTime;
 
 					return {
-						id: o.billno,
-						location: o.lb77_device_lb77_location,
-						machine: o.lb77_device_name,
+						id: o.id,
+						location: o.device_location,
+						machine: o.device_name,
 						status: isProcessing ? 'processing' : 'completed',
 						statusText: isProcessing ? '进行中' : '已完成',
-						mode: o.lb77_laundry_mode_name,
-						startTime: o.createtime,
-						endTime: o.lb77_end_time,
-						cost: o.lb77_cost.toFixed(2)
+						mode: o.wash_type,
+						startTime: this.formatDateTime(o.start_time || o.created_at),
+						endTime: this.formatDateTime(o.end_time || o.created_at),
+						cost: Number(o.actual_cost ?? o.estimated_cost ?? 0).toFixed(2)
 					};
 				});
 

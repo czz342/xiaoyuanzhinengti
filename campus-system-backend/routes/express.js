@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const ExpressPackage = require('../models/ExpressPackage');
 const ExpressStation = require('../models/ExpressStation');
 const ExpressTracking = require('../models/ExpressTracking');
+const config = require('../config/config');
 
 // 中间件：验证JWT token
 const authenticateToken = (req, res, next) => {
@@ -14,7 +15,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ success: false, message: '访问令牌缺失' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    jwt.verify(token, config.jwt.secret, (err, user) => {
         if (err) {
             return res.status(403).json({ success: false, message: '访问令牌无效' });
         }

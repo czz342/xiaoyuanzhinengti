@@ -141,7 +141,12 @@
     "create-testuser": "node scripts/create-testuser-schedule.js",
     "create-testuser-account": "node scripts/create-testuser.js",
     "create-testuser2": "node scripts/create-testuser2-schedule.js",
-    "create-testuser-2024001": "node scripts/create-testuser-2024001-schedule.js"
+    "create-testuser-2024001": "node scripts/create-testuser-2024001-schedule.js",
+    "init-express": "node scripts/init-express.js",
+    "init-shared-devices": "node scripts/init-shared-devices.js",
+    "import:shared-devices": "node scripts/import-shared-devices-from-csv.js",
+    "init-device-events": "node scripts/init-shared-device-events.js",
+    "import:counselors": "node scripts/import-counselors-and-schedules.js"
   },
   "keywords": [],
   "author": "",

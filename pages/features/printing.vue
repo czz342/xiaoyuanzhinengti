@@ -205,7 +205,6 @@
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -271,31 +270,46 @@ export default {
 		async loadPageData() {
 			uni.showLoading({ title: '加载中...' });
 			try {
+				const token = uni.getStorageSync('token');
 				const [devicesRes, busyRes, pricingRes] = await Promise.all([
-					KingdeeAgentService.getDevicesByType('打印机', 200),
-					KingdeeAgentService.getBusyPrinterDeviceIds(this.formatDate(new Date())),
-					KingdeeAgentService.getServicePricing('打印', 100)
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/devices?deviceType=打印机',
+						method: 'GET',
+						header: { 'Authorization': `Bearer ${token}` }
+					}),
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/devices/busy?deviceType=打印机',
+						method: 'GET',
+						header: { 'Authorization': `Bearer ${token}` }
+					}),
+					uni.request({
+						url: 'http://localhost:3000/api/shared-devices/pricing?serviceType=打印&deviceType=打印机',
+						method: 'GET',
+						header: { 'Authorization': `Bearer ${token}` }
+					})
 				]);
 
-				const allPrinters = devicesRes?.data?.rows ?? [];
-				const busyPrinterIds = new Set((busyRes?.data?.rows ?? []).map(d => d.lb77_device_number));
-				this.colorOptions = (pricingRes?.data?.rows ?? []).sort((a,b) => a.lb77_unit_price - b.lb77_unit_price);
+				const allPrinters = devicesRes.data.success ? devicesRes.data.data : [];
+				const busyPrinterIds = new Set(busyRes.data.success ? busyRes.data.data : []);
+				this.colorOptions = (pricingRes.data.success ? pricingRes.data.data : [])
+					.sort((a,b) => Number(a.unit_price) - Number(b.unit_price))
+					.map(p => ({ id: p.id, name: p.service_name, unit_price: p.unit_price }));
 				
 				if (this.colorOptions.length > 0) {
-					this.startingPrice = this.colorOptions[0].lb77_unit_price.toFixed(2);
+					this.startingPrice = Number(this.colorOptions[0].unit_price).toFixed(2);
 					this.selectedColor = this.colorOptions[0];
-					this.unitPrice = this.colorOptions[0].lb77_unit_price;
+					this.unitPrice = Number(this.colorOptions[0].unit_price);
 				}
 
 				this.printers = allPrinters.map(device => {
 					let status = '';
 					let statusClass = '';
 
-					if (device.lb77_status !== '正常') {
+					if (device.status !== '正常') {
 						status = '故障';
 						statusClass = 'status-fault';
 					} else {
-						if (busyPrinterIds.has(device.number)) {
+						if (busyPrinterIds.has(device.id)) {
 							status = '使用中';
 							statusClass = 'status-busy';
 						} else {
@@ -305,16 +319,16 @@ export default {
 					}
 					
 					return {
-						id: device.number,
-						name: device.name,
-						type: device.lb77_brand_model,
-						location: device.lb77_location,
+						id: device.id,
+						name: device.device_name,
+						type: device.device_model,
+						location: device.location,
 						status: status,
 						statusClass: statusClass,
 						speed: 30, // 模拟
 						image: '/static/images/printer-icon.png',
-						features: ['双面打印', '彩色'], // 模拟
-						rating: (Math.random() * 0.5 + 4.5).toFixed(1) // 模拟
+						features: ['双面打印', '彩色'],
+						rating: (Math.random() * 0.5 + 4.5).toFixed(1)
 					};
 				});
 
@@ -373,7 +387,7 @@ export default {
 		},
 		selectColor(colorOption) {
 			this.selectedColor = colorOption;
-			this.unitPrice = colorOption.lb77_unit_price;
+			this.unitPrice = Number(colorOption.unit_price);
 		},
 		toggleDoubleSided(e) {
 			this.doubleSided = e.detail.value;
@@ -410,17 +424,44 @@ export default {
 			
 			uni.showLoading({ title: '正在提交...' });
 			
+			const token = uni.getStorageSync('token');
+			const totalPages = this.pageCount * this.copies;
+			const totalCost = (this.unitPrice * totalPages).toFixed(2);
 			const jobData = {
-				billno: `DY${Date.now()}`,
-				lb77_device_number: this.recommendedPrinter.id,
-				lb77_user_number: '645730151', // @TODO: 动态获取
-				lb77_laundry_mode_number: this.selectedColor.number, // 使用价目表编码
-				lb77_pages: this.pageCount * this.copies // @TODO: 确认是总页数还是单份页数
+				deviceId: this.recommendedPrinter.id,
+				deviceNumber: String(this.recommendedPrinter.id),
+				deviceName: this.recommendedPrinter.name,
+				deviceLocation: this.recommendedPrinter.location,
+				fileName: this.currentFile?.name || '打印任务.pdf',
+				filePath: '/uploads/virtual/打印任务.pdf',
+				fileSize: 0,
+				fileType: 'pdf',
+				printType: this.selectedColor?.name?.includes('彩色') ? '彩色' : '黑白',
+				paperSize: 'A4',
+				paperType: '普通纸',
+				printQuality: '标准',
+				copies: this.copies,
+				pages: totalPages,
+				duplex: this.doubleSided ? '双面' : '单面',
+				colorPages: this.selectedColor?.name?.includes('彩色') ? totalPages : 0,
+				blackPages: this.selectedColor?.name?.includes('彩色') ? 0 : totalPages,
+				estimatedCost: Number(totalCost),
+				actualCost: Number(totalCost),
+				status: '待支付',
+				paymentMethod: '微信支付'
 			};
 			
 			try {
-				const res = await KingdeeAgentService.createPrintJob(jobData);
-				if (res && res.data && res.data.successCount > 0) {
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/shared-devices/printing/jobs',
+					method: 'POST',
+					header: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json'
+					},
+					data: jobData
+				});
+				if (res.data && res.data.success) {
 					uni.hideLoading();
 					uni.showToast({ title: '打印任务已提交', icon: 'success' });
 					this.showPrintPopup = false;
@@ -432,7 +473,7 @@ export default {
 					}, 1500);
 
 				} else {
-					throw new Error(res.message || '提交失败');
+					throw new Error(res.data?.message || '提交失败');
 				}
 			} catch(error) {
 				uni.hideLoading();
