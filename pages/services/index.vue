@@ -79,16 +79,6 @@
 						<text class="grid-text">智慧洗衣打印</text>
 						<view class="grid-badge" v-if="deviceCount > 0">{{deviceCount}}</view>
 					</view>
-				</view>
-				<view class="grid-row">
-					<!-- 社团活动 -->
-					<view class="grid-item" @tap="navigateTo('/pages/features/club-activities')">
-						<view class="grid-icon lifestyle">
-							<image src="/static/images/club.png" mode="aspectFit"></image>
-						</view>
-						<text class="grid-text">社团活动</text>
-						<view class="grid-badge" v-if="clubActivityCount > 0">{{clubActivityCount}}</view>
-					</view>
 					
 					<!-- 跑腿代办 -->
 					<view class="grid-item" @tap="navigateTo('/pages/features/errand-service')">
@@ -96,14 +86,6 @@
 							<image src="/static/images/express.png" mode="aspectFit"></image>
 						</view>
 						<text class="grid-text">跑腿代办</text>
-					</view>
-					
-					<!-- 占位，保持布局整齐 -->
-					<view class="grid-item placeholder">
-						<view class="grid-icon lifestyle">
-							<image src="/static/images/devices.png" mode="aspectFit"></image>
-						</view>
-						<text class="grid-text">更多服务</text>
 					</view>
 				</view>
 			</view>
@@ -144,6 +126,37 @@
 							<image src="/static/images/emergency.png" mode="aspectFit"></image>
 						</view>
 						<text class="grid-text">紧急求助</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 校园活动区域 -->
+			<view class="grid-section">
+				<view class="section-title">校园活动</view>
+				<view class="grid-row">
+					<!-- 活动中心 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/club-activities')">
+						<view class="grid-icon activity">
+							<image src="/static/images/club.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">活动中心</text>
+						<view class="grid-badge" v-if="clubActivityCount > 0">{{clubActivityCount}}</view>
+					</view>
+					
+					<!-- 校园圈子 -->
+					<view class="grid-item" @tap="navigateTo('/pages/features/campus-community')">
+						<view class="grid-icon activity">
+							<image src="/static/images/community.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">校园圈子</text>
+					</view>
+					
+					<!-- 占位，保持布局整齐 -->
+					<view class="grid-item placeholder">
+						<view class="grid-icon activity">
+							<image src="/static/images/devices.png" mode="aspectFit"></image>
+						</view>
+						<text class="grid-text">更多活动</text>
 					</view>
 				</view>
 			</view>
@@ -621,6 +634,10 @@ export default {
 
 .grid-icon.emergency {
 	background-color: #ffe6e6;
+}
+
+.grid-icon.activity {
+	background-color: #f0e6ff;
 }
 
 .grid-item.placeholder {

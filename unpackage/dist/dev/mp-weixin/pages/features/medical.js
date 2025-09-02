@@ -325,19 +325,19 @@ var _default = {
         };
         var statusFilter = statusMap[this.currentStatusTab];
         appointmentsToFilter = this.myAppointments.filter(function (item) {
-          return item.lb77_appointment_status === statusFilter;
+          return item.status === statusFilter;
         });
       }
       return appointmentsToFilter.map(function (appointment) {
         return _objectSpread(_objectSpread({}, appointment), {}, {
-          department: appointment.lb77_doctor_lb77_department_name,
-          doctorName: appointment.lb77_doctor_name,
-          doctorTitle: appointment.lb77_doctor_lb77_title,
-          date: appointment.lb77_appointment_date.split(' ')[0],
-          time: _this.secondsToTime(appointment.lb77_starttime),
-          location: '校医院 ' + appointment.lb77_doctor_lb77_department_name,
-          status: appointment.lb77_appointment_status === '已预约' ? '待就诊' : appointment.lb77_appointment_status,
-          statusClass: _this.getStatusClass(appointment.lb77_appointment_status)
+          department: appointment.departmentName || _this.getDepartmentNameByNumber(appointment.dept_number),
+          doctorName: appointment.doctorName || appointment.doctor_name,
+          doctorTitle: appointment.doctorTitle || appointment.title,
+          date: appointment.appointment_date,
+          time: _this.secondsToTime(appointment.start_time_sec),
+          location: '校医院 ' + (appointment.departmentName || _this.getDepartmentNameByNumber(appointment.dept_number)),
+          status: appointment.status === '已预约' ? '待就诊' : appointment.status,
+          statusClass: _this.getStatusClass(appointment.status)
         });
       });
     },
@@ -448,56 +448,69 @@ var _default = {
     fetchDepartments: function fetchDepartments() {
       var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var res;
+        var token, res;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
                 _this3.isLoadingDepartments = true;
                 _context2.prev = 1;
-                _context2.next = 4;
-                return _kingdeeAgent.default.getHospitalDepartments(20);
-              case 4:
+                token = uni.getStorageSync('token');
+                _context2.next = 5;
+                return uni.request({
+                  url: 'http://localhost:3000/api/medical/departments',
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 5:
                 res = _context2.sent;
-                if (!(res && res.data && res.data.rows)) {
-                  _context2.next = 10;
+                if (!(res.data && res.data.success)) {
+                  _context2.next = 11;
                   break;
                 }
-                _this3.departments = res.data.rows;
+                _this3.departments = (res.data.data || []).map(function (d) {
+                  return {
+                    number: d.dept_number,
+                    name: d.name,
+                    description: d.description
+                  };
+                });
                 // 默认选中第一个科室
                 if (!(_this3.departments.length > 0)) {
-                  _context2.next = 10;
+                  _context2.next = 11;
                   break;
                 }
-                _context2.next = 10;
+                _context2.next = 11;
                 return _this3.selectDepartment(_this3.departments[0]);
-              case 10:
-                _context2.next = 16;
+              case 11:
+                _context2.next = 17;
                 break;
-              case 12:
-                _context2.prev = 12;
+              case 13:
+                _context2.prev = 13;
                 _context2.t0 = _context2["catch"](1);
                 console.error("获取科室列表失败:", _context2.t0);
                 uni.showToast({
                   title: '科室加载失败',
                   icon: 'none'
                 });
-              case 16:
-                _context2.prev = 16;
+              case 17:
+                _context2.prev = 17;
                 _this3.isLoadingDepartments = false;
-                return _context2.finish(16);
-              case 19:
+                return _context2.finish(17);
+              case 20:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[1, 12, 16, 19]]);
+        }, _callee2, null, [[1, 13, 17, 20]]);
       }))();
     },
     fetchDoctors: function fetchDoctors(departmentNumber) {
       var _this4 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
-        var res;
+        var token, res;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
@@ -505,45 +518,54 @@ var _default = {
                 _this4.isLoadingDoctors = true;
                 _this4.doctorsList = [];
                 _context3.prev = 2;
-                _context3.next = 5;
-                return _kingdeeAgent.default.getDoctorsByDepartment(departmentNumber);
-              case 5:
+                token = uni.getStorageSync('token');
+                _context3.next = 6;
+                return uni.request({
+                  url: "http://localhost:3000/api/medical/departments/".concat(departmentNumber, "/doctors"),
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 6:
                 res = _context3.sent;
-                if (res && res.data && res.data.rows) {
-                  _this4.doctorsList = res.data.rows.map(function (doc, index) {
-                    return _objectSpread(_objectSpread({}, doc), {}, {
-                      id: doc.number,
+                if (res.data && res.data.success) {
+                  _this4.doctorsList = (res.data.data || []).map(function (doc, index) {
+                    return {
+                      id: doc.id,
+                      number: doc.doctor_number,
+                      name: doc.name,
+                      title: doc.title,
+                      specialty: doc.specialty,
                       avatar: doctorAvatars[index % doctorAvatars.length],
-                      title: doc.lb77_title,
-                      specialty: doc.lb77_specialty,
                       rating: (4.5 + Math.random() * 0.5).toFixed(1),
                       ratingCount: Math.floor(Math.random() * 200) + 50,
                       availableSlots: [],
                       isLoadingSlots: true
-                    });
+                    };
                   });
                   _this4.updateAllDoctorSchedules();
                 }
-                _context3.next = 13;
+                _context3.next = 14;
                 break;
-              case 9:
-                _context3.prev = 9;
+              case 10:
+                _context3.prev = 10;
                 _context3.t0 = _context3["catch"](2);
                 console.error("获取医生列表失败:", _context3.t0);
                 uni.showToast({
                   title: '医生加载失败',
                   icon: 'none'
                 });
-              case 13:
-                _context3.prev = 13;
+              case 14:
+                _context3.prev = 14;
                 _this4.isLoadingDoctors = false;
-                return _context3.finish(13);
-              case 16:
+                return _context3.finish(14);
+              case 17:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[2, 9, 13, 16]]);
+        }, _callee3, null, [[2, 10, 14, 17]]);
       }))();
     },
     updateAllDoctorSchedules: function updateAllDoctorSchedules() {
@@ -576,7 +598,7 @@ var _default = {
     updateDoctorSchedule: function updateDoctorSchedule(doctor) {
       var _this6 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5() {
-        var scheduleRes, bookingsRes, allSlots, weeklySchedule, bookedSlots, availableSlots;
+        var token, res, rows, slots, availableSlots;
         return _regenerator.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
@@ -584,55 +606,44 @@ var _default = {
                 _this6.$set(doctor, 'isLoadingSlots', true);
                 _this6.$set(doctor, 'availableSlots', []);
                 _context5.prev = 2;
-                _context5.next = 5;
-                return _kingdeeAgent.default.getDoctorWeeklySchedule(doctor.number);
-              case 5:
-                scheduleRes = _context5.sent;
-                _context5.next = 8;
-                return _kingdeeAgent.default.getAppointmentsByDate(doctor.number, _this6.selectedDate.fullDate);
-              case 8:
-                bookingsRes = _context5.sent;
-                allSlots = [];
-                if (scheduleRes && scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0].lb77_weekschedule) {
-                  weeklySchedule = scheduleRes.data.rows[0].lb77_weekschedule;
-                  allSlots = weeklySchedule.filter(function (slot) {
-                    return slot.lb77_day_of_week.trim() === _this6.selectedDate.weekday;
-                  }).map(function (slot) {
-                    return {
-                      start: slot.lb77_start_time,
-                      end: slot.lb77_end_time
-                    };
-                  });
-                }
-                bookedSlots = [];
-                if (bookingsRes && bookingsRes.data && bookingsRes.data.rows) {
-                  bookedSlots = bookingsRes.data.rows.map(function (booking) {
-                    return booking.lb77_starttime;
-                  });
-                }
-                availableSlots = allSlots.filter(function (slot) {
-                  return !bookedSlots.includes(slot.start);
-                }).map(function (slot) {
-                  return _this6.secondsToTime(slot.start);
+                token = uni.getStorageSync('token');
+                _context5.next = 6;
+                return uni.request({
+                  url: "http://localhost:3000/api/medical/doctors/".concat(doctor.number, "/schedule"),
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 6:
+                res = _context5.sent;
+                rows = res.data && res.data.success ? res.data.data || [] : [];
+                slots = rows.filter(function (r) {
+                  return r.day_of_week === _this6.selectedDate.weekday;
+                }).map(function (r) {
+                  return r.start_time_sec;
+                });
+                availableSlots = slots.map(function (sec) {
+                  return _this6.secondsToTime(sec);
                 });
                 _this6.$set(doctor, 'availableSlots', availableSlots);
-                _context5.next = 21;
+                _context5.next = 17;
                 break;
-              case 17:
-                _context5.prev = 17;
+              case 13:
+                _context5.prev = 13;
                 _context5.t0 = _context5["catch"](2);
                 console.error("\u83B7\u53D6\u533B\u751F ".concat(doctor.name, " \u7684\u6392\u73ED\u5931\u8D25:"), _context5.t0);
                 _this6.$set(doctor, 'availableSlots', []);
-              case 21:
-                _context5.prev = 21;
+              case 17:
+                _context5.prev = 17;
                 _this6.$set(doctor, 'isLoadingSlots', false);
-                return _context5.finish(21);
-              case 24:
+                return _context5.finish(17);
+              case 20:
               case "end":
                 return _context5.stop();
             }
           }
-        }, _callee5, null, [[2, 17, 21, 24]]);
+        }, _callee5, null, [[2, 13, 17, 20]]);
       }))();
     },
     // ===================================================================
@@ -686,7 +697,7 @@ var _default = {
     submitAppointment: function submitAppointment() {
       var _this8 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee7() {
-        var timeParts, startTimeInSeconds, endTimeInSeconds, appointmentData, res;
+        var timeParts, startTimeInSeconds, endTimeInSeconds, token, res;
         return _regenerator.default.wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
@@ -708,21 +719,25 @@ var _default = {
                 timeParts = _this8.selectedTimeInPopup.split(':');
                 startTimeInSeconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60;
                 endTimeInSeconds = startTimeInSeconds + 15 * 60;
-                appointmentData = {
-                  billno: "YUYUE-".concat(_this8.currentUser.studentId, "-").concat(Date.now()),
-                  lb77_appointment_date: _this8.selectedDate.fullDate,
-                  lb77_starttime: startTimeInSeconds,
-                  lb77_endtime: endTimeInSeconds,
-                  lb77_symptoms: "用户自助预约",
-                  lb77_appointment_status: '已预约',
-                  lb77_student_number: _this8.currentUser.studentId,
-                  lb77_doctor_number: _this8.currentDoctor.number
-                };
+                token = uni.getStorageSync('token');
                 _context7.next = 11;
-                return _kingdeeAgent.default.createMedicalAppointment(appointmentData);
+                return uni.request({
+                  url: 'http://localhost:3000/api/medical/appointments',
+                  method: 'POST',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {},
+                  data: {
+                    studentId: _this8.currentUser.studentId,
+                    doctorNumber: _this8.currentDoctor.number,
+                    date: _this8.selectedDate.fullDate,
+                    startTimeSec: startTimeInSeconds,
+                    endTimeSec: endTimeInSeconds
+                  }
+                });
               case 11:
                 res = _context7.sent;
-                if (!(res && res.data && res.data.successCount > 0)) {
+                if (!(res.data && res.data.success)) {
                   _context7.next = 21;
                   break;
                 }
@@ -741,7 +756,7 @@ var _default = {
                 _context7.next = 22;
                 break;
               case 21:
-                throw new Error(res.message || '预约失败');
+                throw new Error(res.data && res.data.message || '预约失败');
               case 22:
                 _context7.next = 30;
                 break;
@@ -772,47 +787,73 @@ var _default = {
     fetchMyAppointments: function fetchMyAppointments() {
       var _this9 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee8() {
-        var res;
+        var token, res, depts, deptNameByNum, rows;
         return _regenerator.default.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
                 _this9.isLoadingAppointments = true;
                 _context8.prev = 1;
-                _context8.next = 4;
-                return _kingdeeAgent.default.getPersonalAppointments(_this9.currentUser.studentId, 50);
-              case 4:
+                token = uni.getStorageSync('token');
+                _context8.next = 5;
+                return uni.request({
+                  url: "http://localhost:3000/api/medical/my/appointments?studentId=".concat(_this9.currentUser.studentId),
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 5:
                 res = _context8.sent;
-                if (res && res.data && res.data.rows) {
-                  _this9.myAppointments = res.data.rows.sort(function (a, b) {
-                    var dateA = new Date(a.lb77_appointment_date).getTime();
-                    var dateB = new Date(b.lb77_appointment_date).getTime();
+                if (res.data && res.data.success) {
+                  depts = _this9.departments || [];
+                  deptNameByNum = function deptNameByNum(n) {
+                    var _depts$find;
+                    return ((_depts$find = depts.find(function (d) {
+                      return d.number === n;
+                    })) === null || _depts$find === void 0 ? void 0 : _depts$find.name) || n || '门诊部';
+                  };
+                  rows = res.data.data || [];
+                  _this9.myAppointments = rows.map(function (r) {
+                    return {
+                      id: r.id,
+                      departmentName: deptNameByNum(r.dept_number),
+                      doctorName: r.doctor_name || '',
+                      doctorTitle: r.title || '',
+                      appointment_date: r.appointment_date,
+                      start_time_sec: r.start_time_sec,
+                      status: r.status,
+                      dept_number: r.dept_number
+                    };
+                  }).sort(function (a, b) {
+                    var dateA = new Date(a.appointment_date).getTime();
+                    var dateB = new Date(b.appointment_date).getTime();
                     if (dateB !== dateA) return dateB - dateA;
-                    return b.lb77_starttime - a.lb77_starttime;
+                    return b.start_time_sec - a.start_time_sec;
                   });
                 } else {
                   _this9.myAppointments = [];
                 }
-                _context8.next = 12;
+                _context8.next = 13;
                 break;
-              case 8:
-                _context8.prev = 8;
+              case 9:
+                _context8.prev = 9;
                 _context8.t0 = _context8["catch"](1);
                 console.error("获取我的预约记录失败:", _context8.t0);
                 uni.showToast({
                   title: '预约记录加载失败',
                   icon: 'none'
                 });
-              case 12:
-                _context8.prev = 12;
+              case 13:
+                _context8.prev = 13;
                 _this9.isLoadingAppointments = false;
-                return _context8.finish(12);
-              case 15:
+                return _context8.finish(13);
+              case 16:
               case "end":
                 return _context8.stop();
             }
           }
-        }, _callee8, null, [[1, 8, 12, 15]]);
+        }, _callee8, null, [[1, 9, 13, 16]]);
       }))();
     },
     fetchMedicalRecords: function fetchMedicalRecords() {
@@ -880,25 +921,35 @@ var _default = {
                   content: '确定要取消此次预约吗？',
                   success: function () {
                     var _success = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee10(res) {
-                      var apiRes;
+                      var token, apiRes;
                       return _regenerator.default.wrap(function _callee10$(_context10) {
                         while (1) {
                           switch (_context10.prev = _context10.next) {
                             case 0:
                               if (!res.confirm) {
-                                _context10.next = 21;
+                                _context10.next = 22;
                                 break;
                               }
                               uni.showLoading({
                                 title: '正在取消...'
                               });
                               _context10.prev = 2;
-                              _context10.next = 5;
-                              return _kingdeeAgent.default.cancelMedicalAppointment(appointment.billno);
-                            case 5:
+                              token = uni.getStorageSync('token');
+                              _context10.next = 6;
+                              return uni.request({
+                                url: "http://localhost:3000/api/medical/appointments/".concat(appointment.id, "/cancel"),
+                                method: 'POST',
+                                header: token ? {
+                                  'Authorization': "Bearer ".concat(token)
+                                } : {},
+                                data: {
+                                  studentId: _this11.currentUser.studentId
+                                }
+                              });
+                            case 6:
                               apiRes = _context10.sent;
-                              if (!(apiRes && apiRes.data && apiRes.data.successCount > 0)) {
-                                _context10.next = 13;
+                              if (!(apiRes.data && apiRes.data.success)) {
+                                _context10.next = 14;
                                 break;
                               }
                               uni.hideLoading();
@@ -910,15 +961,15 @@ var _default = {
                               if (_this11.showAppointmentDetail) {
                                 _this11.hideAppointmentDetail();
                               }
-                              _context10.next = 14;
+                              _context10.next = 15;
                               break;
-                            case 13:
-                              throw new Error(apiRes.message || '取消失败');
                             case 14:
-                              _context10.next = 21;
+                              throw new Error(apiRes.data && apiRes.data.message || '取消失败');
+                            case 15:
+                              _context10.next = 22;
                               break;
-                            case 16:
-                              _context10.prev = 16;
+                            case 17:
+                              _context10.prev = 17;
                               _context10.t0 = _context10["catch"](2);
                               uni.hideLoading();
                               console.error('取消预约失败:', _context10.t0);
@@ -926,12 +977,12 @@ var _default = {
                                 title: _context10.t0.message || '取消操作失败',
                                 icon: 'none'
                               });
-                            case 21:
+                            case 22:
                             case "end":
                               return _context10.stop();
                           }
                         }
-                      }, _callee10, null, [[2, 16]]);
+                      }, _callee10, null, [[2, 17]]);
                     }));
                     function success(_x) {
                       return _success.apply(this, arguments);
@@ -1086,6 +1137,12 @@ var _default = {
         default:
           return '';
       }
+    },
+    getDepartmentNameByNumber: function getDepartmentNameByNumber(number) {
+      var department = this.departments.find(function (d) {
+        return d.number === number;
+      });
+      return department ? department.name : number;
     }
   }
 };

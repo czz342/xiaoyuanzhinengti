@@ -146,7 +146,8 @@
     "init-shared-devices": "node scripts/init-shared-devices.js",
     "import:shared-devices": "node scripts/import-shared-devices-from-csv.js",
     "init-device-events": "node scripts/init-shared-device-events.js",
-    "import:counselors": "node scripts/import-counselors-and-schedules.js"
+    "import:counselors": "node scripts/import-counselors-and-schedules.js",
+    "import:medical": "node scripts/import-medical-from-csv.js"
   },
   "keywords": [],
   "author": "",

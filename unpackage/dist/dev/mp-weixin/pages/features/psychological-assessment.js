@@ -208,6 +208,15 @@ var render = function () {
     _vm.showCounselorDetailPopup && !_vm.isLoadingSchedule
       ? _vm.availableTimeSlots.length
       : null
+  var m4 = _vm.showAppointmentDetailPopup
+    ? _vm.formatDate(
+        new Date(_vm.currentAppointment.lb77_appointment_date),
+        "yyyy-MM-dd"
+      )
+    : null
+  var m5 = _vm.showAppointmentDetailPopup
+    ? _vm.secondsToTime(_vm.currentAppointment.lb77_starttime)
+    : null
   _vm.$mp.data = Object.assign(
     {},
     {
@@ -220,6 +229,8 @@ var render = function () {
         l4: l4,
         g3: g3,
         g4: g4,
+        m4: m4,
+        m5: m5,
       },
     }
   )
@@ -264,13 +275,324 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 40));
-var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 42));
-var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/kingdeeAgent.js */ 43));
 var _methods;
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
   data: function data() {
     return {
@@ -302,7 +624,10 @@ var _default = {
       myPsychReports: [],
       isLoadingReports: false,
       myAppointments: [],
-      isLoadingAppointments: false
+      isLoadingAppointments: false,
+      // 预约详情弹窗
+      showAppointmentDetailPopup: false,
+      currentAppointment: {}
     };
   },
   onLoad: function onLoad(options) {
@@ -398,56 +723,71 @@ var _default = {
     }
   },
   methods: (_methods = {
-    // 获取咨询师列表
+    // 获取咨询师列表（改为本地后端）
     fetchCounselors: function fetchCounselors() {
       var _this2 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
-        var res;
+        var token, clean, res;
         return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
                 _this2.isLoadingCounselors = true;
-                _context2.prev = 1;
-                _context2.next = 4;
-                return _kingdeeAgent.default.getCounselors(20);
-              case 4:
+                token = uni.getStorageSync('token');
+                clean = function clean(s) {
+                  if (s == null) return '';
+                  var t = String(s).trim();
+                  return t.replace(/^\"|\"$/g, '');
+                };
+                _context2.prev = 3;
+                _context2.next = 6;
+                return uni.request({
+                  url: 'http://localhost:3000/api/psych/counselors',
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 6:
                 res = _context2.sent;
-                if (res && res.data && Array.isArray(res.data.rows)) {
-                  _this2.counselors = res.data.rows.map(function (c, index) {
-                    return _objectSpread(_objectSpread({}, c), {}, {
-                      id: c.number,
+                if (res.data && res.data.success) {
+                  _this2.counselors = (res.data.data || []).map(function (c, index) {
+                    var spec = clean(c.specialties).split(',').map(function (t) {
+                      return t.trim();
+                    }).filter(Boolean);
+                    return {
+                      id: c.id,
                       name: c.name,
-                      title: c.lb77_title,
-                      avatar: c.lb77_avatarURL || '/static/images/counselor' + (index % 3 + 1) + '.png',
-                      specialties: c.lb77_specialties ? c.lb77_specialties.split(',') : [],
-                      background: c.lb77_background,
-                      style: c.lb77_style,
-                      rating: 4.7 + Math.random() * 0.3,
+                      title: clean(c.title),
+                      avatar: c.avatar || '/static/images/counselor' + (index % 3 + 1) + '.png',
+                      specialties: spec,
+                      background: clean(c.background),
+                      style: clean(c.style),
+                      rating: 4.6 + Math.random() * 0.4,
                       ratingCount: Math.floor(Math.random() * 150) + 50
-                    });
+                    };
                   });
                 }
-                _context2.next = 12;
+                _context2.next = 14;
                 break;
-              case 8:
-                _context2.prev = 8;
-                _context2.t0 = _context2["catch"](1);
-                console.error("获取咨询师列表失败:", _context2.t0);
+              case 10:
+                _context2.prev = 10;
+                _context2.t0 = _context2["catch"](3);
+                console.error('获取咨询师列表失败:', _context2.t0);
                 uni.showToast({
                   title: '咨询师加载失败',
                   icon: 'none'
                 });
-              case 12:
-                _context2.prev = 12;
+              case 14:
+                _context2.prev = 14;
                 _this2.isLoadingCounselors = false;
-                return _context2.finish(12);
-              case 15:
+                return _context2.finish(14);
+              case 17:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[1, 8, 12, 15]]);
+        }, _callee2, null, [[3, 10, 14, 17]]);
       }))();
     },
     // 切换Tab
@@ -521,11 +861,11 @@ var _default = {
       this.selectedDateIndex = 0;
       this.selectedTime = {};
     },
-    // 更新咨询师排班
+    // 更新咨询师排班（改为本地后端）
     updateCounselorSchedule: function updateCounselorSchedule() {
       var _this3 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee3() {
-        var selectedDate, _yield$Promise$all, _yield$Promise$all2, scheduleRes, bookingsRes, allSlots, bookedSlots;
+        var selectedDate, token, res, rows, weekday, allSlots;
         return _regenerator.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
@@ -546,33 +886,28 @@ var _default = {
               case 7:
                 selectedDate = _this3.availableDates[_this3.selectedDateIndex];
                 _context3.prev = 8;
-                _context3.next = 11;
-                return Promise.all([_kingdeeAgent.default.getCounselorWeeklySchedule(_this3.currentCounselor.id), _kingdeeAgent.default.getCounselingAppointmentsByDate(_this3.currentCounselor.id, selectedDate.fullDate)]);
-              case 11:
-                _yield$Promise$all = _context3.sent;
-                _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2);
-                scheduleRes = _yield$Promise$all2[0];
-                bookingsRes = _yield$Promise$all2[1];
-                allSlots = [];
-                if (scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0].entryentity) {
-                  allSlots = scheduleRes.data.rows[0].entryentity.filter(function (slot) {
-                    return slot.lb77_day_of_week.trim() === selectedDate.weekday;
-                  }).map(function (slot) {
-                    return {
-                      startTime: slot.lb77_start_time,
-                      endTime: slot.lb77_end_time
-                    };
-                  });
-                }
-                bookedSlots = [];
-                if (bookingsRes.data && bookingsRes.data.rows) {
-                  bookedSlots = bookingsRes.data.rows.map(function (booking) {
-                    return booking.lb77_starttime;
-                  });
-                }
-                _this3.availableTimeSlots = allSlots.filter(function (slot) {
-                  return !bookedSlots.includes(slot.startTime);
-                }).map(function (slot) {
+                token = uni.getStorageSync('token');
+                _context3.next = 12;
+                return uni.request({
+                  url: "http://localhost:3000/api/psych/counselors/".concat(_this3.currentCounselor.id, "/schedule"),
+                  method: 'GET',
+                  header: token ? {
+                    'Authorization': "Bearer ".concat(token)
+                  } : {}
+                });
+              case 12:
+                res = _context3.sent;
+                rows = res.data && res.data.success ? res.data.data || [] : [];
+                weekday = selectedDate.weekday;
+                allSlots = rows.filter(function (r) {
+                  return (r.day_of_week || r.dayOfWeek) === weekday;
+                }).map(function (r) {
+                  return {
+                    startTime: Number(r.start_time_sec || r.startSec),
+                    endTime: Number(r.end_time_sec || r.endSec)
+                  };
+                });
+                _this3.availableTimeSlots = allSlots.map(function (slot) {
                   return {
                     time: _this3.secondsToTime(slot.startTime),
                     startTime: slot.startTime,
@@ -582,26 +917,26 @@ var _default = {
                 }).sort(function (a, b) {
                   return a.startTime - b.startTime;
                 });
-                _context3.next = 26;
+                _context3.next = 23;
                 break;
-              case 22:
-                _context3.prev = 22;
+              case 19:
+                _context3.prev = 19;
                 _context3.t0 = _context3["catch"](8);
                 console.error("获取咨询师排班失败:", _context3.t0);
                 uni.showToast({
                   title: '号源加载失败',
                   icon: 'none'
                 });
-              case 26:
-                _context3.prev = 26;
+              case 23:
+                _context3.prev = 23;
                 _this3.isLoadingSchedule = false;
-                return _context3.finish(26);
-              case 29:
+                return _context3.finish(23);
+              case 26:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[8, 22, 26, 29]]);
+        }, _callee3, null, [[8, 19, 23, 26]]);
       }))();
     },
     // 日期选择器控制 - 已废弃
@@ -628,7 +963,7 @@ var _default = {
         this.selectedTime = time;
       }
     },
-    // 预约咨询
+    // 预约咨询（本地后端）
     bookAppointment: function bookAppointment() {
       var _this4 = this;
       if (this.selectedTime && this.selectedTime.startTime) {
@@ -639,13 +974,13 @@ var _default = {
           content: "\u60A8\u786E\u5B9A\u8981\u9884\u7EA6".concat(this.currentCounselor.name, "\u54A8\u8BE2\u5E08\u5728 ").concat(date.fullDate, " ").concat(time.time, " \u7684\u54A8\u8BE2\u5417\uFF1F"),
           success: function () {
             var _success = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee4(res) {
-              var studentId;
+              var studentId, token;
               return _regenerator.default.wrap(function _callee4$(_context4) {
                 while (1) {
                   switch (_context4.prev = _context4.next) {
                     case 0:
                       if (!res.confirm) {
-                        _context4.next = 17;
+                        _context4.next = 18;
                         break;
                       }
                       // TODO: 后续应从用户登录状态中获取真实学生ID
@@ -654,9 +989,23 @@ var _default = {
                       uni.showLoading({
                         title: '正在预约...'
                       });
-                      _context4.next = 6;
-                      return _kingdeeAgent.default.createCounselingAppointment(studentId, _this4.currentCounselor.id, date.fullDate, time.startTime, time.endTime);
-                    case 6:
+                      token = uni.getStorageSync('token');
+                      _context4.next = 7;
+                      return uni.request({
+                        url: 'http://localhost:3000/api/psych/appointments',
+                        method: 'POST',
+                        header: token ? {
+                          'Authorization': "Bearer ".concat(token)
+                        } : {},
+                        data: {
+                          studentId: studentId,
+                          counselorId: _this4.currentCounselor.id,
+                          date: date.fullDate,
+                          startTimeSec: time.startTime,
+                          endTimeSec: time.endTime
+                        }
+                      });
+                    case 7:
                       uni.hideLoading();
                       uni.showToast({
                         title: '预约成功',
@@ -671,10 +1020,10 @@ var _default = {
                           url: '/pages/features/psychological-assessment?tab=2&recordstab=1'
                         });
                       }, 1500);
-                      _context4.next = 17;
+                      _context4.next = 18;
                       break;
-                    case 12:
-                      _context4.prev = 12;
+                    case 13:
+                      _context4.prev = 13;
                       _context4.t0 = _context4["catch"](2);
                       uni.hideLoading();
                       console.error("创建心理咨询预约失败:", _context4.t0);
@@ -683,12 +1032,12 @@ var _default = {
                         icon: 'none',
                         duration: 2000
                       });
-                    case 17:
+                    case 18:
                     case "end":
                       return _context4.stop();
                   }
                 }
-              }, _callee4, null, [[2, 12]]);
+              }, _callee4, null, [[2, 13]]);
             }));
             function success(_x) {
               return _success.apply(this, arguments);
@@ -1010,7 +1359,7 @@ var _default = {
   }), (0, _defineProperty2.default)(_methods, "submitAssessment", function submitAssessment() {
     var _this5 = this;
     return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee5() {
-      var totalScore, level, suggestion, studentId, entries;
+      var totalScore, level, suggestion, studentId, entries, token;
       return _regenerator.default.wrap(function _callee5$(_context5) {
         while (1) {
           switch (_context5.prev = _context5.next) {
@@ -1048,16 +1397,30 @@ var _default = {
               studentId = "645730151";
               entries = _this5.currentQuestionnaire.questions.map(function (q, index) {
                 return {
-                  lb77_questionindex: index + 1,
-                  lb77_selecttext: q.options[q.selected].text,
-                  lb77_score: q.options[q.selected].score
+                  question_index: index + 1,
+                  selected_text: q.options[q.selected].text,
+                  score: q.options[q.selected].score
                 };
               });
-              _context5.next = 13;
-              return _kingdeeAgent.default.createPsychReport(studentId, totalScore, level,
-              // 使用 level 作为 ResultSummary
-              entries, _this5.currentQuestionnaire.id, _this5.currentQuestionnaire.title);
-            case 13:
+              token = uni.getStorageSync('token');
+              _context5.next = 14;
+              return uni.request({
+                url: 'http://localhost:3000/api/psych/reports',
+                method: 'POST',
+                header: token ? {
+                  'Authorization': "Bearer ".concat(token)
+                } : {},
+                data: {
+                  studentId: studentId,
+                  questionnaireKey: _this5.currentQuestionnaire.id,
+                  questionnaireTitle: _this5.currentQuestionnaire.title,
+                  totalScore: totalScore,
+                  resultLevel: level,
+                  suggestion: suggestion,
+                  entries: entries
+                }
+              });
+            case 14:
               _this5.assessmentReport = {
                 score: totalScore,
                 level: level,
@@ -1069,10 +1432,10 @@ var _default = {
                 title: '报告生成成功',
                 icon: 'success'
               });
-              _context5.next = 24;
+              _context5.next = 25;
               break;
-            case 19:
-              _context5.prev = 19;
+            case 20:
+              _context5.prev = 20;
               _context5.t0 = _context5["catch"](8);
               uni.hideLoading();
               console.error("创建心理评估报告失败:", _context5.t0);
@@ -1080,12 +1443,12 @@ var _default = {
                 title: '报告提交失败，请重试',
                 icon: 'none'
               });
-            case 24:
+            case 25:
             case "end":
               return _context5.stop();
           }
         }
-      }, _callee5, null, [[8, 19]]);
+      }, _callee5, null, [[8, 20]]);
     }))();
   }), (0, _defineProperty2.default)(_methods, "resetAssessment", function resetAssessment() {
     this.initAssessment();
@@ -1093,7 +1456,7 @@ var _default = {
   }), (0, _defineProperty2.default)(_methods, "fetchMyReports", function fetchMyReports() {
     var _this6 = this;
     return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6() {
-      var studentId, res;
+      var studentId, token, res, list;
       return _regenerator.default.wrap(function _callee6$(_context6) {
         while (1) {
           switch (_context6.prev = _context6.next) {
@@ -1106,42 +1469,58 @@ var _default = {
               _context6.prev = 3;
               // TODO: 后续应从用户登录状态中获取真实学生ID
               studentId = "645730151";
-              _context6.next = 7;
-              return _kingdeeAgent.default.getMyPsychReports(studentId);
-            case 7:
+              token = uni.getStorageSync('token');
+              _context6.next = 8;
+              return uni.request({
+                url: "http://localhost:3000/api/psych/my/reports?studentId=".concat(studentId),
+                method: 'GET',
+                header: token ? {
+                  'Authorization': "Bearer ".concat(token)
+                } : {}
+              });
+            case 8:
               res = _context6.sent;
-              if (res.data && res.data.rows) {
-                _this6.myPsychReports = res.data.rows.sort(function (a, b) {
+              if (res.data && res.data.success) {
+                list = res.data.data || [];
+                _this6.myPsychReports = list.map(function (r) {
+                  return {
+                    id: r.id,
+                    lb77_questionnairetitle: r.questionnaire_title,
+                    lb77_resultsummary: r.result_level,
+                    lb77_totalscore: r.total_score,
+                    createtime: r.created_at
+                  };
+                }).sort(function (a, b) {
                   return new Date(b.createtime) - new Date(a.createtime);
                 });
               } else {
                 _this6.myPsychReports = [];
               }
-              _context6.next = 15;
+              _context6.next = 16;
               break;
-            case 11:
-              _context6.prev = 11;
+            case 12:
+              _context6.prev = 12;
               _context6.t0 = _context6["catch"](3);
               console.error("获取心理评估报告列表失败:", _context6.t0);
               uni.showToast({
                 title: '报告加载失败',
                 icon: 'none'
               });
-            case 15:
-              _context6.prev = 15;
+            case 16:
+              _context6.prev = 16;
               _this6.isLoadingReports = false;
-              return _context6.finish(15);
-            case 18:
+              return _context6.finish(16);
+            case 19:
             case "end":
               return _context6.stop();
           }
         }
-      }, _callee6, null, [[3, 11, 15, 18]]);
+      }, _callee6, null, [[3, 12, 16, 19]]);
     }))();
   }), (0, _defineProperty2.default)(_methods, "fetchMyAppointments", function fetchMyAppointments() {
     var _this7 = this;
     return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee7() {
-      var studentId, res;
+      var studentId, token, res, list;
       return _regenerator.default.wrap(function _callee7$(_context7) {
         while (1) {
           switch (_context7.prev = _context7.next) {
@@ -1153,37 +1532,53 @@ var _default = {
               _context7.prev = 3;
               // TODO: 后续应从用户登录状态中获取真实学生ID
               studentId = "645730151";
-              _context7.next = 7;
-              return _kingdeeAgent.default.getMyCounselingAppointments(studentId);
-            case 7:
+              token = uni.getStorageSync('token');
+              _context7.next = 8;
+              return uni.request({
+                url: "http://localhost:3000/api/psych/my/appointments?studentId=".concat(studentId),
+                method: 'GET',
+                header: token ? {
+                  'Authorization': "Bearer ".concat(token)
+                } : {}
+              });
+            case 8:
               res = _context7.sent;
-              if (res.data && res.data.rows) {
-                _this7.myAppointments = res.data.rows.sort(function (a, b) {
+              if (res.data && res.data.success) {
+                list = res.data.data || [];
+                _this7.myAppointments = list.map(function (r) {
+                  return {
+                    id: r.id,
+                    lb77_counselor_name: r.counselor_name || '',
+                    lb77_appointment_status: r.status,
+                    lb77_appointment_date: r.appointment_date,
+                    lb77_starttime: r.start_time_sec
+                  };
+                }).sort(function (a, b) {
                   return new Date(b.lb77_appointment_date) - new Date(a.lb77_appointment_date);
                 });
               } else {
                 _this7.myAppointments = [];
               }
-              _context7.next = 15;
+              _context7.next = 16;
               break;
-            case 11:
-              _context7.prev = 11;
+            case 12:
+              _context7.prev = 12;
               _context7.t0 = _context7["catch"](3);
               console.error("获取我的咨询预约列表失败:", _context7.t0);
               uni.showToast({
                 title: '预约记录加载失败',
                 icon: 'none'
               });
-            case 15:
-              _context7.prev = 15;
+            case 16:
+              _context7.prev = 16;
               _this7.isLoadingAppointments = false;
-              return _context7.finish(15);
-            case 18:
+              return _context7.finish(16);
+            case 19:
             case "end":
               return _context7.stop();
           }
         }
-      }, _callee7, null, [[3, 11, 15, 18]]);
+      }, _callee7, null, [[3, 12, 16, 19]]);
     }))();
   }), (0, _defineProperty2.default)(_methods, "confirmCancelAppointment", function confirmCancelAppointment(appointmentId) {
     var _this8 = this;
@@ -1215,6 +1610,7 @@ var _default = {
   }), (0, _defineProperty2.default)(_methods, "cancelAppointment", function cancelAppointment(appointmentId) {
     var _this9 = this;
     return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee9() {
+      var token, studentId;
       return _regenerator.default.wrap(function _callee9$(_context9) {
         while (1) {
           switch (_context9.prev = _context9.next) {
@@ -1223,9 +1619,20 @@ var _default = {
                 title: '正在取消...'
               });
               _context9.prev = 1;
-              _context9.next = 4;
-              return _kingdeeAgent.default.cancelCounselingAppointment(appointmentId);
-            case 4:
+              token = uni.getStorageSync('token');
+              studentId = "645730151";
+              _context9.next = 6;
+              return uni.request({
+                url: "http://localhost:3000/api/psych/appointments/".concat(appointmentId, "/cancel"),
+                method: 'POST',
+                header: token ? {
+                  'Authorization': "Bearer ".concat(token)
+                } : {},
+                data: {
+                  studentId: studentId
+                }
+              });
+            case 6:
               uni.hideLoading();
               uni.showToast({
                 title: '取消成功',
@@ -1233,10 +1640,10 @@ var _default = {
               });
               // 刷新列表
               _this9.fetchMyAppointments();
-              _context9.next = 14;
+              _context9.next = 16;
               break;
-            case 9:
-              _context9.prev = 9;
+            case 11:
+              _context9.prev = 11;
               _context9.t0 = _context9["catch"](1);
               uni.hideLoading();
               console.error("取消预约失败:", _context9.t0);
@@ -1244,13 +1651,18 @@ var _default = {
                 title: '取消失败，请稍后再试',
                 icon: 'none'
               });
-            case 14:
+            case 16:
             case "end":
               return _context9.stop();
           }
         }
-      }, _callee9, null, [[1, 9]]);
+      }, _callee9, null, [[1, 11]]);
     }))();
+  }), (0, _defineProperty2.default)(_methods, "showAppointmentDetail", function showAppointmentDetail(apt) {
+    this.currentAppointment = apt;
+    this.showAppointmentDetailPopup = true;
+  }), (0, _defineProperty2.default)(_methods, "hideAppointmentDetail", function hideAppointmentDetail() {
+    this.showAppointmentDetailPopup = false;
   }), _methods)
 };
 exports.default = _default;

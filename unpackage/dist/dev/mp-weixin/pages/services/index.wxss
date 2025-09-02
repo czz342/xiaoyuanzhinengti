@@ -65,6 +65,9 @@
 .grid-icon.emergency {
 	background-color: #ffe6e6;
 }
+.grid-icon.activity {
+	background-color: #f0e6ff;
+}
 .grid-item.placeholder {
 	opacity: 0.5;
 	cursor: default;

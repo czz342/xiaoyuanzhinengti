@@ -29,7 +29,24 @@ class Counselor {
             ON DUPLICATE KEY UPDATE name=VALUES(name), title=VALUES(title), background=VALUES(background),
                 style=VALUES(style), specialties=VALUES(specialties), status=VALUES(status), avatar=VALUES(avatar)
         `;
-        const values = [data.counselorNumber, data.name, data.title, data.background, data.style, data.specialties, data.status || '在职', data.avatar];
+        const nn = (v) => (v === undefined ? null : v);
+        const normStatus = (v) => {
+            const s = (v || '').trim();
+            if (s === '在职' || s === '离职') return s;
+            if (/^active$/i.test(s)) return '在职';
+            if (/^inactive|left$/i.test(s)) return '离职';
+            return '在职';
+        };
+        const values = [
+            nn(data.counselorNumber),
+            nn(data.name),
+            nn(data.title),
+            nn(data.background),
+            nn(data.style),
+            nn(data.specialties),
+            nn(normStatus(data.status)),
+            nn(data.avatar)
+        ];
         const [res] = await db.execute(sql, values);
         return res.insertId || (await this.findByNumber(data.counselorNumber))?.id;
     }

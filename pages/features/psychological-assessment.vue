@@ -169,7 +169,7 @@
 								<button class="primary-btn" @tap="switchTab(1)">立即预约</button>
 							</view>
 							<view v-else class="appointment-list">
-								<view class="appointment-card" v-for="apt in processedAppointments" :key="apt.id">
+								<view class="appointment-card" v-for="apt in processedAppointments" :key="apt.id" @tap="showAppointmentDetail(apt)">
 									<view class="apt-header">
 										<text class="apt-counselor">{{ apt.lb77_counselor_name }}</text>
 										<text class="apt-status" :class="apt.statusClass">{{ apt.lb77_appointment_status }}</text>
@@ -178,7 +178,7 @@
 										<text class="apt-time">时间：{{ formatDate(new Date(apt.lb77_appointment_date), 'yyyy-MM-dd') }} {{ secondsToTime(apt.lb77_starttime) }}</text>
 									</view>
 									<view class="apt-footer" v-if="apt.lb77_appointment_status === '已预约'">
-										<button class="cancel-btn" @tap="confirmCancelAppointment(apt.id)">取消预约</button>
+										<button class="cancel-btn" @tap.stop="confirmCancelAppointment(apt.id)">取消预约</button>
 									</view>
 								</view>
 							</view>
@@ -282,11 +282,36 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 预约详情弹窗 -->
+		<view class="apt-detail-popup" v-if="showAppointmentDetailPopup">
+			<view class="popup-mask" @tap="hideAppointmentDetail"></view>
+			<view class="popup-content">
+				<view class="popup-header">
+					<text class="popup-title">预约详情</text>
+					<view class="popup-close" @tap="hideAppointmentDetail">
+						<image src="/static/images/close.png" mode="aspectFit"></image>
+					</view>
+				</view>
+				<view class="popup-body apt-detail-body">
+					<view class="qrcode-section">
+						<image class="qrcode-image" src="/static/images/qrcode.png" mode="aspectFit"></image>
+						<text class="qrcode-tip">请到达时出示此二维码以核验</text>
+					</view>
+					<view class="apt-info">
+						<view class="info-row"><text class="info-label">咨询师</text><text class="info-value">{{ currentAppointment.lb77_counselor_name }}</text></view>
+						<view class="info-row"><text class="info-label">日期</text><text class="info-value">{{ formatDate(new Date(currentAppointment.lb77_appointment_date), 'yyyy-MM-dd') }}</text></view>
+						<view class="info-row"><text class="info-label">时间</text><text class="info-value">{{ secondsToTime(currentAppointment.lb77_starttime) }}</text></view>
+						<view class="info-row"><text class="info-label">状态</text><text class="info-value">{{ currentAppointment.lb77_appointment_status }}</text></view>
+						<view class="info-row"><text class="info-label">地点</text><text class="info-value">校医楼二楼心理咨询中心</text></view>
+					</view>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
 
 export default {
 	data() {
@@ -323,6 +348,9 @@ export default {
 			isLoadingReports: false,
 			myAppointments: [],
 			isLoadingAppointments: false,
+			// 预约详情弹窗
+			showAppointmentDetailPopup: false,
+			currentAppointment: {},
 		}
 	},
 	async onLoad(options) {
@@ -395,27 +423,39 @@ export default {
 		}
 	},
 	methods: {
-		// 获取咨询师列表
+		// 获取咨询师列表（改为本地后端）
 		async fetchCounselors() {
 			this.isLoadingCounselors = true;
+			const token = uni.getStorageSync('token');
+			const clean = (s) => {
+				if (s == null) return '';
+				const t = String(s).trim();
+				return t.replace(/^\"|\"$/g, '');
+			};
 			try {
-				const res = await KingdeeAgentService.getCounselors(20);
-				if (res && res.data && Array.isArray(res.data.rows)) {
-					this.counselors = res.data.rows.map((c, index) => ({
-						...c,
-						id: c.number,
-						name: c.name,
-						title: c.lb77_title,
-						avatar: c.lb77_avatarURL || '/static/images/counselor' + ((index % 3) + 1) + '.png',
-						specialties: c.lb77_specialties ? c.lb77_specialties.split(',') : [],
-						background: c.lb77_background,
-						style: c.lb77_style,
-						rating: (4.7 + Math.random() * 0.3),
-						ratingCount: Math.floor(Math.random() * 150) + 50,
-					}));
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/psych/counselors',
+					method: 'GET',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
+				if (res.data && res.data.success) {
+					this.counselors = (res.data.data || []).map((c, index) => {
+						const spec = clean(c.specialties).split(',').map(t => t.trim()).filter(Boolean);
+						return {
+							id: c.id,
+							name: c.name,
+							title: clean(c.title),
+							avatar: c.avatar || '/static/images/counselor' + ((index % 3) + 1) + '.png',
+							specialties: spec,
+							background: clean(c.background),
+							style: clean(c.style),
+							rating: (4.6 + Math.random() * 0.4),
+							ratingCount: Math.floor(Math.random() * 150) + 50,
+						};
+					});
 				}
 			} catch (error) {
-				console.error("获取咨询师列表失败:", error);
+				console.error('获取咨询师列表失败:', error);
 				uni.showToast({ title: '咨询师加载失败', icon: 'none' });
 			} finally {
 				this.isLoadingCounselors = false;
@@ -498,7 +538,7 @@ export default {
 			this.selectedTime = {};
 		},
 
-		// 更新咨询师排班
+		// 更新咨询师排班（改为本地后端）
 		async updateCounselorSchedule() {
 			if (!this.currentCounselor.id || this.selectedDateIndex < 0) return;
 			
@@ -512,28 +552,20 @@ export default {
 			const selectedDate = this.availableDates[this.selectedDateIndex];
 
 			try {
-				const [scheduleRes, bookingsRes] = await Promise.all([
-					KingdeeAgentService.getCounselorWeeklySchedule(this.currentCounselor.id),
-					KingdeeAgentService.getCounselingAppointmentsByDate(this.currentCounselor.id, selectedDate.fullDate)
-				]);
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/psych/counselors/${this.currentCounselor.id}/schedule`,
+					method: 'GET',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
 
-				let allSlots = [];
-				if (scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0].entryentity) {
-					allSlots = scheduleRes.data.rows[0].entryentity
-						.filter(slot => slot.lb77_day_of_week.trim() === selectedDate.weekday)
-						.map(slot => ({
-							startTime: slot.lb77_start_time,
-							endTime: slot.lb77_end_time,
-						}));
-				}
-
-				let bookedSlots = [];
-				if (bookingsRes.data && bookingsRes.data.rows) {
-					bookedSlots = bookingsRes.data.rows.map(booking => booking.lb77_starttime);
-				}
+				const rows = (res.data && res.data.success) ? (res.data.data || []) : [];
+				const weekday = selectedDate.weekday;
+				const allSlots = rows
+					.filter(r => (r.day_of_week || r.dayOfWeek) === weekday)
+					.map(r => ({ startTime: Number(r.start_time_sec || r.startSec), endTime: Number(r.end_time_sec || r.endSec) }));
 
 				this.availableTimeSlots = allSlots
-					.filter(slot => !bookedSlots.includes(slot.startTime))
 					.map(slot => ({
 						time: this.secondsToTime(slot.startTime),
 						startTime: slot.startTime,
@@ -571,7 +603,7 @@ export default {
 			}
 		},
 		
-		// 预约咨询
+		// 预约咨询（本地后端）
 		bookAppointment() {
 			if (this.selectedTime && this.selectedTime.startTime) {
 				const date = this.availableDates[this.selectedDateIndex];
@@ -588,13 +620,19 @@ export default {
 							try {
 								uni.showLoading({ title: '正在预约...' });
 								
-								await KingdeeAgentService.createCounselingAppointment(
-									studentId,
-									this.currentCounselor.id,
-									date.fullDate,
-									time.startTime,
-									time.endTime
-								);
+								const token = uni.getStorageSync('token');
+								await uni.request({
+									url: 'http://localhost:3000/api/psych/appointments',
+									method: 'POST',
+									header: token ? { 'Authorization': `Bearer ${token}` } : {},
+									data: {
+										studentId,
+										counselorId: this.currentCounselor.id,
+										date: date.fullDate,
+										startTimeSec: time.startTime,
+										endTimeSec: time.endTime
+									}
+								});
 								
 								uni.hideLoading();
 								uni.showToast({
@@ -809,19 +847,25 @@ export default {
 				// TODO: 后续应从用户登录状态中获取真实学生ID
 				const studentId = "645730151";
 				const entries = this.currentQuestionnaire.questions.map((q, index) => ({
-					lb77_questionindex: index + 1,
-					lb77_selecttext: q.options[q.selected].text,
-					lb77_score: q.options[q.selected].score,
+					question_index: index + 1,
+					selected_text: q.options[q.selected].text,
+					score: q.options[q.selected].score,
 				}));
-				
-				await KingdeeAgentService.createPsychReport(
-					studentId,
-					totalScore, 
-					level, // 使用 level 作为 ResultSummary
-					entries,
-					this.currentQuestionnaire.id,
-					this.currentQuestionnaire.title
-				);
+				const token = uni.getStorageSync('token');
+				await uni.request({
+					url: 'http://localhost:3000/api/psych/reports',
+					method: 'POST',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {},
+					data: {
+						studentId,
+						questionnaireKey: this.currentQuestionnaire.id,
+						questionnaireTitle: this.currentQuestionnaire.title,
+						totalScore,
+						resultLevel: level,
+						suggestion,
+						entries
+					}
+				});
 				
 				this.assessmentReport = {
 					score: totalScore,
@@ -856,9 +900,23 @@ export default {
 			try {
 				// TODO: 后续应从用户登录状态中获取真实学生ID
 				const studentId = "645730151";
-				const res = await KingdeeAgentService.getMyPsychReports(studentId);
-				if (res.data && res.data.rows) {
-					this.myPsychReports = res.data.rows.sort((a, b) => new Date(b.createtime) - new Date(a.createtime));
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/psych/my/reports?studentId=${studentId}`,
+					method: 'GET',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
+				if (res.data && res.data.success) {
+					const list = res.data.data || [];
+					this.myPsychReports = list
+						.map(r => ({
+							id: r.id,
+							lb77_questionnairetitle: r.questionnaire_title,
+							lb77_resultsummary: r.result_level,
+							lb77_totalscore: r.total_score,
+							createtime: r.created_at
+						}))
+						.sort((a, b) => new Date(b.createtime) - new Date(a.createtime));
 				} else {
 					this.myPsychReports = [];
 				}
@@ -875,9 +933,23 @@ export default {
 			try {
 				// TODO: 后续应从用户登录状态中获取真实学生ID
 				const studentId = "645730151";
-				const res = await KingdeeAgentService.getMyCounselingAppointments(studentId);
-				if (res.data && res.data.rows) {
-					this.myAppointments = res.data.rows.sort((a, b) => new Date(b.lb77_appointment_date) - new Date(a.lb77_appointment_date));
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/psych/my/appointments?studentId=${studentId}`,
+					method: 'GET',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
+				if (res.data && res.data.success) {
+					const list = res.data.data || [];
+					this.myAppointments = list
+						.map(r => ({
+							id: r.id,
+							lb77_counselor_name: r.counselor_name || '',
+							lb77_appointment_status: r.status,
+							lb77_appointment_date: r.appointment_date,
+							lb77_starttime: r.start_time_sec
+						}))
+						.sort((a, b) => new Date(b.lb77_appointment_date) - new Date(a.lb77_appointment_date));
 				} else {
 					this.myAppointments = [];
 				}
@@ -904,7 +976,14 @@ export default {
 		async cancelAppointment(appointmentId) {
 			uni.showLoading({ title: '正在取消...' });
 			try {
-				await KingdeeAgentService.cancelCounselingAppointment(appointmentId);
+				const token = uni.getStorageSync('token');
+				const studentId = "645730151";
+				await uni.request({
+					url: `http://localhost:3000/api/psych/appointments/${appointmentId}/cancel`,
+					method: 'POST',
+					header: token ? { 'Authorization': `Bearer ${token}` } : {},
+					data: { studentId }
+				});
 				uni.hideLoading();
 				uni.showToast({ title: '取消成功', icon: 'success' });
 				// 刷新列表
@@ -914,6 +993,14 @@ export default {
 				console.error("取消预约失败:", error);
 				uni.showToast({ title: '取消失败，请稍后再试', icon: 'none' });
 			}
+		},
+		// 显示/隐藏预约详情
+		showAppointmentDetail(apt) {
+			this.currentAppointment = apt;
+			this.showAppointmentDetailPopup = true;
+		},
+		hideAppointmentDetail() {
+			this.showAppointmentDetailPopup = false;
 		}
 	}
 }
@@ -2091,5 +2178,53 @@ export default {
 	margin: 0;
 	margin-left: 20rpx;
 	flex-shrink: 0;
+}
+
+/* 预约详情弹窗 */
+.apt-detail-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 999;
+}
+.apt-detail-body {
+	padding: 30rpx;
+}
+.qrcode-section {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 30rpx;
+}
+.qrcode-image {
+	width: 360rpx;
+	height: 360rpx;
+}
+.qrcode-tip {
+	margin-top: 12rpx;
+	font-size: 24rpx;
+	color: #666;
+}
+.apt-info {
+	background-color: #fff;
+	border-radius: 16rpx;
+	padding: 20rpx;
+	box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+}
+.info-row {
+	display: flex;
+	justify-content: space-between;
+	padding: 12rpx 0;
+}
+.info-label {
+	color: #666;
+	font-size: 26rpx;
+}
+.info-value {
+	color: #333;
+	font-size: 28rpx;
+	font-weight: 500;
 }
 </style> 

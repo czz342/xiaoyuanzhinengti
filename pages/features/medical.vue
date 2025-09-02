@@ -531,26 +531,20 @@
 			filteredAppointments() {
 				let appointmentsToFilter = this.myAppointments;
 				if (this.currentStatusTab !== 0) {
-					const statusMap = {
-						1: '已预约',
-						2: '已完成',
-						3: '已取消'
-					};
+					const statusMap = { 1: '已预约', 2: '已完成', 3: '已取消' };
 					const statusFilter = statusMap[this.currentStatusTab];
-					appointmentsToFilter = this.myAppointments.filter(item => item.lb77_appointment_status ===
-						statusFilter);
+					appointmentsToFilter = this.myAppointments.filter(item => item.status === statusFilter);
 				}
 				return appointmentsToFilter.map(appointment => ({
 					...appointment,
-					department: appointment.lb77_doctor_lb77_department_name,
-					doctorName: appointment.lb77_doctor_name,
-					doctorTitle: appointment.lb77_doctor_lb77_title,
-					date: appointment.lb77_appointment_date.split(' ')[0],
-					time: this.secondsToTime(appointment.lb77_starttime),
-					location: '校医院 ' + appointment.lb77_doctor_lb77_department_name,
-					status: appointment.lb77_appointment_status === '已预约' ? '待就诊' : appointment
-					.lb77_appointment_status,
-					statusClass: this.getStatusClass(appointment.lb77_appointment_status)
+					department: appointment.departmentName || this.getDepartmentNameByNumber(appointment.dept_number),
+					doctorName: appointment.doctorName || appointment.doctor_name,
+					doctorTitle: appointment.doctorTitle || appointment.title,
+					date: appointment.appointment_date,
+					time: this.secondsToTime(appointment.start_time_sec),
+					location: '校医院 ' + (appointment.departmentName || this.getDepartmentNameByNumber(appointment.dept_number)),
+					status: appointment.status === '已预约' ? '待就诊' : appointment.status,
+					statusClass: this.getStatusClass(appointment.status)
 				}));
 			},
 			currentAppointmentStatusClass() {
@@ -633,9 +627,18 @@
 			async fetchDepartments() {
 				this.isLoadingDepartments = true;
 				try {
-					const res = await KingdeeAgentService.getHospitalDepartments(20);
-					if (res && res.data && res.data.rows) {
-						this.departments = res.data.rows;
+					const token = uni.getStorageSync('token');
+					const res = await uni.request({
+						url: 'http://localhost:3000/api/medical/departments',
+						method: 'GET',
+						header: token ? { 'Authorization': `Bearer ${token}` } : {}
+					});
+					if (res.data && res.data.success) {
+						this.departments = (res.data.data || []).map(d => ({
+							number: d.dept_number,
+							name: d.name,
+							description: d.description
+						}));
 						// 默认选中第一个科室
 						if (this.departments.length > 0) {
 							await this.selectDepartment(this.departments[0]);
@@ -655,14 +658,20 @@
 				this.isLoadingDoctors = true;
 				this.doctorsList = [];
 				try {
-					const res = await KingdeeAgentService.getDoctorsByDepartment(departmentNumber);
-					if (res && res.data && res.data.rows) {
-						this.doctorsList = res.data.rows.map((doc, index) => ({
-							...doc,
-							id: doc.number,
+					const token = uni.getStorageSync('token');
+					const res = await uni.request({
+						url: `http://localhost:3000/api/medical/departments/${departmentNumber}/doctors`,
+						method: 'GET',
+						header: token ? { 'Authorization': `Bearer ${token}` } : {}
+					});
+					if (res.data && res.data.success) {
+						this.doctorsList = (res.data.data || []).map((doc, index) => ({
+							id: doc.id,
+							number: doc.doctor_number,
+							name: doc.name,
+							title: doc.title,
+							specialty: doc.specialty,
 							avatar: doctorAvatars[index % doctorAvatars.length],
-							title: doc.lb77_title,
-							specialty: doc.lb77_specialty,
 							rating: (4.5 + Math.random() * 0.5).toFixed(1),
 							ratingCount: Math.floor(Math.random() * 200) + 50,
 							availableSlots: [],
@@ -689,31 +698,17 @@
 				this.$set(doctor, 'isLoadingSlots', true);
 				this.$set(doctor, 'availableSlots', []);
 				try {
-					const scheduleRes = await KingdeeAgentService.getDoctorWeeklySchedule(doctor.number);
-					const bookingsRes = await KingdeeAgentService.getAppointmentsByDate(doctor.number, this.selectedDate
-						.fullDate);
-
-					let allSlots = [];
-					if (scheduleRes && scheduleRes.data && scheduleRes.data.rows.length > 0 && scheduleRes.data.rows[0]
-						.lb77_weekschedule) {
-						const weeklySchedule = scheduleRes.data.rows[0].lb77_weekschedule;
-						allSlots = weeklySchedule
-							.filter(slot => slot.lb77_day_of_week.trim() === this.selectedDate.weekday)
-							.map(slot => ({
-								start: slot.lb77_start_time,
-								end: slot.lb77_end_time
-							}));
-					}
-
-					let bookedSlots = [];
-					if (bookingsRes && bookingsRes.data && bookingsRes.data.rows) {
-						bookedSlots = bookingsRes.data.rows.map(booking => booking.lb77_starttime);
-					}
-
-					const availableSlots = allSlots
-						.filter(slot => !bookedSlots.includes(slot.start))
-						.map(slot => this.secondsToTime(slot.start));
-
+					const token = uni.getStorageSync('token');
+					const res = await uni.request({
+						url: `http://localhost:3000/api/medical/doctors/${doctor.number}/schedule`,
+						method: 'GET',
+						header: token ? { 'Authorization': `Bearer ${token}` } : {}
+					});
+					const rows = (res.data && res.data.success) ? (res.data.data || []) : [];
+					const slots = rows
+						.filter(r => r.day_of_week === this.selectedDate.weekday)
+						.map(r => r.start_time_sec);
+					const availableSlots = slots.map(sec => this.secondsToTime(sec));
 					this.$set(doctor, 'availableSlots', availableSlots);
 				} catch (error) {
 					console.error(`获取医生 ${doctor.name} 的排班失败:`, error);
@@ -767,19 +762,20 @@
 					const timeParts = this.selectedTimeInPopup.split(':');
 					const startTimeInSeconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60;
 					const endTimeInSeconds = startTimeInSeconds + 15 * 60;
-
-					const appointmentData = {
-						billno: `YUYUE-${this.currentUser.studentId}-${Date.now()}`,
-						lb77_appointment_date: this.selectedDate.fullDate,
-						lb77_starttime: startTimeInSeconds,
-						lb77_endtime: endTimeInSeconds,
-						lb77_symptoms: "用户自助预约",
-						lb77_appointment_status: '已预约',
-						lb77_student_number: this.currentUser.studentId,
-						lb77_doctor_number: this.currentDoctor.number
-					};
-					const res = await KingdeeAgentService.createMedicalAppointment(appointmentData);
-					if (res && res.data && res.data.successCount > 0) {
+					const token = uni.getStorageSync('token');
+					const res = await uni.request({
+						url: 'http://localhost:3000/api/medical/appointments',
+						method: 'POST',
+						header: token ? { 'Authorization': `Bearer ${token}` } : {},
+						data: {
+							studentId: this.currentUser.studentId,
+							doctorNumber: this.currentDoctor.number,
+							date: this.selectedDate.fullDate,
+							startTimeSec: startTimeInSeconds,
+							endTimeSec: endTimeInSeconds
+						}
+					});
+					if (res.data && res.data.success) {
 						uni.hideLoading();
 						this.hideDoctorDetail();
 						this.appointmentResult = {
@@ -793,7 +789,7 @@
 						this.fetchMyAppointments();
 						this.updateAllDoctorSchedules();
 					} else {
-						throw new Error(res.message || '预约失败');
+						throw new Error((res.data && res.data.message) || '预约失败');
 					}
 				} catch (error) {
 					uni.hideLoading();
@@ -815,13 +811,30 @@
 			async fetchMyAppointments() {
 				this.isLoadingAppointments = true;
 				try {
-					const res = await KingdeeAgentService.getPersonalAppointments(this.currentUser.studentId, 50);
-					if (res && res.data && res.data.rows) {
-						this.myAppointments = res.data.rows.sort((a, b) => {
-							const dateA = new Date(a.lb77_appointment_date).getTime();
-							const dateB = new Date(b.lb77_appointment_date).getTime();
+					const token = uni.getStorageSync('token');
+					const res = await uni.request({
+						url: `http://localhost:3000/api/medical/my/appointments?studentId=${this.currentUser.studentId}`,
+						method: 'GET',
+						header: token ? { 'Authorization': `Bearer ${token}` } : {}
+					});
+					if (res.data && res.data.success) {
+						const depts = this.departments || [];
+						const deptNameByNum = (n) => (depts.find(d => d.number === n)?.name) || n || '门诊部';
+						const rows = res.data.data || [];
+						this.myAppointments = rows.map(r => ({
+							id: r.id,
+							departmentName: deptNameByNum(r.dept_number),
+							doctorName: r.doctor_name || '',
+							doctorTitle: r.title || '',
+							appointment_date: r.appointment_date,
+							start_time_sec: r.start_time_sec,
+							status: r.status,
+							dept_number: r.dept_number
+						})).sort((a, b) => {
+							const dateA = new Date(a.appointment_date).getTime();
+							const dateB = new Date(b.appointment_date).getTime();
 							if (dateB !== dateA) return dateB - dateA;
-							return b.lb77_starttime - a.lb77_starttime;
+							return b.start_time_sec - a.start_time_sec;
 						});
 					} else {
 						this.myAppointments = [];
@@ -871,9 +884,14 @@
 								title: '正在取消...'
 							});
 							try {
-								const apiRes = await KingdeeAgentService.cancelMedicalAppointment(appointment
-									.billno);
-								if (apiRes && apiRes.data && apiRes.data.successCount > 0) {
+								const token = uni.getStorageSync('token');
+								const apiRes = await uni.request({
+									url: `http://localhost:3000/api/medical/appointments/${appointment.id}/cancel`,
+									method: 'POST',
+									header: token ? { 'Authorization': `Bearer ${token}` } : {},
+									data: { studentId: this.currentUser.studentId }
+								});
+								if (apiRes.data && apiRes.data.success) {
 									uni.hideLoading();
 									uni.showToast({
 										title: '预约已取消',
@@ -884,7 +902,7 @@
 										this.hideAppointmentDetail();
 									}
 								} else {
-									throw new Error(apiRes.message || '取消失败');
+									throw new Error((apiRes.data && apiRes.data.message) || '取消失败');
 								}
 							} catch (error) {
 								uni.hideLoading();
@@ -1000,6 +1018,10 @@
 					default: return '';
 				}
 			},
+			getDepartmentNameByNumber(number) {
+				const department = this.departments.find(d => d.number === number);
+				return department ? department.name : number;
+			}
 		}
 	}
 </script>
