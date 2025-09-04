@@ -122,6 +122,12 @@
 				"navigationBarTitleText": "互助社区"
 			}
 		},
+        {
+            "path": "pages/features/campus-community",
+            "style": {
+                "navigationBarTitleText": "校园圈子"
+            }
+        },
 		{
 			"path": "pages/features/community-post-detail",
 			"style": {
@@ -223,6 +229,13 @@
 			"style": {
 				"navigationBarTitleText": "社团活动",
 				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/features/activity-detail",
+			"style": {
+				"navigationBarTitleText": "活动详情",
+				"navigationStyle": "custom"
 			}
 		},
 		{

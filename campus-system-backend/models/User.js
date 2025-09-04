@@ -128,6 +128,22 @@ class User {
     }
   }
 
+  // 根据studentId查找用户
+  static async findByStudentId(studentId) {
+    const sql = `
+      SELECT id, createdTime, userId, userName, phone, email, displayName, 
+             status, source, studentId, picture, creditScore, completedOrders, updated_at 
+      FROM users WHERE studentId = ?
+    `;
+    try {
+      const users = await query(sql, [studentId]);
+      return users[0] || null;
+    } catch (error) {
+      console.error('❌ 用户查询失败:', error.message);
+      throw error;
+    }
+  }
+
   // 验证密码
   static async verifyPassword(password, hashedPassword) {
     return await bcrypt.compare(password, hashedPassword);

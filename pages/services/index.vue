@@ -83,7 +83,7 @@
 					<!-- 跑腿代办 -->
 					<view class="grid-item" @tap="navigateTo('/pages/features/errand-service')">
 						<view class="grid-icon lifestyle">
-							<image src="/static/images/express.png" mode="aspectFit"></image>
+							<image src="/static/images/expressrun.png" mode="aspectFit"></image>
 						</view>
 						<text class="grid-text">跑腿代办</text>
 					</view>

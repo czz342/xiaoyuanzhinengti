@@ -20,6 +20,7 @@
     "pages/features/ai-companion",
     "pages/features/journal",
     "pages/features/community",
+    "pages/features/campus-community",
     "pages/features/community-post-detail",
     "pages/features/community-create-post",
     "pages/features/assessment-detail",
@@ -36,6 +37,7 @@
     "pages/register/index",
     "pages/forgot-password/index",
     "pages/features/club-activities",
+    "pages/features/activity-detail",
     "pages/features/canteen-traffic",
     "pages/features/errand-service",
     "pages/features/order-detail"

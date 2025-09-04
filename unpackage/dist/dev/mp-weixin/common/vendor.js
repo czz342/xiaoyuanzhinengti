@@ -9624,7 +9624,7 @@ uni.addInterceptor({
 
 /***/ }),
 
-/***/ 356:
+/***/ 372:
 /*!************************************************************************************!*\
   !*** ./node_modules/@dcloudio/vue-cli-plugin-uni/packages/uni-cloud/dist/index.js ***!
   \************************************************************************************/
@@ -9640,19 +9640,19 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.uniCloud = exports.default = exports.UniCloudError = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 56));
-var _assertThisInitialized2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/assertThisInitialized */ 357));
+var _assertThisInitialized2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/assertThisInitialized */ 373));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _typeof2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/typeof */ 13));
 var _toConsumableArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/toConsumableArray */ 18));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 58));
 var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
-var _inherits2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/inherits */ 358));
-var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ 359));
-var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ 360));
-var _wrapNativeSuper2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/wrapNativeSuper */ 361));
+var _inherits2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/inherits */ 374));
+var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/possibleConstructorReturn */ 375));
+var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/getPrototypeOf */ 376));
+var _wrapNativeSuper2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/wrapNativeSuper */ 377));
 var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
 var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
-var _pages = _interopRequireDefault(__webpack_require__(/*! @/pages.json */ 363));
+var _pages = _interopRequireDefault(__webpack_require__(/*! @/pages.json */ 379));
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e34) { throw _e34; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e35) { didErr = true; err = _e35; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
@@ -10163,7 +10163,7 @@ var b = "development" === "development",
   x = true;
 var N = "";
 try {
-  N = (__webpack_require__(/*! uni-stat-config */ 364).default || __webpack_require__(/*! uni-stat-config */ 364)).appid;
+  N = (__webpack_require__(/*! uni-stat-config */ 380).default || __webpack_require__(/*! uni-stat-config */ 380)).appid;
 } catch (e) {}
 var R,
   L = {};
@@ -18025,7 +18025,7 @@ exports.default = Zs;
 
 /***/ }),
 
-/***/ 357:
+/***/ 373:
 /*!**********************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/assertThisInitialized.js ***!
   \**********************************************************************/
@@ -18042,7 +18042,7 @@ module.exports = _assertThisInitialized, module.exports.__esModule = true, modul
 
 /***/ }),
 
-/***/ 358:
+/***/ 374:
 /*!*********************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/inherits.js ***!
   \*********************************************************/
@@ -18070,7 +18070,7 @@ module.exports = _inherits, module.exports.__esModule = true, module.exports["de
 
 /***/ }),
 
-/***/ 359:
+/***/ 375:
 /*!**************************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js ***!
   \**************************************************************************/
@@ -18078,7 +18078,7 @@ module.exports = _inherits, module.exports.__esModule = true, module.exports["de
 /***/ (function(module, exports, __webpack_require__) {
 
 var _typeof = __webpack_require__(/*! ./typeof.js */ 13)["default"];
-var assertThisInitialized = __webpack_require__(/*! ./assertThisInitialized.js */ 357);
+var assertThisInitialized = __webpack_require__(/*! ./assertThisInitialized.js */ 373);
 function _possibleConstructorReturn(self, call) {
   if (call && (_typeof(call) === "object" || typeof call === "function")) {
     return call;
@@ -18091,7 +18091,7 @@ module.exports = _possibleConstructorReturn, module.exports.__esModule = true, m
 
 /***/ }),
 
-/***/ 360:
+/***/ 376:
 /*!***************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/getPrototypeOf.js ***!
   \***************************************************************/
@@ -18108,16 +18108,16 @@ module.exports = _getPrototypeOf, module.exports.__esModule = true, module.expor
 
 /***/ }),
 
-/***/ 361:
+/***/ 377:
 /*!****************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/wrapNativeSuper.js ***!
   \****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-var getPrototypeOf = __webpack_require__(/*! ./getPrototypeOf.js */ 360);
+var getPrototypeOf = __webpack_require__(/*! ./getPrototypeOf.js */ 376);
 var setPrototypeOf = __webpack_require__(/*! ./setPrototypeOf.js */ 16);
-var isNativeFunction = __webpack_require__(/*! ./isNativeFunction.js */ 362);
+var isNativeFunction = __webpack_require__(/*! ./isNativeFunction.js */ 378);
 var construct = __webpack_require__(/*! ./construct.js */ 15);
 function _wrapNativeSuper(Class) {
   var _cache = typeof Map === "function" ? new Map() : undefined;
@@ -18149,7 +18149,7 @@ module.exports = _wrapNativeSuper, module.exports.__esModule = true, module.expo
 
 /***/ }),
 
-/***/ 362:
+/***/ 378:
 /*!*****************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/isNativeFunction.js ***!
   \*****************************************************************/
@@ -18167,7 +18167,7 @@ module.exports = _isNativeFunction, module.exports.__esModule = true, module.exp
 
 /***/ }),
 
-/***/ 363:
+/***/ 379:
 /*!**************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/pages.json?{"type":"origin-pages-json"} ***!
   \**************************************************************************************************/
@@ -18285,6 +18285,11 @@ var _default = {
       "navigationBarTitleText": "互助社区"
     }
   }, {
+    "path": "pages/features/campus-community",
+    "style": {
+      "navigationBarTitleText": "校园圈子"
+    }
+  }, {
     "path": "pages/features/community-post-detail",
     "style": {
       "navigationBarTitleText": "帖子详情"
@@ -18372,6 +18377,12 @@ var _default = {
       "enablePullDownRefresh": false
     }
   }, {
+    "path": "pages/features/activity-detail",
+    "style": {
+      "navigationBarTitleText": "活动详情",
+      "navigationStyle": "custom"
+    }
+  }, {
     "path": "pages/features/canteen-traffic",
     "style": {
       "navigationBarTitleText": "食堂人流量"
@@ -18438,7 +18449,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 364:
+/***/ 380:
 /*!*************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/pages.json?{"type":"stat"} ***!
   \*************************************************************************************/
@@ -18459,7 +18470,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 365:
+/***/ 381:
 /*!*******************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/qiun-data-charts/js_sdk/u-charts/u-charts.js ***!
   \*******************************************************************************************************************/
@@ -26120,7 +26131,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 366:
+/***/ 382:
 /*!*************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/qiun-data-charts/js_sdk/u-charts/config-ucharts.js ***!
   \*************************************************************************************************************************/
@@ -26742,7 +26753,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 374:
+/***/ 390:
 /*!*******************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/util.js ***!
   \*******************************************************************************************************************/
@@ -26760,7 +26771,7 @@ exports.default = void 0;
 var _typeof2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/typeof */ 13));
 var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
 var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
-var _calendar = _interopRequireDefault(__webpack_require__(/*! ./calendar.js */ 375));
+var _calendar = _interopRequireDefault(__webpack_require__(/*! ./calendar.js */ 391));
 var Calendar = /*#__PURE__*/function () {
   function Calendar() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -27158,7 +27169,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 375:
+/***/ 391:
 /*!***********************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/calendar.js ***!
   \***********************************************************************************************************************/
@@ -27674,7 +27685,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 376:
+/***/ 392:
 /*!*************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/i18n/index.js ***!
   \*************************************************************************************************************************/
@@ -27689,9 +27700,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 377));
-var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 378));
-var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 379));
+var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 393));
+var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 394));
+var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 395));
 var _default = {
   en: _en.default,
   'zh-Hans': _zhHans.default,
@@ -27701,7 +27712,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 377:
+/***/ 393:
 /*!************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/i18n/en.json ***!
   \************************************************************************************************************************/
@@ -27712,7 +27723,7 @@ module.exports = JSON.parse("{\"uni-calender.ok\":\"ok\",\"uni-calender.cancel\"
 
 /***/ }),
 
-/***/ 378:
+/***/ 394:
 /*!*****************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/i18n/zh-Hans.json ***!
   \*****************************************************************************************************************************/
@@ -27723,7 +27734,7 @@ module.exports = JSON.parse("{\"uni-calender.ok\":\"确定\",\"uni-calender.canc
 
 /***/ }),
 
-/***/ 379:
+/***/ 395:
 /*!*****************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-calendar/components/uni-calendar/i18n/zh-Hant.json ***!
   \*****************************************************************************************************************************/
@@ -27734,7 +27745,23 @@ module.exports = JSON.parse("{\"uni-calender.ok\":\"確定\",\"uni-calender.canc
 
 /***/ }),
 
-/***/ 387:
+/***/ 4:
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/interopRequireDefault.js ***!
+  \**********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {
+    "default": obj
+  };
+}
+module.exports = _interopRequireDefault, module.exports.__esModule = true, module.exports["default"] = module.exports;
+
+/***/ }),
+
+/***/ 403:
 /*!***************************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-datetime-picker/components/uni-datetime-picker/i18n/index.js ***!
   \***************************************************************************************************************************************/
@@ -27749,9 +27776,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 388));
-var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 389));
-var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 390));
+var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 404));
+var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 405));
+var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 406));
 var _default = {
   en: _en.default,
   'zh-Hans': _zhHans.default,
@@ -27761,7 +27788,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 388:
+/***/ 404:
 /*!**************************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-datetime-picker/components/uni-datetime-picker/i18n/en.json ***!
   \**************************************************************************************************************************************/
@@ -27772,7 +27799,7 @@ module.exports = JSON.parse("{\"uni-datetime-picker.selectDate\":\"select date\"
 
 /***/ }),
 
-/***/ 389:
+/***/ 405:
 /*!*******************************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-datetime-picker/components/uni-datetime-picker/i18n/zh-Hans.json ***!
   \*******************************************************************************************************************************************/
@@ -27783,7 +27810,7 @@ module.exports = JSON.parse("{\"uni-datetime-picker.selectDate\":\"选择日期\
 
 /***/ }),
 
-/***/ 390:
+/***/ 406:
 /*!*******************************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-datetime-picker/components/uni-datetime-picker/i18n/zh-Hant.json ***!
   \*******************************************************************************************************************************************/
@@ -27794,7 +27821,7 @@ module.exports = JSON.parse("{\"uni-datetime-picker.selectDate\":\"選擇日期\
 
 /***/ }),
 
-/***/ 391:
+/***/ 407:
 /*!*********************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-datetime-picker/components/uni-datetime-picker/util.js ***!
   \*********************************************************************************************************************************/
@@ -28245,23 +28272,7 @@ function fixIosDateFormat(value) {
 
 /***/ }),
 
-/***/ 4:
-/*!**********************************************************************!*\
-  !*** ./node_modules/@babel/runtime/helpers/interopRequireDefault.js ***!
-  \**********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-function _interopRequireDefault(obj) {
-  return obj && obj.__esModule ? obj : {
-    "default": obj
-  };
-}
-module.exports = _interopRequireDefault, module.exports.__esModule = true, module.exports["default"] = module.exports;
-
-/***/ }),
-
-/***/ 413:
+/***/ 429:
 /*!**************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-icons/components/uni-icons/uniicons_file_vue.js ***!
   \**************************************************************************************************************************/
@@ -28765,7 +28776,7 @@ exports.fontData = fontData;
 
 /***/ }),
 
-/***/ 421:
+/***/ 437:
 /*!***************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-load-more/components/uni-load-more/i18n/index.js ***!
   \***************************************************************************************************************************/
@@ -28780,9 +28791,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 422));
-var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 423));
-var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 424));
+var _en = _interopRequireDefault(__webpack_require__(/*! ./en.json */ 438));
+var _zhHans = _interopRequireDefault(__webpack_require__(/*! ./zh-Hans.json */ 439));
+var _zhHant = _interopRequireDefault(__webpack_require__(/*! ./zh-Hant.json */ 440));
 var _default = {
   en: _en.default,
   'zh-Hans': _zhHans.default,
@@ -28792,7 +28803,7 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 422:
+/***/ 438:
 /*!**************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-load-more/components/uni-load-more/i18n/en.json ***!
   \**************************************************************************************************************************/
@@ -28803,7 +28814,7 @@ module.exports = JSON.parse("{\"uni-load-more.contentdown\":\"Pull up to show mo
 
 /***/ }),
 
-/***/ 423:
+/***/ 439:
 /*!*******************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-load-more/components/uni-load-more/i18n/zh-Hans.json ***!
   \*******************************************************************************************************************************/
@@ -28814,7 +28825,7 @@ module.exports = JSON.parse("{\"uni-load-more.contentdown\":\"上拉显示更多
 
 /***/ }),
 
-/***/ 424:
+/***/ 440:
 /*!*******************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-load-more/components/uni-load-more/i18n/zh-Hant.json ***!
   \*******************************************************************************************************************************/
@@ -28825,7 +28836,7 @@ module.exports = JSON.parse("{\"uni-load-more.contentdown\":\"上拉顯示更多
 
 /***/ }),
 
-/***/ 472:
+/***/ 488:
 /*!**********************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-transition/components/uni-transition/createAnimation.js ***!
   \**********************************************************************************************************************************/
