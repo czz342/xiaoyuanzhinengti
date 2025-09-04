@@ -312,3 +312,35 @@
 	margin-right: 10rpx;
 }
 
+/* 智能助手悬浮按钮 */
+.assistant-fab {
+	position: fixed;
+	right: 40rpx;
+	bottom: 120rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+	color: white;
+	border-radius: 50rpx;
+	padding: 16rpx 32rpx;
+	box-shadow: 0 8rpx 16rpx rgba(0, 122, 255, 0.3);
+	z-index: 100;
+	transition: -webkit-transform 0.2s ease;
+	transition: transform 0.2s ease;
+	transition: transform 0.2s ease, -webkit-transform 0.2s ease;
+}
+.assistant-fab:active {
+	-webkit-transform: scale(0.95);
+	        transform: scale(0.95);
+}
+.assistant-fab .fab-icon {
+	width: 40rpx;
+	height: 40rpx;
+	margin-right: 12rpx;
+}
+.assistant-fab .fab-text {
+	font-size: 28rpx;
+	font-weight: 500;
+}
+

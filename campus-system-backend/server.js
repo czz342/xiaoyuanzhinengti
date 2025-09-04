@@ -62,6 +62,8 @@ app.use('/api/express', require('./routes/express'));
 app.use('/api/shared-devices', require('./routes/shared-devices'));
 app.use('/api/psych', require('./routes/psych'));
 app.use('/api/medical', require('./routes/medical'));
+app.use('/api/errand', require('./routes/errand'));
+app.use('/api/smart-recommendation', require('./routes/smart-recommendation'));
 
 // 404处理
 app.use(notFound);

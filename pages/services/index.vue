@@ -175,11 +175,11 @@
 			<!-- 推荐卡片列表 -->
 			<view class="recommendation-list">
 				<!-- 教室导航卡片 -->
-				<view class="recommendation-card" v-if="isBeforeClass">
+				<view class="recommendation-card" v-if="isBeforeClass && nextClass.name">
 					<view class="card-header classroom-header">
 						<image src="/static/images/classroom.png" mode="aspectFit" class="card-icon"></image>
 						<text class="card-title">即将上课</text>
-						<text class="card-time">距离上课还有 {{nextClassTime}} 分钟</text>
+						<text class="card-time">距离上课还有 {{nextClassTime}} 分钟 ({{classUpdateTime}} 更新)</text>
 					</view>
 					<view class="card-content">
 						<view class="class-info">
@@ -200,11 +200,11 @@
 				</view>
 				
 				<!-- 食堂人流量热力图卡片 -->
-				<view class="recommendation-card" v-if="isLunchTime" id="canteenTrafficCard">
+				<view class="recommendation-card" v-if="chartData.categories && chartData.categories.length > 0" id="canteenTrafficCard">
 					<view class="card-header canteen-header">
 						<image src="/static/images/food.png" mode="aspectFit" class="card-icon"></image>
 						<text class="card-title">食堂人流量</text>
-						<text class="card-time">{{currentTime}} 更新</text>
+						<text class="card-time">{{canteenUpdateTime}} 更新</text>
 					</view>
 					<view class="card-content">
 						<view class="charts-container">
@@ -226,11 +226,11 @@
 				</view>
 				
 				<!-- 自习室空位信息卡片 -->
-				<view class="recommendation-card" v-if="isExamPeriod">
+				<view class="recommendation-card" v-if="studyRooms && studyRooms.length > 0">
 					<view class="card-header study-header">
 						<image src="/static/images/study.png" mode="aspectFit" class="card-icon"></image>
 						<text class="card-title">自习室空位</text>
-						<text class="card-time">{{currentTime}} 更新</text>
+						<text class="card-time">{{studyRoomUpdateTime}} 更新</text>
 					</view>
 					<view class="card-content">
 						<view class="study-rooms">
@@ -250,11 +250,16 @@
 				</view>
 			</view>
 		</view>
+		
+		<!-- 智能助手悬浮按钮 -->
+		<view class="assistant-fab" @tap="goToAssistant">
+			<image class="fab-icon" src="/static/images/assistant.png"></image>
+			<text class="fab-text">智能助手</text>
+		</view>
 	</view>
 </template>
 
 <script>
-import KingdeeAgentService from '@/services/kingdeeAgent.js';
 import qiunDataCharts from '@/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue';
 
 export default {
@@ -294,14 +299,17 @@ export default {
 			pageScrollTop: 0, // 页面滚动位置
 			scrollTarget: null, // 深度链接滚动目标
 			
-			// 场景判断
-			isBeforeClass: true,
-			isLunchTime: true,
-			isExamPeriod: true,
+			// 场景判断 - 将根据实际数据动态设置
+			isBeforeClass: false,
+			isLunchTime: false,
+			isExamPeriod: false,
 			
 			// 时间数据
 			currentTime: '12:30',
 			nextClassTime: 45,
+			canteenUpdateTime: '12:30',
+			studyRoomUpdateTime: '12:30',
+			classUpdateTime: '12:30',
 
 			chartData: {},
 			chartOptions: {
@@ -334,53 +342,38 @@ export default {
 				}
 			},
 			
-			// 下一节课信息
+			// 下一节课信息 - 将由后端API填充
 			nextClass: {
-				name: '高等数学（II）',
-				location: '理科楼 A306',
-				teacher: '张教授'
+				name: '',
+				location: '',
+				teacher: ''
 			},
 			
-			// 自习室数据
-			studyRooms: [
-				{
-					name: '中央图书馆 3F',
-					statusText: '空位较多',
-					statusClass: 'status-good',
-					statusColor: '#00B578',
-					occupancyRate: 60,
-					availableSeats: 42,
-					totalSeats: 105
-				},
-				{
-					name: '理科楼 自习室',
-					statusText: '即将满座',
-					statusClass: 'status-warning',
-					statusColor: '#FF9500',
-					occupancyRate: 85,
-					availableSeats: 15,
-					totalSeats: 100
-				},
-				{
-					name: '工科楼 自习室',
-					statusText: '已满座',
-					statusClass: 'status-full',
-					statusColor: '#FF3B30',
-					occupancyRate: 100,
-					availableSeats: 0,
-					totalSeats: 80
-				}
-			]
+			// 自习室数据 - 将由后端API填充
+			studyRooms: []
 		}
 	},
 	onShow() {
 		this.updateTime();
+		this.fetchUpcomingClass();
 		this.fetchCanteenTraffic();
+		this.fetchStudyRoomAvailability();
+		
+		// 根据时间判断显示场景
+		this.isLunchTime = this.checkIfLunchTime();
+		this.isExamPeriod = this.checkIfExamPeriod();
 	},
 	methods: {
 		// 页面跳转
 		navigateTo(url) {
 			uni.navigateTo({ url });
+		},
+		
+		// 跳转到智能助手页面
+		goToAssistant() {
+			uni.navigateTo({
+				url: '/pages/assistant/index'
+			});
 		},
 		
 		// 筛选选项
@@ -434,78 +427,137 @@ export default {
 			});
 		},
 		checkIfExamPeriod() {
-			// 检查当前是否为考试周，这里用固定值模拟
-			return true;
-		},
-		updateTime() {
+					// 检查当前是否为考试周，这里用固定值模拟
+		return true;
+	},
+	// 检查是否为用餐时间
+	checkIfLunchTime() {
+		const now = new Date();
+		const hour = now.getHours();
+		return (hour >= 6 && hour < 9) || (hour >= 11 && hour < 14) || (hour >= 17 && hour < 20);
+	},
+	// 检查是否为考试周
+	checkIfExamPeriod() {
+		// 这里可以根据实际学期安排来判断
+		// 暂时返回true，让自习室空位卡片总是显示
+		return true;
+	},
+	async fetchUpcomingClass() {
+		try {
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				this.isBeforeClass = false;
+				return;
+			}
+			
+			const res = await uni.request({
+				url: 'http://localhost:3000/api/smart-recommendation/upcoming-class',
+				method: 'GET',
+				header: { 'Authorization': `Bearer ${token}` }
+			});
+			
+			if (res.statusCode === 200 && res.data.success) {
+				const data = res.data.data;
+				if (data.hasUpcomingClass) {
+					this.isBeforeClass = true;
+					this.nextClass = data.nextClass;
+					this.nextClassTime = data.timeUntilClass;
+					this.classUpdateTime = data.currentTime;
+				} else {
+					this.isBeforeClass = false;
+				}
+			} else {
+				this.isBeforeClass = false;
+			}
+		} catch (err) {
+			console.error('获取即将上课信息失败:', err);
+			this.isBeforeClass = false;
+		}
+	},
+	updateTime() {
 			const now = new Date();
 			this.currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 		},
 		async fetchCanteenTraffic() {
 			try {
-				const canteenResponse = await KingdeeAgentService.getCanteenList();
-				if (!canteenResponse || !canteenResponse.data || !canteenResponse.data.rows) {
-					throw new Error("获取食堂列表失败");
-				}
-				
-				const canteens = canteenResponse.data.rows;
-				const now = new Date();
-				const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-				const endTime = this.formatDateTime(now);
-				const startTime = this.formatDateTime(oneHourAgo);
-
-				const trafficPromises = canteens.map(canteen => 
-					KingdeeAgentService.getTodaysCanteenOrders(canteen.number, startTime, endTime)
-				);
-				
-				const trafficResults = await Promise.all(trafficPromises);
-				
-				const categories = [];
-				const seriesData = [];
-				const displayMultiplier = 10;
-				
-				trafficResults.forEach((res, index) => {
-					const canteenName = canteens[index].name;
-					const trafficCount = (res && res.data) ? parseInt(res.data.totalCount, 10) : 0;
-					const displayCount = trafficCount * displayMultiplier;
-					
-					categories.push(canteenName);
-
-					let color = '';
-					if (displayCount <= 100) {
-						color = '#4cd964'; // Green
-					} else if (displayCount <= 300) {
-						color = '#FEEA9A'; // Light Yellow
-					} else if (displayCount <= 500) {
-						color = '#ff9500'; // Orange
-					} else {
-						color = '#ff3b30'; // Red
-					}
-
-					seriesData.push({
-						value: displayCount,
-						color: color
-					});
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/smart-recommendation/canteen-traffic',
+					method: 'GET'
 				});
-
-				this.chartData = {
-					categories: categories,
-					series: [
-						{
-							name: "当前人流量",
-							data: seriesData
+				
+				if (res.statusCode === 200 && res.data.success) {
+					const data = res.data.data;
+					this.canteenUpdateTime = data.updateTime;
+					
+					const categories = [];
+					const seriesData = [];
+					
+					data.canteens.forEach(canteen => {
+						categories.push(canteen.name);
+						
+						let color = '';
+						switch (canteen.trafficLevel) {
+							case 'idle':
+								color = '#4cd964'; // 绿色 - 空闲
+								break;
+							case 'moderate':
+								color = '#FEEA9A'; // 浅黄色 - 适中
+								break;
+							case 'busy':
+								color = '#ff9500'; // 橙色 - 繁忙
+								break;
+							case 'crowded':
+								color = '#ff3b30'; // 红色 - 拥挤
+								break;
+							default:
+								color = '#4cd964';
 						}
-					]
-				};
+						
+						seriesData.push({
+							value: canteen.trafficCount,
+							color: color
+						});
+					});
 
-			} catch (error) {
-				console.error("获取食堂人流数据失败:", error);
-				this.chartData = {
-					categories: [],
-					series: []
-				};
+					this.chartData = {
+						categories: categories,
+						series: [
+							{
+								name: "当前人流量",
+								data: seriesData
+							}
+						]
+					};
+				} else {
+					throw new Error("获取食堂人流量数据失败");
+				}
+					} catch (error) {
+			console.error("获取食堂人流数据失败:", error);
+			this.chartData = {
+				categories: [],
+				series: []
+			};
+		}
+	},
+	async fetchStudyRoomAvailability() {
+		try {
+			const res = await uni.request({
+				url: 'http://localhost:3000/api/smart-recommendation/study-room-availability',
+				method: 'GET'
+			});
+			
+			if (res.statusCode === 200 && res.data.success) {
+				const data = res.data.data;
+				this.studyRooms = data.studyRooms;
+				this.studyRoomUpdateTime = data.updateTime;
+			} else {
+				throw new Error("获取自习室空位信息失败");
 			}
-		},
+		} catch (error) {
+			console.error("获取自习室空位信息失败:", error);
+			// 保持默认数据
+		}
+	},
 		formatDateTime(date) {
 			const year = date.getFullYear();
 			const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -925,5 +977,37 @@ export default {
 	height: 20rpx;
 	border-radius: 4rpx;
 	margin-right: 10rpx;
+}
+
+/* 智能助手悬浮按钮 */
+.assistant-fab {
+	position: fixed;
+	right: 40rpx;
+	bottom: 120rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+	color: white;
+	border-radius: 50rpx;
+	padding: 16rpx 32rpx;
+	box-shadow: 0 8rpx 16rpx rgba(0, 122, 255, 0.3);
+	z-index: 100;
+	transition: transform 0.2s ease;
+}
+
+.assistant-fab:active {
+	transform: scale(0.95);
+}
+
+.assistant-fab .fab-icon {
+	width: 40rpx;
+	height: 40rpx;
+	margin-right: 12rpx;
+}
+
+.assistant-fab .fab-text {
+	font-size: 28rpx;
+	font-weight: 500;
 }
 </style>

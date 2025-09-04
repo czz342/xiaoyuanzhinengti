@@ -1,5 +1,7 @@
 {
   "pages": [
+    "pages/index/index",
+    "pages/home/index",
     "pages/assistant/index",
     "pages/services/index",
     "pages/features/schedule",
@@ -52,10 +54,16 @@
     "backgroundColor": "#FFFFFF",
     "list": [
       {
-        "pagePath": "pages/assistant/index",
-        "iconPath": "static/images/assistant.png",
-        "selectedIconPath": "static/images/assistant-active.png",
-        "text": "智能助手"
+        "pagePath": "pages/index/index",
+        "iconPath": "static/images/首页.png",
+        "selectedIconPath": "static/images/首页-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/home/index",
+        "iconPath": "static/images/快捷服务.png",
+        "selectedIconPath": "static/images/快捷服务-active.png",
+        "text": "快捷服务"
       },
       {
         "pagePath": "pages/services/index",

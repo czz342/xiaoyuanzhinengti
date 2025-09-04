@@ -1,6 +1,19 @@
 {
 	"pages": [
 		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/home/index",
+			"style": {
+				"navigationBarTitleText": "快捷服务"
+			}
+		},
+		{
 			"path": "pages/assistant/index",
 			"style": {
 				"navigationBarTitleText": "智能助手"
@@ -250,10 +263,16 @@
 		"backgroundColor": "#FFFFFF",
 		"list": [
 			{
-				"pagePath": "pages/assistant/index",
-				"iconPath": "static/images/assistant.png",
-				"selectedIconPath": "static/images/assistant-active.png",
-				"text": "智能助手"
+				"pagePath": "pages/index/index",
+				"iconPath": "static/images/首页.png",
+				"selectedIconPath": "static/images/首页-active.png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/home/index",
+				"iconPath": "static/images/快捷服务.png",
+				"selectedIconPath": "static/images/快捷服务-active.png",
+				"text": "快捷服务"
 			},
 			{
 				"pagePath": "pages/services/index",

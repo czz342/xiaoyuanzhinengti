@@ -324,9 +324,18 @@
 					<view class="order-footer">
 						<view class="publisher-info">
 							<image :src="order.publisherAvatar" mode="aspectFit" class="publisher-avatar"></image>
-							<text class="publisher-name">{{ order.publisherName }}</text>
-							<view class="publisher-rating">
-								<text class="rating-text">{{ order.publisherRating }}分</text>
+							<view class="publisher-details">
+								<text class="publisher-name">{{ order.publisherName }}</text>
+								<view class="publisher-stats">
+									<view class="rating-info">
+										<text class="rating-label">评分</text>
+										<text class="rating-value">{{ (order.publisherRating || 5.0).toFixed(1) }}</text>
+									</view>
+									<view class="orders-info">
+										<text class="orders-label">完成</text>
+										<text class="orders-value">{{ order.completedOrders }}单</text>
+									</view>
+								</view>
 							</view>
 						</view>
 						<button class="accept-btn" @tap="acceptOrder(order.id)">接单</button>
@@ -351,11 +360,11 @@ export default {
 		return {
 			activeTab: 'publish',
 			orderFilterType: 'published', // 新增：订单筛选类型
-			selectedServiceType: 'takeout',
+			selectedServiceType: '外卖代拿',
 			serviceTypes: [
-				{ value: 'takeout', name: '外卖代拿', icon: '/static/images/food.png' },
-				{ value: 'express', name: '快递代取', icon: '/static/images/express.png' },
-				{ value: 'other', name: '小事代办', icon: '/static/images/devices.png' }
+				{ value: '外卖代拿', name: '外卖代拿', icon: '/static/images/food.png' },
+				{ value: '快递代取', name: '快递代取', icon: '/static/images/express.png' },
+				{ value: '小事代办', name: '小事代办', icon: '/static/images/devices.png' }
 			],
 			publishForm: {
 				title: '',
@@ -366,96 +375,24 @@ export default {
 				expectedTime: '',
 				phone: ''
 			},
-			myOrders: [
-				{
-					id: 1,
-					type: 'published', // 新增：订单类型
-					title: '帮忙取快递',
-					description: '快递在菜鸟驿站，帮忙取一下送到宿舍',
-					serviceType: 'express',
-					status: 'pending',
-					pickupLocation: '菜鸟驿站',
-					deliveryLocation: '6号宿舍楼',
-					price: 5,
-					expectedTime: '18:00'
-				},
-				{
-					id: 2,
-					type: 'published', // 新增：订单类型
-					title: '帮忙买午饭',
-					description: '在食堂帮忙买一份黄焖鸡米饭',
-					serviceType: 'takeout',
-					status: 'completed',
-					pickupLocation: '第一食堂',
-					deliveryLocation: '图书馆',
-					price: 3,
-					expectedTime: '12:00'
-				}
-			],
-			// 新增：我接的订单数据
-			acceptedOrders: [
-				{
-					id: 5,
-					type: 'accepted',
-					title: '帮忙取外卖',
-					description: '外卖在宿舍楼下，帮忙送到5楼',
-					serviceType: 'takeout',
-					status: 'accepted',
-					pickupLocation: '宿舍楼下',
-					deliveryLocation: '5楼宿舍',
-					price: 4,
-					expectedTime: '20:00',
-					publisherName: '王同学',
-					publisherAvatar: '/static/images/个人中心-active.png'
-				},
-				{
-					id: 6,
-					type: 'accepted',
-					title: '帮忙买饮料',
-					description: '在小卖部帮忙买两瓶可乐',
-					serviceType: 'other',
-					status: 'completed',
-					pickupLocation: '小卖部',
-					deliveryLocation: '篮球场',
-					price: 3,
-					expectedTime: '17:00',
-					publisherName: '赵同学',
-					publisherAvatar: '/static/images/个人中心-active.png'
-				}
-			],
-			availableOrders: [
-				{
-					id: 3,
-					title: '帮忙取外卖',
-					description: '外卖在宿舍楼下，帮忙送到3楼',
-					serviceType: 'takeout',
-					price: 4,
-					pickupLocation: '宿舍楼下',
-					deliveryLocation: '3楼宿舍',
-					expectedTime: '19:00',
-					publisherName: '张同学',
-					publisherAvatar: '/static/images/个人中心-active.png',
-					publisherRating: 4.8
-				},
-				{
-					id: 4,
-					title: '帮忙买饮料',
-					description: '在小卖部帮忙买一瓶可乐',
-					serviceType: 'other',
-					price: 2,
-					pickupLocation: '小卖部',
-					deliveryLocation: '操场',
-					expectedTime: '16:00',
-					publisherName: '李同学',
-					publisherAvatar: '/static/images/个人中心-active.png',
-					publisherRating: 4.9
-				}
-			],
+			myOrders: [],
+			acceptedOrders: [],
+			availableOrders: [],
 			selectedFilter: {
 				serviceType: '全部类型',
 				priceRange: '全部价格'
-			}
+			},
+			currentViewingOrderId: null
 		}
+	},
+	onShow() {
+		// 如果用户刚从订单详情页面返回，强制刷新可接订单
+		if (this.currentViewingOrderId) {
+			this.loadAvailableOrders();
+			this.currentViewingOrderId = null; // 清除标记
+		}
+		this.loadMyOrders();
+		this.loadAvailableOrders();
 	},
 	methods: {
 		goBack() {
@@ -481,7 +418,7 @@ export default {
 		onTimeChange(e) {
 			this.publishForm.expectedTime = e.detail.value;
 		},
-		publishOrder() {
+		async publishOrder() {
 			if (!this.validateForm()) {
 				return;
 			}
@@ -489,21 +426,40 @@ export default {
 			uni.showLoading({
 				title: '发布中...'
 			});
-			
-			// 模拟发布过程
-			setTimeout(() => {
-				uni.hideLoading();
-				uni.showToast({
-					title: '发布成功',
-					icon: 'success'
+			try {
+				const token = uni.getStorageSync('token');
+				if (!token) throw new Error('请先登录');
+				const today = new Date();
+				const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+				const expectedDateTime = this.publishForm.expectedTime ? `${dateStr} ${this.publishForm.expectedTime}:00` : null;
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/errand/orders',
+					method: 'POST',
+					header: { 'Authorization': `Bearer ${token}` },
+					data: {
+						title: this.publishForm.title,
+						description: this.publishForm.description,
+						service_type: this.selectedServiceType,
+						price: Number(this.publishForm.price),
+						pickup_location: this.publishForm.pickupLocation,
+						delivery_location: this.publishForm.deliveryLocation,
+						expected_time: expectedDateTime,
+						phone: this.publishForm.phone
+					}
 				});
-				
-				// 重置表单
-				this.resetForm();
-				
-				// 切换到我的订单页面
-				this.activeTab = 'orders';
-			}, 1500);
+				if (res.statusCode === 200 && res.data && res.data.success) {
+					uni.showToast({ title: '发布成功', icon: 'success' });
+					this.resetForm();
+					this.activeTab = 'orders';
+					await this.loadMyOrders();
+				} else {
+					throw new Error(res.data && res.data.message || '发布失败');
+				}
+			} catch (err) {
+				uni.showToast({ title: err.message || '发布失败', icon: 'none' });
+			} finally {
+				uni.hideLoading();
+			}
 		},
 		validateForm() {
 			if (!this.publishForm.title.trim()) {
@@ -574,61 +530,89 @@ export default {
 				content: '确定要取消这个订单吗？',
 				success: (res) => {
 					if (res.confirm) {
-						// 模拟取消订单
-						const order = this.myOrders.find(o => o.id === orderId);
-						if (order) {
-							order.status = 'cancelled';
-						}
-						uni.showToast({
-							title: '订单已取消',
-							icon: 'success'
-						});
+						this.cancelOrderRequest(orderId);
 					}
 				}
 			});
 		},
+		async cancelOrderRequest(orderId) {
+			try {
+				const token = uni.getStorageSync('token');
+				if (!token) throw new Error('请先登录');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/errand/orders/${orderId}/cancel`,
+					method: 'POST',
+					header: { 'Authorization': `Bearer ${token}` }
+				});
+				if (res.statusCode === 200 && res.data.success) {
+					uni.showToast({ title: '订单已取消', icon: 'success' });
+					await this.loadMyOrders();
+				} else {
+					throw new Error(res.data.message || '取消失败');
+				}
+			} catch (err) {
+				uni.showToast({ title: err.message || '取消失败', icon: 'none' });
+			}
+		},
 		reviewOrder(orderId) {
 			uni.navigateTo({
-				url: `/pages/features/order-review?orderId=${orderId}`
+				url: `/pages/features/order-detail?orderId=${orderId}`
 			});
 		},
 		acceptOrder(orderId) {
+			// 检查订单是否仍然可接
+			const order = this.availableOrders.find(o => o.id === orderId);
+			if (!order) {
+				uni.showToast({ title: '订单不存在或已被接取', icon: 'none' });
+				// 刷新可接订单列表
+				this.loadAvailableOrders();
+				return;
+			}
+			
 			uni.showModal({
 				title: '确认接单',
 				content: '确定要接这个订单吗？',
 				success: (res) => {
 					if (res.confirm) {
-						// 模拟接单过程
-						uni.showLoading({
-							title: '接单中...'
-						});
-						
-						setTimeout(() => {
-							uni.hideLoading();
-							uni.showToast({
-								title: '接单成功',
-								icon: 'success'
-							});
-							
-							// 从可接订单中移除
-							this.availableOrders = this.availableOrders.filter(o => o.id !== orderId);
-						}, 1000);
+						this.acceptOrderRequest(orderId);
 					}
 				}
 			});
+		},
+		async acceptOrderRequest(orderId) {
+			try {
+				uni.showLoading({ title: '接单中...' });
+				const token = uni.getStorageSync('token');
+				if (!token) throw new Error('请先登录');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/errand/orders/${orderId}/accept`,
+					method: 'POST',
+					header: { 'Authorization': `Bearer ${token}` }
+				});
+				if (res.statusCode === 200 && res.data.success) {
+					uni.showToast({ title: '接单成功', icon: 'success' });
+					// 立即从可接订单列表中移除已接取的订单
+					this.availableOrders = this.availableOrders.filter(o => o.id !== orderId);
+					// 然后刷新数据
+					await this.loadAvailableOrders();
+					await this.loadMyOrders();
+				} else {
+					throw new Error(res.data.message || '接单失败');
+				}
+			} catch (err) {
+				uni.showToast({ title: err.message || '接单失败', icon: 'none' });
+			} finally {
+				uni.hideLoading();
+			}
 		},
 		refreshOrders() {
 			uni.showLoading({
 				title: '刷新中...'
 			});
-			
-			setTimeout(() => {
+			Promise.all([this.loadAvailableOrders(), this.loadMyOrders()]).finally(() => {
 				uni.hideLoading();
-				uni.showToast({
-					title: '刷新成功',
-					icon: 'success'
-				});
-			}, 1000);
+				uni.showToast({ title: '刷新成功', icon: 'success' });
+			});
 		},
 		showServiceTypeFilter() {
 			uni.showActionSheet({
@@ -656,6 +640,122 @@ export default {
 			const serviceType = this.serviceTypes.find(s => s.value === type);
 			return serviceType ? serviceType.name : '其他';
 		},
+		formatDateTime(val) {
+			if (!val) return '';
+			const d = new Date(val);
+			if (isNaN(d.getTime())) return String(val);
+			const y = d.getFullYear();
+			const m = String(d.getMonth()+1).padStart(2,'0');
+			const day = String(d.getDate()).padStart(2,'0');
+			const hh = String(d.getHours()).padStart(2,'0');
+			const mm = String(d.getMinutes()).padStart(2,'0');
+			return `${y}-${m}-${day} ${hh}:${mm}`;
+		},
+		resolveAvatar(path) {
+			if (!path) return '/static/images/个人中心-active.png';
+			// 已是绝对或以 http(s) 开头
+			if (/^https?:\/\//.test(path)) return path;
+			// 统一指向后端静态目录
+			return `http://localhost:3000/${path.replace(/^\/+/, '')}`;
+		},
+			async loadMyOrders() {
+		try {
+			const token = uni.getStorageSync('token');
+			if (!token) return;
+			
+			// 加载我发布的订单
+			const publishedRes = await uni.request({
+				url: 'http://localhost:3000/api/errand/orders/my',
+				method: 'GET',
+				header: { 'Authorization': `Bearer ${token}` }
+			});
+			
+			// 加载我接的订单
+			const acceptedRes = await uni.request({
+				url: 'http://localhost:3000/api/errand/orders/accepted',
+				method: 'GET',
+				header: { 'Authorization': `Bearer ${token}` }
+			});
+			
+			if (publishedRes.statusCode === 200 && publishedRes.data.success) {
+				this.myOrders = publishedRes.data.data.map(r => ({
+					id: r.id,
+					type: 'published',
+					title: r.title,
+					description: r.description,
+					serviceType: r.service_type,
+					status: this.mapBackendStatus(r.status),
+					pickupLocation: r.pickup_location,
+					deliveryLocation: r.delivery_location,
+					price: r.price,
+					expectedTime: this.formatDateTime(r.expected_time)
+				}));
+			}
+			
+			if (acceptedRes.statusCode === 200 && acceptedRes.data.success) {
+				this.acceptedOrders = acceptedRes.data.data.map(r => ({
+					id: r.id,
+					type: 'accepted',
+					title: r.title,
+					description: r.description,
+					serviceType: r.service_type,
+					status: this.mapBackendStatus(r.status),
+					pickupLocation: r.pickup_location,
+					deliveryLocation: r.delivery_location,
+					price: r.price,
+					expectedTime: this.formatDateTime(r.expected_time),
+					publisherName: r.publisher_name || '同学',
+					publisherAvatar: this.resolveAvatar(r.publisher_avatar)
+				}));
+			}
+		} catch (e) {
+			console.error('加载我的订单失败', e);
+		}
+	},
+		async loadAvailableOrders() {
+			try {
+				const token = uni.getStorageSync('token');
+				if (!token) return;
+				const query = {};
+				if (this.selectedFilter.serviceType && this.selectedFilter.serviceType !== '全部类型') {
+					query.serviceType = this.selectedFilter.serviceType;
+				}
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/errand/orders/available',
+					method: 'GET',
+					header: { 'Authorization': `Bearer ${token}` },
+					data: query
+				});
+				if (res.statusCode === 200 && res.data.success) {
+					this.availableOrders = res.data.data.map(r => ({
+						id: r.id,
+						title: r.title,
+						description: r.description,
+						serviceType: r.service_type,
+						price: r.price,
+						pickupLocation: r.pickup_location,
+						deliveryLocation: r.delivery_location,
+						expectedTime: this.formatDateTime(r.expected_time),
+						publisherName: r.publisher_name || r.publisherName || '同学',
+						publisherAvatar: this.resolveAvatar(r.publisher_avatar || r.publisherAvatar),
+						publisherRating: Number(r.creditScore) || 5.0,
+						completedOrders: Number(r.completedOrders) || 0
+					}));
+				}
+			} catch (e) {
+				console.error('加载可接订单失败', e);
+			}
+		},
+		mapBackendStatus(s) {
+			switch (s) {
+				case '待接单': return 'pending';
+				case '已接单': return 'accepted';
+				case '进行中': return 'accepted';
+				case '已完成': return 'completed';
+				case '已取消': return 'cancelled';
+				default: return 'pending';
+			}
+		},
 		getStatusClass(status) {
 			const statusMap = {
 				'pending': 'status-pending',
@@ -675,6 +775,8 @@ export default {
 			return statusMap[status] || '待接单';
 		},
 		goToOrderDetail(orderId) {
+			// 设置一个标记，表示用户正在查看订单详情
+			this.currentViewingOrderId = orderId;
 			uni.navigateTo({
 				url: `/pages/features/order-detail?orderId=${orderId}`
 			});
@@ -1346,10 +1448,45 @@ export default {
 	margin-right: 15rpx;
 }
 
+.publisher-details {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
 .publisher-name {
 	font-size: 24rpx;
 	color: #333333;
-	margin-right: 15rpx;
+	margin-bottom: 6rpx;
+	display: block;
+	font-weight: 500;
+}
+
+.publisher-stats {
+	display: flex;
+	flex-direction: column;
+	gap: 4rpx;
+}
+
+.rating-info, .orders-info {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+}
+
+.rating-label, .orders-label {
+	font-size: 20rpx;
+	color: #999999;
+	font-weight: 400;
+	line-height: 1;
+}
+
+.rating-value, .orders-value {
+	font-size: 20rpx;
+	color: #666666;
+	font-weight: 500;
+	line-height: 1;
 }
 
 .publisher-rating {
