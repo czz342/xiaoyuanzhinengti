@@ -40,7 +40,31 @@
     "pages/features/activity-detail",
     "pages/features/canteen-traffic",
     "pages/features/errand-service",
-    "pages/features/order-detail"
+    "pages/features/order-detail",
+    "pages/NEUIKit/pages/Conversation/index",
+    "pages/NEUIKit/pages/Chat/index",
+    "pages/NEUIKit/pages/Contact/index",
+    "pages/NEUIKit/pages/user-card/my/index",
+    "pages/NEUIKit/pages/Chat/video-play",
+    "pages/NEUIKit/pages/Group/group-member/index",
+    "pages/NEUIKit/pages/Group/group-create/index",
+    "pages/NEUIKit/pages/Group/group-add/index",
+    "pages/NEUIKit/pages/Friend/add-friend/index",
+    "pages/NEUIKit/pages/Group/group-set/index",
+    "pages/NEUIKit/pages/Group/group-set/group-info-edit",
+    "pages/NEUIKit/pages/Group/group-set/group-manage",
+    "pages/NEUIKit/pages/Group/group-set/add-group-manager",
+    "pages/NEUIKit/pages/Group/group-set/nick-in-team",
+    "pages/NEUIKit/pages/Group/group-set/transform-team",
+    "pages/NEUIKit/pages/user-card/friend/index",
+    "pages/NEUIKit/pages/user-card/my/setting",
+    "pages/NEUIKit/pages/user-card/my-detail/index",
+    "pages/NEUIKit/pages/user-card/detail-item/index",
+    "pages/NEUIKit/pages/Chat/forward",
+    "pages/NEUIKit/pages/Contact/contact-list/black-list",
+    "pages/NEUIKit/pages/Contact/contact-list/friend-list",
+    "pages/NEUIKit/pages/Contact/contact-list/group-list",
+    "pages/NEUIKit/pages/Contact/contact-list/valid-list"
   ],
   "subPackages": [],
   "window": {
@@ -72,6 +96,12 @@
         "iconPath": "static/images/服务大厅.png",
         "selectedIconPath": "static/images/服务大厅-active.png",
         "text": "服务大厅"
+      },
+      {
+        "text": "消息",
+        "iconPath": "static/YX_IMG/conversation.png",
+        "selectedIconPath": "static/YX_IMG/conversation-selected.png",
+        "pagePath": "pages/NEUIKit/pages/Conversation/index"
       },
       {
         "pagePath": "pages/personal/index",

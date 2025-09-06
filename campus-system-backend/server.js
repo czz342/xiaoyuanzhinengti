@@ -62,6 +62,7 @@ app.use('/api/express', require('./routes/express'));
 app.use('/api/shared-devices', require('./routes/shared-devices'));
 app.use('/api/psych', require('./routes/psych'));
 app.use('/api/medical', require('./routes/medical'));
+app.use('/api/im', require('./routes/im'));
 app.use('/api/errand', require('./routes/errand'));
 app.use('/api/activities', require('./routes/activities'));
 app.use('/api/community', require('./routes/community'));

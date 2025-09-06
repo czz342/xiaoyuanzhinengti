@@ -1,0 +1,1920 @@
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+快速集成 uni-app 源码（Vue 2）
+快速集成 uni-app 源码（Vue 2）
+
+更新时间： 2025/07/09 18:39:41
+
+IM uni-app Demo 是基于网易云信 IM UIKit（NEUIKit）的一款 uni-app Demo，托管在 GitHub 开源代码仓库 nim-uikit-uniapp。该 Demo 提供了一些通用的功能，包含会话、聊天、群组等，您可以基于源码搭建您的即时通讯业务逻辑。本文描述适用于 Vue.js 2.x 版本项目。
+
+版本说明
+v1.0.0 ~ v1.5.1 版本 IM UIKit 底层适配了 uni-app 0.1x.x NIM SDK。其中 V9 概指低于 V10 系列 NIM SDK 的版本。
+
+网易云信即时通讯 UIKit 适配 uni-app 开发框架的全新 10.0.1 版本已发布。底层适配了 NIM Web SDK v10.4.0。新版不仅承袭了前代的优质特性，更融入了多项创新技术与用户反馈，致力于提供更流畅、更稳定的即时通讯沟通解决方案。如何集成新版 UIKit，请参考《开发指南（V10）》快速集成 uni-app 源码（Vue 3）。
+
+效果预览
+IM uni-app Demo 的部分界面效果如下：
+
+Demo.png
+平台支持
+当前 IM uni-app Demo 支持：Android、iOS、H5、小程序。
+
+前提条件
+开始跑通 Demo 之前，请确保您已完成了以下操作：
+
+在 网易云信控制台 上 创建应用，并获取 App Key。
+
+注册 IM 账号，获取账号 ID 和 token。
+
+在 网易云信控制台 上，为应用开通 消息漫游 开关。开启步骤请参考《控制台文档》配置应用。
+
+image.png
+如果需要使用呼叫组件功能，请提前在 网易云信控制台 为应用开通 多端登录 开关。开启步骤请参考《控制台文档》配置应用。
+
+
+调整本地开发环境，并满足如下要求：
+
+配置项	要求
+集成开发环境	HBuilderX
+Vue.js 版本	Vue 2
+Vue 2 暂时不支持 vue cli 创建的工程集成。
+开发语言	TypeScript
+CSS 预处理器	Sass（Sass-loader 版本 <= 10.1.1）
+Node.js 版本	12.13.0 ~ 17.0.0（推荐 LTS 版本 16.17.0）
+JavaScript 包管理器	NPM（版本请与 Node.js 版本匹配）
+第一步：创建 uni-app 项目
+创建 uni-app 项目，详情参考 uni-app 官网。
+
+如已创建项目，请忽略本步骤。
+
+第二步：下载 Demo 源码
+运行以下命令将 NEUIKit GitHub 源码项目下载到您的 uni-app 项目中：
+
+V10 源码地址：nim-uikit-uniapp.git
+V9 源码地址：nim-uikit-uniapp.git
+Bash
+# 找一个目录，clone IMUIKit 组件项目，使用 V9 需要将分支切至 1.5.0 版本
+git clone https://github.com/netease-kit/nim-uikit-uniapp
+
+# 在您的项目根目录下执行以下命令，拷贝组件
+mkdir -p ./pages/NEUIKit
+
+# macOS
+mv ${IMUIKit 组件项目路径}/NEUIKit/* ./pages/NEUIKit
+# windows
+move ${IMUIKit 组件项目路径}/NEUIKit/* .\pages\NEUIKit
+下载成功后，目录结构如下图所示：
+
+
+第三步：添加依赖和图片引入
+在您的项目根目录下添加依赖和图片引入。
+
+Bash
+npm init -y
+npm i @xkit-yx/core-kit@0.14.3 @xkit-yx/im-store@0.4.5 @xkit-yx/utils@0.5.6 dayjs@1.11.7 mobx@6.6.1 pinyin@3.1.0 --save
+npm i unplugin-vue2-script-setup @vue/composition-api
+在您的项目根目录下执行以下命令，将组件需要的图片复制到 static 目录下，若命令执行不成功，请按照路径手动复制。
+
+Bash
+mkdir -p static
+当前静态资源放置在网易对象存储（Netease Object Storage，NOS） 中，您可通过链接的方式在组件中进行访问。
+
+由于访问频率有限制，建议您将静态资源放置在您的 业务服务器 上，然后修改组件中的链接即可。
+
+Bash
+# macOS
+cp -r pages/NEUIKit/static static/YX_IMG
+# windows
+xcopy /E pages\NEUIKit\static static\YX_IMG
+在根目录下创建 vue.config.js。
+
+JavaScript
+const ScriptSetup = require('unplugin-vue2-script-setup/webpack').default;
+module.exports = {
+  parallel: false,
+  configureWebpack: {
+    plugins: [
+      ScriptSetup({
+        /* options */
+      }),
+    ],
+  },
+  chainWebpack(config) {
+    // disable type check and let `vue-tsc` handles it
+    config.plugins.delete('fork-ts-checker');
+  },
+};
+第四步：引入并初始化组件
+初始化 NEUIKit 组件
+在您的项目 App.vue 文件中引入 NEUIKit 组件并进行初始化。
+
+JSX
+<script>
+import RootStore from '@xkit-yx/im-store'
+import { NimKitCore } from '@xkit-yx/core-kit/dist/uniapp-nim-core'
+import { getMsgContentTipByType } from './pages/NEUIKit/utils/msg'
+import { getUniPlatform } from './pages/NEUIKit/utils'
+// #ifdef APP-PLUS
+const nimPushPlugin = uni.requireNativePlugin('NIMUniPlugin-PluginModule')
+// #endif
+export default {
+  onLaunch: function () {
+    const isWeixinApp = getUniPlatform() === 'mp-weixin'
+    // @ts-ignore
+    const nim = uni.$UIKitNIM = new NimKitCore({
+      initOptions: {
+        "appkey": "", // 请填写您的 appkey
+        "account": "", // 请填写您的 account
+        "token": "", // 请填写您的 token
+        "lbsUrls": isWeixinApp ? [
+          "https://lbs.netease.im/lbs/wxwebconf.jsp"
+        ] : [
+          "https://lbs.netease.im/lbs/webconf.jsp"
+        ],
+        "linkUrl": isWeixinApp ? 'wlnimsc0.netease.im' : 'weblink.netease.im',
+        "needReconnect": true,
+        /**
+        * 使用固定设备 ID，
+        */
+        isFixedDeviceId: true,
+        // "reconnectionAttempts": 5,
+        debugLevel: 'debug',
+      },
+      platform: 'UniApp',
+    })
+    // @ts-ignore
+    const store = uni.$UIKitStore = new RootStore(nim, {
+      addFriendNeedVerify: false,
+      teamBeInviteMode: 'noVerify',
+      teamJoinMode: 'noVerify',
+      teamUpdateExtMode: 'all',
+      teamUpdateTeamMode: 'all',
+      teamInviteMode: 'all',
+      sendMsgBefore: async (options, type) => {
+        const pushContent = getMsgContentTipByType({ body: options.body, type })
+        const yxAitMsg = options.ext ? options.ext.yxAitMsg : { forcePushIDsList: '[]', needForcePush: false }
+
+        // 如果是 at 消息，需要走离线强推
+        const { forcePushIDsList, needForcePush } = yxAitMsg
+          // @ts-ignore
+          ? store.msgStore._formatExtAitToPushInfo(yxAitMsg, options.body)
+          : { forcePushIDsList: '[]', needForcePush: false }
+
+        console.log('forcePushIDsList: ', forcePushIDsList)
+
+        // 不同产商的推送消息体
+        const { scene, to } = options
+        const pushPayload = JSON.stringify({
+          // oppo
+          oppoField: {
+            "click_action_type": 4, // 参考 oppo 官网
+            "click_action_activity": '', // 各端不一样 TODO
+            "action_parameters": { "sessionId": scene, "sessionType": to } // 自定义
+          },
+
+          // vivo
+          vivoField: {
+            "pushMode": 0 //推送模式 0：正式推送。1：测试推送，不填默认为 0。
+          },
+
+          // huawei
+          hwField: {
+            click_action: {
+              'type': 1,
+              'action': '' // 各端不一样 TODO
+            },
+            androidConfig: {
+              'category': 'IM',
+              'data': JSON.stringify({ 'sessionId': to, 'sessionType': scene })
+            }
+          },
+
+          // 通用
+          sessionId: to,
+          sessionType: scene
+        })
+
+        const pushInfo = {
+          needPush: true,
+          needPushBadge: true,
+          pushPayload: '{}',
+          pushContent,
+          needForcePush,
+          forcePushIDsList,
+          forcePushContent: pushContent,
+        }
+        return { ...options, pushInfo }
+      },
+    })
+    // #ifdef APP-PLUS
+    // 注册推送
+    nim.getNIM().offlinePush.setOfflinePushConfig({
+      plugin: nimPushPlugin,
+      authConfig: {
+        // xiaomi
+        xmAppId: "",
+        xmAppKey: "",
+        xmCertificateName: "KIT_UNIAPP_MI_PUSH",
+
+        // huawei
+        hwAppId: "",
+        hwCertificateName: "KIT_UNIAPP_HW_PUSH",
+
+        // oppo
+        oppoAppId: "",
+        oppoAppKey: "",
+        oppoAppSecret: "",
+        oppoCertificateName: "KIT_UNIAPP_OPPO_PUSH",
+
+        /**
+        * 注意 vivo 的 appid 和 appkey 需要同时在此处，以及 manifest.json(即插件参数配置)中配置
+        */
+        vivoAppId: "",
+        vivoAppKey: "",
+        vivoCertificateName: "KIT_UNIAPP_VIVO_PUSH",
+
+        // fcm
+        fcmCertificateName: "KIT_UNIAPP_FCM_PUSH",
+
+        // meizu
+        mzAppId: "",
+        mzAppKey: "",
+        mzCertificateName: "KIT_UNIAPP_MZ_PUSH",
+
+        // iOS
+        apnsCertificateName: "dis_im_uniapp"
+      }
+    })
+    // #endif
+
+    nim.connect()
+
+  },
+  onShow: function () {
+    console.log('App Show')
+  },
+  onHide: function () {
+    console.log('App Hide')
+  }
+}
+</script>
+
+<style>
+uni-page-body {
+  height: 100%;
+}
+uni-page-body > uni-view {
+  height: 100%;
+}
+</style>
+在 main.js 中添加 VueCompositionAPI。
+
+JavaScript
+import App from './App'
+
+// #ifndef VUE3
+import Vue from 'vue'
+import './uni.promisify.adaptor'
+import VueCompositionAPI from "@vue/composition-api";
+Vue.use(VueCompositionAPI);
+
+Vue.config.productionTip = false
+App.mpType = 'app'
+const app = new Vue({
+  ...App
+})
+app.$mount()
+// #endif
+
+// #ifdef VUE3
+import { createSSRApp } from 'vue'
+export function createApp() {
+  const app = createSSRApp(App)
+  return {
+    app
+  }
+}
+// #endif
+初始化 NimKitCore
+在初始化 NimKitCore 时，您需要根据是否是微信小程序，传入不同的 lbsUrls 和 linkUrl。
+
+JavaScript
+const nim = (uni.$UIKitNIM = new NimKitCore({
+    initOptions: {
+      appkey: "", // 请填写您的 appkey
+      account: "", // 请填写您的 account
+      token: "", // 请填写您的 token
+      lbsUrls: isWeixinApp
+        ? ["https://lbs.netease.im/lbs/wxwebconf.jsp"]
+        : ["https://lbs.netease.im/lbs/webconf.jsp"],
+      linkUrl: isWeixinApp ? "wlnimsc0.netease.im" : "weblink.netease.im",
+      needReconnect: true,
+      /**
+        * 使用固定设备 ID，
+        */
+      isFixedDeviceId: true,
+      // "reconnectionAttempts": 5,
+      debugLevel: "debug",
+    },
+    platform: "UniApp",
+  }));
+第五步：配置路由
+在 pages/NEUIKit/utils/customNavigate.ts 中，修改 preUrl：
+
+JavaScript
+const preUrl = '/pages/NEUIKit'
+在您项目的 pages.json 文件中的更新 pages 路由：
+
+JSON
+{
+  "pages": [
+    {
+      "path": "pages/NEUIKit/pages/Conversation/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Chat/message/p2p-set",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/group-info-edit",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Contact/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Contact/contact-list/group-list",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Contact/contact-list/valid-list",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Contact/contact-list/black-list",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Chat/index",
+      "style": {
+        "navigationBarBackgroundColor": "#F6F8FA",
+        "navigationBarTextStyle": "black",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": false,
+        "app-plus": {
+          "softinputNavBar": "none",
+          "bounce": "none"
+        }
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Chat/video-play",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-member/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-create/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-add/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Friend/add-friend/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/user-card/friend/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/user-card/my/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/user-card/my/setting",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/user-card/my-detail/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/user-card/detail-item/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/nick-in-team",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/group-manage",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/transform-team",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/group-manager-list",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Group/group-set/add-group-manager",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/NEUIKit/pages/Chat/forward",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+      "backgroundColor": "#F6F8FA",
+      "color": "#999999",
+      "selectedColor": "#337EFF",
+      "height": "60px",
+      "list": [
+        {
+          "text": "消息",
+          "iconPath": "static/YX_IMG/conversation.png",
+          "selectedIconPath": "static/YX_IMG/conversation-selected.png",
+          "pagePath": "pages/NEUIKit/pages/Conversation/index"
+        },
+        {
+          "text": "通讯录",
+          "iconPath": "static/YX_IMG/contact.png",
+          "selectedIconPath": "static/YX_IMG/contact-selected.png",
+          "pagePath": "pages/NEUIKit/pages/Contact/index"
+        },
+        {
+          "text": "我的",
+          "pagePath": "pages/NEUIKit/pages/user-card/my/index",
+          "iconPath": "static/YX_IMG/me.png",
+          "selectedIconPath": "static/YX_IMG/me-selected.png"
+        }
+      ]
+    }
+}
+第六步：运行 Demo
+在 uni-app IDE 中，运行 Demo：
+
+运行 demo.png
+自定义开发
+API 参考
+IM uni-app Demo 基于 UIKitStore 开发，相关 API 详情请参考 UIKitStore。
+
+例如，您想获取 IM uni-app UIKit 的会话未读数，示例代码如下：
+
+JavaScript
+const unRead = store.uiStore.sessionUnread
+使用原生 SDK 中的方法
+如果您需要自行实现目前 uni-app UIKit 还未实现，但原生的 IM uni-app SDK 已提供的能力。您可以通过调用原生 IM uni-app SDK 中提供的接口来实现。原生 uni-app SDK 中的接口请参考对应的 API 文档。
+
+例如，您想对 IM uni-app UIKit 的消息历史进行全文检索（按时间分页搜索），可以调用原生 SDK 中的 msgFtsInServerByTiming 方法，示例代码如下：
+
+JavaScript
+uni.$UIKitNIM.nim.msgFtsInServerByTiming({
+  keyword: '您好',
+})
+以上示例中的 uni.$UIKitNIM.nim 为原生 NIM uni-app SDK 的实例。
+
+常见问题
+集成过程中如果遇到任何问题，请 提交工单 联系网易云信技术支持工程师或参考 常见问题。开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+实现音视频通话
+实现音视频通话
+
+更新时间： 2025/05/28 14:13:30
+
+IM uni-app Demo 是基于网易云信即时通讯 SDK（简称 NIM SDK）为 uni-app 开发者提供的一款 Demo，它提供了一些通用的功能，包含会话、聊天、群组等，您可以基于源码搭建自己的 IM 业务逻辑。自 V1.5.0 起，uni-app Demo 引入呼叫组件，您可以在 Demo 中集成呼叫组件，实现音视频通话能力。
+
+本文主要介绍如何在 uni-app Demo 中快速实现音视频通话。
+
+平台支持
+当前 IM uni-app Demo 的音视频通话功能仅支持安卓、iOS 平台。
+
+前提条件
+在引入呼叫组件之前，请确保：
+
+在 网易云信控制台 创建的应用（AppKey）已开通音视频功能。若未开通，请参考 开通音视频能力 进行开通。
+
+在 网易云信控制台 创建的应用（AppKey）已设置多端登录。若未开通，请参考 配置多端登录。
+
+已完成 IM uni-app Demo 的引入和初始化，具体请参考 初始化。
+
+已完成自定义基座的制作，具体请参考 自定义基座。
+
+开发环境满足如下要求：
+
+HBuilderX
+sass（sass-loader 版本 <= 10.1.1）
+node（16.0.0 <= node 版本 <= 17.0.0, 推荐使用 Node.js 官方 LTS 版本 16.17.0）
+npm（版本请与 node 版本匹配）
+第一步：引入呼叫组件
+前往 DCloud 下载 呼叫组件，将下载的组件放置项目工程的 nativeplugin 目录下。
+
+JavaScript
+// #ifdef APP-PLUS
+// 音视频通话插件
+const nimCallKit = uni.requireNativePlugin('netease-CallKit'))
+// #endif
+第二步：初始化呼叫组件
+在实现音视频通话前，需要先初始化呼叫组件。
+
+JavaScript
+nimCallKit.initConfig(
+    {
+        appKey: '', // 请填写您的 appkey
+        account: '', // 请填写您的 account
+        token: '', // 请填写您的 token
+        apnsCername: '',
+        pkCername: '',
+    },
+    (ret: any) => {
+        if (ret.code != 200) {
+        uni.showToast({
+            title: '音视频通话插件初始化失败',
+            icon: 'none',
+        })
+        console.log(
+            '----callkit init 失败\n 错误码：' +
+            ret.code +
+            '\n 错误信息：' +
+            ret.msg
+        )
+        } else {
+        uni.showToast({
+            title: '音视频通话插件初始化成功',
+            icon: 'none',
+        })
+        console.log('----callkit 开始登录----')
+        }
+    }
+    )
+第三步：登录呼叫组件
+呼叫组件初始化完成后才能进行登录，您可以将登录信息写入初始化接口的完成回调中，可参考以下示例：
+
+JavaScript
+nimCallKit.initConfig(
+    {
+        appKey: '', // 请填写您的 appkey
+        account: '', // 请填写您的 account
+        token: '', // 请填写您的 token
+        apnsCername: '',
+        pkCername: '',
+    },
+    (ret: any) => {
+        if (ret.code != 200) {
+        uni.showToast({
+            title: '音视频通话插件初始化失败',
+            icon: 'none',
+        })
+        } else {
+        uni.showToast({
+            title: '音视频通话插件初始化成功',
+            icon: 'none',
+        })
+        nimCallKit.login(
+            {
+            account: opts.account,
+            token: opts.token,
+            },
+            function (ret: any) {
+            if (ret.code != 200) {
+                uni.showToast({
+                title: '音视频通话插件登录失败',
+                icon: 'none',
+                })
+            } else {
+                uni.showToast({
+                title: '音视频通话插件登录成功',
+                icon: 'none',
+                })
+            }
+            }
+        )
+        }
+    }
+    )
+第四步：发起音视频通话
+JavaScript
+nimCallKit.toCallPage({
+    calledAccount:'123456',
+    type:2
+}, function(ret) {
+    if (ret.code != 200) {
+        var msg = '呼叫失败\n 错误码：' + ret.code + '\n 错误信息：' + ret.message;
+        uni.showToast({
+          title: msg,
+          icon: 'none',
+        })
+    } else {
+        uni.showToast({
+          title: '呼叫成功',
+          icon: 'none',
+        })
+    }
+})
+第五步：退出登录
+JavaScript
+nimCallKit.logout({}, (ret) => {
+          if (ret.code != 200) {
+            uni.showToast({
+              title: '登出失败',
+              icon: 'none',
+            })
+          } else {
+            uni.showToast({
+              title: '登出成功',
+              icon: 'none',
+            })
+          }
+        })
+API 参考
+呼叫组件相关 API 详情请参考 插件接口。
+
+常见问题
+iOS 离线打包，退出后台听不见声音
+在 XCode 中打开工程，勾选 Audio, AirPlay, and Picture in Picture 和 Voice over IP 两项即可。
+
+Xcode 选项.png
+iOS 退出登录崩溃
+严格按照 logout 接口的要求传递参数，第二个参数为 callback，如果只传递一个参数，会造成崩溃。
+
+同时集成呼叫组件和推送插件，制定自定义基座打包报错
+在 nativeplugin/netease-CallKit/package.json 目录下，添加 excludeDependencies，请参考以下示例代码：
+
+JSON
+"excludeDependencies": [
+        "com.netease.nimlib:basesdk",
+        "com.netease.nimlib:push"
+      ],
+打包出错.png开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+如何单独集成聊天页面
+如何单独集成聊天页面
+
+更新时间： 2025/03/10 14:14:08
+
+若您在集成 IM UIKit 时，只需要集成聊天页面（会话消息组件），不需要会话列表、通讯录、搜索等其他页面，可以参考本文实现。
+
+效果展示
+会话消息界面效果.png
+前提条件
+已完成 IM 初始化以及 UIKit 相关配置，具体请参考 快速开始。
+
+操作步骤
+参考组件导入和初始化文档，在 UIKit 组件导入并初始化后，完成聊天（会话消息）页面相关路由配置。
+
+JSON
+{
+"pages": [
+    {
+        "path": "pages/NEUIKit/pages/Chat/index",
+        "style": {
+            "navigationBarBackgroundColor": "#F6F8FA",
+            "navigationBarTextStyle": "black",
+            "navigationStyle": "custom",
+            "enablePullDownRefresh": false,
+            "app-plus": {
+            "softinputNavBar": "none",
+            "bounce": "none"
+            }
+        }
+    }
+    ]
+}
+将项目的其他页面跳转至聊天页面。
+
+在路由跳转前，您需要调用 uni.$UIKitStore.uiStore.selectSession 接口，并传入 sessionId（sessionid 由 scene 和 account 或者 teamId 组成）。
+
+单聊 const sessionId = p2p-account，例如 p2p-123456 群聊 const sessionId = team-teamId，例如 team-123456
+
+完整示例代码如下：
+
+JavaScript
+const navigateToChat = (account) => {
+    const sessionId = `p2p-${account}`
+    await uni.$UIKitStore.uiStore.selectSession(session.id)
+    uni.navigateTo({ url })
+}开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+全局上下文
+全局上下文
+
+更新时间： 2025/05/29 15:20:23
+
+在 IM UIKit 中，store 是一个基于 MobX 封装的全局上下文对象，它提供了数据和 UI 之间的双向绑定能力。store 包含多个子模块，每个子模块负责管理不同的数据领域，如会话、消息、联系人、群组等。通过 store，您可以方便地获取数据、响应数据变化，并更新 UI。
+
+适用场景
+store 在 IM UIKit 中的使用场景包括但不限于：
+
+消息发送与管理：使用 store 管理会话消息，发送文本、图片、视频等类型的消息。
+状态同步：同步用户在线状态、群组信息、好友列表等。
+数据绑定：在 UI 组件中使用 store 的数据进行数据绑定，实现 UI 的自动更新。
+自定义消息：发送自定义消息格式，满足特定业务需求。
+扩展功能：在特定的场景下，如群聊，添加扩展字段或处理特定业务逻辑。
+前提条件
+在使用 IM UIKit store 前，请确保您已完成 IM UIKit 的初始化。详情请参考 初始化。
+
+第一步：初始化 store
+JavaScript
+// 初始化 nim sdk
+const nim = (uni.$UIKitNIM = V2NIM.getInstance(
+    {
+        appkey: '',
+        needReconnect: true,
+        debugLevel: 'debug',
+        apiVersion: 'v2',
+    },
+    {
+        V2NIMLoginServiceConfig: {
+        lbsUrls: isWxApp
+            ? ['https://lbs.netease.im/lbs/wxwebconf.jsp']
+            : ['https://lbs.netease.im/lbs/webconf.jsp'],
+        linkUrl: isWxApp ? 'wlnimsc0.netease.im' : 'weblink.netease.im',
+        /**
+            * 使用固定设备 ID，
+            */
+        isFixedDeviceId: true,
+        },
+    }
+    ))
+
+// 初始化 store
+const store = (uni.$UIKitStore = new RootStore(
+    nim,
+    {
+        // 添加好友是否需要验证
+        addFriendNeedVerify: false,
+        // 是否需要显示 p2p 消息、p2p 会话列表消息已读未读，默认 false
+        p2pMsgReceiptVisible: true,
+        // 是否需要显示群组消息已读未读，默认 false
+        teamMsgReceiptVisible: true,
+        // 群组被邀请模式，默认需要验证
+        teamAgreeMode:
+        V2NIMConst.V2NIMTeamAgreeMode.V2NIM_TEAM_AGREE_MODE_NO_AUTH,
+        // 发送消息前回调, 可对消息体进行修改，添加自定义参数
+        sendMsgBefore: () => {}
+    },
+    'UniApp'
+    ))
+第二步：数据渲染
+方式一：调用 store 方法
+如果需要使用 store 中的数据自行渲染，可使用 autorun 来监听 store 数据的变化，从而改变 UI。具体使用说明请参考 Mobx 官方文档。
+
+调用 store 相较于直接调用 NIM SDK 方法，具备数据与 UI 双向绑定的能力，无需您额外处理 UI 的增删。
+
+store API 说明：
+
+返回值	类型	说明
+UiStore	Object	Mobx 可观察对象，负责 UI 会用到的属性的子 store。
+ConnectStore	Object	Mobx 可观察对象，负责连接的子 store。
+MsgStore	Object	Mobx 可观察对象，负责管理会话消息的子 store。
+SysMsgStore	Object	Mobx 可观察对象，负责管理好友申请、群申请相关系统消息的子 store。
+ConversationStore	Object	Mobx 可观察对象，负责管理会话相关的子 store。
+FriendStore	Object	Mobx 可观察对象，负责管理好友信息的子 store。
+UserStore	Object	Mobx 可观察对象，负责管理用户信息（包含陌生人）的子 store。
+RelationStore	Object	Mobx 可观察对象，负责管理黑名单和静音列表的子 store。
+TeamStore	Object	Mobx 可观察对象，负责管理群组的子 store。
+TeamMemberStore	Object	Mobx 可观察对象，负责管理群组成员的子 store。
+例如您想在创建群聊的同时添加群扩展字段，可调用群组 store（TeamStore）中的创建群组接口实现，具体参数请参考 createTeamActive。
+
+示例代码：
+
+JavaScript
+store.teamStore.createTeamActive({
+    name: '测试群',
+    avatar: 'https:xxxxxxxxxxx',
+    accounts: ['account1', 'account2'],
+    serverExtension: JSON.stringify({ test: 'test' })
+}).then(res => {
+    console.log('======创建群成功=======');
+    console.log(res);
+}).catch(err => {
+    console.log('======创建群失败=======');
+    console.log(err);
+})
+方式二：调用 NIM SDK 原生 API
+如果您需要自行实现目前 IM UIKit 还未实现的能力，且原生 NIM Web SDK 已提供该能力。您可以通过调用原生 NIM Web SDK 中提供的接口来实现。原生 NIM Web SDK 中的接口请参考对应的 API 文档。
+
+例如，您想云端全文检索消息（按时间分页搜索），可以调用原生 NIM Web SDK 中的searchCloudMessages 方法，示例代码如下：
+
+JavaScript
+nim.V2NIMMessageService.searchCloudMessages({
+  keyword: '您好'
+}).then(msgs => {
+  console.log('云端检索成功', msgs)
+})
+常见问题
+如何监听 store 的数据变更？
+通过 autorun 可以获取最新的 store 数据，例如监听会话列表的变更的示例代码如下：
+
+JavaScript
+import { autorun } from 'mobx'
+let conversationListWatch = () => {}
+onMounted(() => {
+  conversationListWatch = autorun(() => {
+      conversationList.value = uni.$UIKitStore?.uiStore?.conversations
+    })
+})
+
+//组件卸载时移除监听
+onUnmounted(() => {
+  conversationListWatch()
+})开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+切换账号登录
+切换账号登录
+
+更新时间： 2025/02/12 10:10:34
+
+集成 IM UIKit 后，用户业务侧的账号登录需要结合网易云信 IM 的登录实现。本文介绍 uni-app 项目如何结合两种账号登录方式。
+
+实现方式
+以账号登录场景为例，用户在登录页登录账号后，您需要调用 app.vue 根组织文件中注册的账号登录方法，将您的业务服务器返回的 account 和 token，传入 app.vue 里的初始化登录 IM 的方法。待 IM 初始化、连接完成后，再重定向到对应的用户界面。具体实现，请参考 GitHub 中 app.vue 的 initNim 方法。
+
+实现示例
+在 onLaunch 方法里，判断用户是否已经登录账号。
+
+如果用户未登录，重定向到登录页面。
+
+如果用户已登录，则初始化 IM SDK 及 RootStore。
+
+TypeScript
+<script lang="ts">
+import RootStore from '@xkit-yx/im-store-v2'
+
+import V2NIM from 'nim-web-sdk-ng/dist/v2/NIM_UNIAPP_SDK'
+import {
+customRedirectTo,
+customReLaunch,
+customSwitchTab,
+} from './utils/customNavigate'
+import { STORAGE_KEY } from './utils/constants'
+import { isWxApp } from './utils'
+
+export default {
+onLaunch() {
+    // 判断您的业务是否登录
+    const imOptions = uni.getStorageSync(STORAGE_KEY)
+    if (imOptions) {
+    this.initNim(imOptions)
+    } else {
+    // 需要登录，重定向到登录页
+    customRedirectTo({
+        url: '/pages/Login/index',
+    })
+    }
+},
+methods: {
+    initNim(opts: { account: string; token: string }) {
+    // 保存登录信息
+    uni.setStorage({
+        key: STORAGE_KEY,
+        data: opts,
+        success: function () {
+        console.log('保存登录信息 success')
+        },
+    })
+
+    // 初始化 IM SDK
+    const nim = (uni.$UIKitNIM = V2NIM.getInstance(
+        {
+        appkey: '',
+        needReconnect: true,
+        debugLevel: 'debug',
+        apiVersion: 'v2',
+        },
+        {
+        V2NIMLoginServiceConfig: {
+            lbsUrls: isWxApp
+            ? ['https://lbs.netease.im/lbs/wxwebconf.jsp']
+            : ['https://lbs.netease.im/lbs/webconf.jsp'],
+            linkUrl: isWxApp ? 'wlnimsc0.netease.im' : 'weblink.netease.im',
+            /**
+             * 使用固定设备 ID
+            */
+            isFixedDeviceId: true,
+        },
+        }
+    ))
+
+    // 初始化 RootStore
+    const store = (uni.$UIKitStore = new RootStore(
+        // @ts-ignore
+        nim,
+        {
+            //...
+        },
+        'UniApp'
+    ))
+
+    nim.V2NIMLoginService.login(opts.account, opts.token).then(() => {
+    // 登录完成跳转到会话页，您可以根据您的实际需求跳转到指定页面
+        customSwitchTab({
+        url: '/pages/Conversation/index',
+        })
+    })
+    },
+    logout() {
+    uni.removeStorageSync(STORAGE_KEY)
+    uni.$UIKitNIM.V2NIMLoginService.logout().then(() => {
+        uni.$UIKitStore.destroy()
+        customReLaunch({
+        url: '/pages/Login/index',
+        })
+    })
+    },
+},
+}
+</script>
+在登录页，完成业务服务器登录用户账号后，调用 app.vue 中注册的 IM 登录方法（initNim），并传入业务服务器返回的账号 ID（imAccid）和密钥（token）。
+
+TypeScript
+async function submitLoginForm() {
+    try {
+        // loginRegisterByCode 您需要结合您的业务需求自行实现
+        const res = await loginRegisterByCode(loginForm)
+        const app = getApp()
+        // 调用 app.vue 中的注册的 IM 登录方法
+        app.initNim({ account: res.imAccid, token: res.imToken })
+    } catch (error: any) {
+        uni.showToast({
+        title: msg,
+        icon: 'none'
+        })
+    }
+}
+退出登录，调用 app.vue 中注册的 IM 登出方法（logout）。
+
+TypeScript
+const logout = () => {
+    const app = getApp()
+    // 调用 app.vue 中的注册的 IM 登出方法
+    app.logout()开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+实现音视频通话
+实现音视频通话
+
+更新时间： 2025/03/10 14:23:33
+
+IM uni-app Demo 是基于网易云信即时通讯 SDK（简称 NIM SDK）为 uni-app 开发者提供的一款 Demo，它提供了一些通用的功能，包含会话、聊天、群组等，您可以基于源码搭建自己的 IM 业务逻辑。自 V1.5.0 起，uni-app Demo 引入呼叫组件，您可以在 Demo 中集成呼叫组件，实现音视频通话能力。
+
+本文主要介绍如何在 uni-app Demo 中快速实现音视频通话。
+
+平台支持
+当前 IM uni-app Demo 的音视频通话功能仅支持安卓、iOS 平台。
+
+前提条件
+在引入呼叫组件之前，请确保：
+
+在 网易云信控制台 创建的应用（AppKey）已开通音视频功能。若未开通，请参考 开通音视频能力 进行开通。
+
+在 网易云信控制台 创建的应用（AppKey）已设置多端登录。若未开通，请参考 配置多端登录。
+
+已完成 IM uni-app Demo 的引入和初始化，具体请参考 初始化。
+
+已完成自定义基座的制作，具体请参考 自定义基座。
+
+开发环境满足如下要求：
+
+HBuilderX
+sass（sass-loader 版本 <= 10.1.1）
+node（16.0.0 <= node 版本 <= 17.0.0, 推荐使用 Node.js 官方 LTS 版本 16.17.0）
+npm（版本请与 node 版本匹配）
+第一步：引入呼叫组件
+前往 DCloud 下载 呼叫组件，将下载的组件放置项目工程的 nativeplugin 目录下。
+
+JavaScript
+// #ifdef APP-PLUS
+// 音视频通话插件
+const nimCallKit = uni.requireNativePlugin('netease-CallKit'))
+// #endif
+第二步：初始化呼叫组件
+在实现音视频通话前，需要先初始化呼叫组件。
+
+JavaScript
+nimCallKit.initConfig(
+    {
+        appKey: '', // 请填写您的 appkey
+        account: '', // 请填写您的 account
+        token: '', // 请填写您的 token
+        apnsCername: '',
+        pkCername: '',
+    },
+    (ret: any) => {
+        if (ret.code != 200) {
+        uni.showToast({
+            title: '音视频通话插件初始化失败',
+            icon: 'none',
+        })
+        console.log(
+            '----callkit init 失败\n 错误码：' +
+            ret.code +
+            '\n 错误信息：' +
+            ret.msg
+        )
+        } else {
+        uni.showToast({
+            title: '音视频通话插件初始化成功',
+            icon: 'none',
+        })
+        console.log('----callkit 开始登录----')
+        }
+    }
+    )
+第三步：登录呼叫组件
+呼叫组件初始化完成后才能进行登录，您可以将登录信息写入初始化接口的完成回调中，可参考以下示例：
+
+JavaScript
+nimCallKit.initConfig(
+    {
+        appKey: '', // 请填写您的 appkey
+        account: '', // 请填写您的 account
+        token: '', // 请填写您的 token
+        apnsCername: '',
+        pkCername: '',
+    },
+    (ret: any) => {
+        if (ret.code != 200) {
+        uni.showToast({
+            title: '音视频通话插件初始化失败',
+            icon: 'none',
+        })
+        } else {
+        uni.showToast({
+            title: '音视频通话插件初始化成功',
+            icon: 'none',
+        })
+        nimCallKit.login(
+            {
+            account: opts.account,
+            token: opts.token,
+            },
+            function (ret: any) {
+            if (ret.code != 200) {
+                uni.showToast({
+                title: '音视频通话插件登录失败',
+                icon: 'none',
+                })
+            } else {
+                uni.showToast({
+                title: '音视频通话插件登录成功',
+                icon: 'none',
+                })
+            }
+            }
+        )
+        }
+    }
+    )
+第四步：发起音视频通话
+JavaScript
+nimCallKit.toCallPage({
+    calledAccount:'123456',
+    type:2
+}, function(ret) {
+    if (ret.code != 200) {
+        var msg = '呼叫失败\n 错误码：' + ret.code + '\n 错误信息：' + ret.message;
+        uni.showToast({
+          title: msg,
+          icon: 'none',
+        })
+    } else {
+        uni.showToast({
+          title: '呼叫成功',
+          icon: 'none',
+        })
+    }
+})
+第五步：退出登录
+JavaScript
+nimCallKit.logout({}, (ret) => {
+          if (ret.code != 200) {
+            uni.showToast({
+              title: '登出失败',
+              icon: 'none',
+            })
+          } else {
+            uni.showToast({
+              title: '登出成功',
+              icon: 'none',
+            })
+          }
+        })
+API 参考
+呼叫组件相关 API 详情请参考 插件接口。
+}开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+收发自定义消息
+收发自定义消息
+
+更新时间： 2025/07/25 10:45:20
+
+本文介绍网易云信 IM UIKit uni-app 版如何收发自定义消息。
+
+前提条件
+根据本文操作前，请确保您已经完成 IM UIKit 初始化。
+
+发送自定义消息
+以 发送一条评价消息 为例，发送时，可通过 createCustomMessage 创建一条自定义消息，调用 sendMessage 进行发送。
+
+JavaScript
+// 发送评价消息
+    const sendEvaluationMessage = () => {
+      const message = uni.$UIKitNIM.V2NIMMessageCreator.createCustomMessage(
+        'this is a custom message' + Date.now(),
+        JSON.stringify({
+          isEvaluationMessage: true,
+        }),
+      );
+
+      const store = uni.$UIKitStore
+      const to = store.uiStore.selectedConversation;
+      uni.$UIKitNIM.V2NIMMessageService.sendMessage(message, to).then((res) => {
+        // 把当前返回的消息体插入消息列表
+        store.msgStore._handleSendMsgSuccess(res.message);
+        // 让消息滚动到可视区域
+       scrollBottom()
+      });
+    }
+接收自定义消息
+同样以 接收评价消息 为例，接收方可根据消息体上的 props.attachment 上的自定义字段，判断当前消息是否为评价消息，从而自行实现任意的 UI 展示。
+
+在 NEUIKit 的/NEUIKit/pages/Chat/message/message-item.vue 下，添加自定义消息渲染的代码。
+
+JSX
+ const raw = props?.msg?.attachment?.raw || '{}';
+  // 这里根据发送自定义消息时的标记位进行判断
+  const isEvaluationMessage = JSON.parse(raw).isEvaluationMessage;
+
+<template>
+    <div
+      // todo 根据自定义字段 自行判断自定义消息
+      v-else-if="isEvaluationMessage"
+    >
+      // todo自行实现任意的 自定义消息 UI 展示
+       <div className='text'>欢迎您进行评价</div>
+          <img className='star' src="https://yx-web-nosdn.netease.im/common/57dea86c692f76efdfecff37ee7e1059/星星.png"/>
+          <img className='star' src="https://yx-web-nosdn.netease.im/common/57dea86c692f76efdfecff37ee7e1059/星星.png"/>
+          <img className='star' src="https://yx-web-nosdn.netease.im/common/57dea86c692f76efdfecff37ee7e1059/星星.png"/>
+          <img className='star' src="https://yx-web-nosdn.netease.im/common/57dea86c692f76efdfecff37ee7e1059/星星.png"/>
+          <img className='star' src="https://yx-web-nosdn.netease.im/common/57dea86c692f76efdfecff37ee7e1059/星星.png"/>
+    </div>
+</template>开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+单独集成聊天页面
+单独集成聊天页面
+
+更新时间： 2025/03/10 14:18:44
+
+若您在集成 IM UIKit 时，只需要集成聊天页面（会话消息组件），不需要会话列表、通讯录、搜索等其他页面，可以参考本文实现。
+
+效果展示
+会话消息界面效果.png
+前提条件
+已完成 IM 初始化以及 UIKit 相关配置，具体请参考 快速开始。
+
+操作步骤
+参考组件导入和初始化文档，在 UIKit 组件导入并初始化后，完成聊天（会话消息）页面相关路由配置。
+
+JSON
+{
+"pages": [
+    {
+        "path": "pages/NEUIKit/pages/Chat/index",
+        "style": {
+            "navigationBarBackgroundColor": "#F6F8FA",
+            "navigationBarTextStyle": "black",
+            "navigationStyle": "custom",
+            "enablePullDownRefresh": false,
+            "app-plus": {
+            "softinputNavBar": "none",
+            "bounce": "none"
+            }
+        }
+    }
+    ]
+}
+将项目的其他页面跳转至聊天页面。
+
+在路由跳转前，您需要调用 uni.$UIKitStore.uiStore.selectConversation 接口，并传入 conversationId。
+
+完整示例代码如下：
+
+JavaScript
+const navigateToChat = (account) => {
+    /**
+* from 为发送方account
+* V2NIMConversationType 为会话类型 单聊 1 群聊 2
+* to 为接收方account 如果是群 则是群id
+*/
+    const conversationId = `${from}|${V2NIMConversationType}|${to}`
+    await uni.$UIKitStore.uiStore.selectConversation(
+    conversationId
+    )
+    uni.navigateTo({ url })
+}
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+发送消息前添加配置参数
+发送消息前添加配置参数
+
+更新时间： 2025/03/10 14:07:08
+
+本文介绍使用 IM UIKit uniapp 版如何在发送消息前配置参数。
+
+前提条件
+根据本文操作前，请确保您已经完成 IM UIKit 初始化。
+
+配置参数
+在初始化 store 时，您可在 sendMsgBefore 中进行配置：
+
+通过 options 可以获取发送前的消息体，在该消息体上挂载其他字段。
+通过 conversationId 可以获取当前会话的会话 ID。
+通过 sendMsgBefore 中返回（return）最后挂载字段后的消息体即可。
+JavaScript
+const store = (uni.$UIKitStore = new RootStore(
+        // @ts-ignore
+        nim,
+        {
+          //...
+          // 发送消息前回调, 可对消息体进行修改，添加自定义参数
+          sendMsgBefore: async (options: {
+            msg: V2NIMMessage
+            conversationId: string
+            serverExtension?: Record<string, unknown>
+          }) => {
+            const pushConfig = {
+                //...            
+            }
+            return { ...options, pushConfig }
+          },
+        },
+        'UniApp'
+      ))
+配置示例
+例如，在发送消息前，对消息添加推送相关参数。
+
+JavaScript
+const store = (uni.$UIKitStore = new RootStore(
+        // @ts-ignore
+        nim,
+        {
+          //...
+          // 发送消息前回调, 可对消息体进行修改，添加自定义参数
+          sendMsgBefore: async (options: {
+            msg: V2NIMMessage
+            conversationId: string
+            serverExtension?: Record<string, unknown>
+          }) => {
+            const pushContent = getMsgContentTipByType({
+              text: options.msg.text,
+              messageType: options.msg.messageType,
+            })
+            const yxAitMsg = options.serverExtension
+              ? options.serverExtension.yxAitMsg
+              : { forcePushIDsList: '[]', needForcePush: false }
+
+            // 如果是 at 消息，需要走离线强推
+
+            const { forcePushIDsList, needForcePush } = yxAitMsg
+              ? // @ts-ignore
+                store.msgStore._formatExtAitToPushInfo(
+                  yxAitMsg,
+                  options.msg.text
+                )
+              : { forcePushIDsList: '[]', needForcePush: false }
+
+            console.log('forcePushIDsList: ', forcePushIDsList)
+
+            const { conversationId } = options
+            const conversationType =
+              nim.V2NIMConversationIdUtil.parseConversationType(conversationId)
+            const targetId =
+              nim.V2NIMConversationIdUtil.parseConversationTargetId(
+                conversationId
+              )
+
+            const pushPayload = JSON.stringify({
+              // oppo
+              oppoField: {
+                click_action_type: 4, // 参考 oppo 官网
+                click_action_activity: '', // 各端不一样 TODO
+                action_parameters: {
+                  sessionId: targetId,
+                  sessionType: conversationType,
+                }, // 自定义
+              },
+
+              // vivo
+              vivoField: {
+                pushMode: 0, //推送模式 0：正式推送；1：测试推送，不填默认为0
+              },
+
+              // huawei
+              hwField: {
+                click_action: {
+                  type: 1,
+                  action: '', // 各端不一样 TODO
+                },
+                androidConfig: {
+                  category: 'IM',
+                  data: JSON.stringify({
+                    sessionId: targetId,
+                    sessionType: conversationType,
+                  }),
+                },
+              },
+
+              // 通用
+              sessionId: targetId,
+              sessionType: conversationType,
+            })
+
+            const pushConfig: V2NIMMessagePushConfig = {
+              pushEnabled: true,
+              pushNickEnabled: true,
+              forcePush: needForcePush,
+              forcePushContent: pushContent,
+              forcePushAccountIds: forcePushIDsList,
+              pushPayload: '{}',
+              pushContent,
+            }
+
+            return { ...options, pushConfig }
+          },
+        },
+        'UniApp'
+      ))
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+常见问题
+常见问题
+
+更新时间： 2025/05/23 10:10:51
+
+本文主要介绍将 uni-app SDK 的常见问题以及解决方案。
+
+运行鸿蒙应用时配置报错
+当运行 鸿蒙应用 出现以下报错信息时，需要在 harmony-configs/build-profile.json5 文件中，修改配置，将 default 改为 relese。
+
+hvigor ERROR: Invalid product for target 'default'.
+Detail: Check the target applyToProducts field for 'default': [ 'default', 'release' ].
+鸿蒙网络权限问题
+IM 实例需要网络权限，需要在 harmony-configs/entry/src/main/module.json5 中配置网络权限（发送图片和视频也需要权限）。具体请参考 权限配置指南。
+
+requestPermissions: [
+      {
+        name: 'ohos.permission.INTERNET',
+      },
+      { name: 'ohos.permission.GET_NETWORK_INFO' },
+      {
+        name: 'ohos.permission.MICROPHONE',
+        reason: '$string:chat_permission_micro_phone_desc',
+        usedScene: {
+          abilities: ['FormAbility'],
+          when: 'always',
+        },
+      },
+      {
+        name: 'ohos.permission.CAMERA',
+        reason: '$string:chat_permission_camera_desc',
+        usedScene: {
+          abilities: ['FormAbility'],
+          when: 'always',
+        },
+      },
+    ],
+鸿蒙目录问题
+默认情况下，HBuilderX 会在项目内的 unpackage 目录下创建鸿蒙工程目录，用于构建鸿蒙的运行包和发行包。
+
+调试运行时默认使用的鸿蒙工程目录：unpackage/dist/dev/app-harmony
+发行打包时默认使用的鸿蒙工程目录：unpackage/dist/build/app-harmony
+鸿蒙工具链对于鸿蒙工程目录的路径有一定的限制条件：不能包含中文字符和某些特殊字符。即允许在路径中使用的字符仅限于大小写英文字母、数字、正斜杠、反斜杠、下划线、连字符、冒号、句点。（如果安装了较新版本的 DevEco Studio，则还允许包含空格。）
+
+更多详细信息请参考 项目根目录与鸿蒙工程目录。
+
+鸿蒙应用运行和发行
+关于鸿蒙应用的运行和发行问题，包括兼容性说明、开发环境要求、运行方式、调试方式、签名配置等请参考 运行和发行。
+
+无法调用数字人 API
+问题描述
+
+调用数字人相关 API 后出现以下报错：
+
+ai数字人.png
+
+问题原因
+
+未在云信控制台开通并配置数字人。
+
+解决方案
+
+若不需要使用数字人功能，在初始化 RootStore 时，将 aiVisible 设置为 false，关闭数字人功能。
+
+const store = (uni.$UIKitStore = new RootStore(
+        nim,
+        {
+        /**
+      是否开启数字人功能，默认 true
+    */
+    aiVisible: false;
+          })
+若需要使用数字人功能，请提前在云信控制台 开通并添加 AI 数字人 后再调用数字人相关 API。
+
+无法正常打开相册
+相册拒绝授权后再次开启授权，由于 uni-app API 兼容问题，部分 Android 机型无法正常打开相册，需要您自行处理。
+
+iOS 低版本构建后无法运行
+如果 iOS 低版本构建后无法运行，需在构建出的资源 dist/build/app/app-service.js 文件最前面添加 var globalThis = Function('return this')();。
+
+uni-app 兼容问题
+部分 uni-app 兼容问题，已在代码中说明。
+
+page 结构问题
+由于 uni-app 自身的 uni.setNavigationBarTitle 限制，chat 页面的 NavigationBarTitle，需要您自行调整 page 结构设置。
+
+uni-app 推送问题
+uni-app 推送相关问题请参考 uni-app 离线推送。
+
+业务登录问题
+您业务侧的登录需要结合网易云信 IM 的登录实现。
+
+在您的登录页完成登录后，将您的业务服务器返回的 account、token 传入 app.vue 里的初始化登录 IM 的方法，待 IM 初始化、连接完成后，再重定向到您需要的界面。
+
+无法切换深色模式
+目前 Demo 不支持深色模式。如需要深色模式，需要您在业务侧自行适配。
+
+uni_modules 问题
+NEUIKit 中使用到的 uni-app 提供的部分组件（例如 uni-popup），如果使用上产生冲突，您需要将 NEUIKit 的 uni-modules 与您使用的 uni-modules 进行合并，然后修改 NEUIkit 中引用的路径即可。
+
+视频/语音模块离线打包问题
+参考 uni-app 官网的 离线打包。
+
+H5 断网重连问题
+若遇到 H5 断网重连失败的问题，请在 manifest.json 中，修改配置，示例如下：
+
+JSON
+"optimization" : {
+  "treeShaking" : {
+    "enable" : false
+  }
+}
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+发送自定义消息
+发送自定义消息
+
+更新时间： 2025/09/02 16:09:01
+
+网易云信 IM UIKit 内置了多种基本消息类型，包括文本、图片、语音、视频、文件等，可满足大部分即时通讯场景。当这些基础消息类型无法满足您的业务需求时，您可以使用自定义消息来扩展功能，例如实现电商订单卡片、红包、系统通知等。
+
+发送自定义消息
+实现自定义消息收发之前，您需先自行实现消息数据的封装和相关解析规则。IM UIKit 可按照您实现的封装和解析规则对消息进行处理，将消息返回给您的应用。
+
+在 uni-app 中，您可以在消息的 ext 字段中封装自定义数据。
+
+实现自定义消息类
+在 uni-app 中，您无需创建单独的类。自定义消息的业务数据可以直接封装为一个 JSON 对象，并赋值给消息体的 ext 字段。
+
+// 假设这是您的自定义消息数据结构
+const customData = {
+  type: 1002, // 自定义消息类型，建议从1000开始
+  data: {
+    title: '这是一条自定义消息',
+    content: '用户点击了商品卡片'
+  }
+};
+增加发送按钮
+在 src/pages/Chat/message/message-input.vue 的 template 的 发送更多面板 中添加一个新的 Icon 组件并绑定 tap 事件。
+
+// template
+// 参考已有的 Icon 组件，复制修改一下绑定的事件函数 handleSendCustomMsg
+<div class="msg-input-button">
+    <Icon @tap="sendItemCard" type="icon-shezhi" :size="20" />
+</div>
+创建并发送自定义消息
+您可以调用 SDK 的 createCustomMessage 方法创建自定义消息，并将上一步定义的自定义数据字符串化后作为 rawAttachment 参数传入，在 src/pages/Chat/message/message-input.vue 的 script 加入对应逻辑。
+
+//script
+//发送商品卡片
+const sendItemCard = () => {
+  // 假设会话ID和类型已定义
+      const store = uni.$UIKitStore
+  
+  // 自定义消息数据
+  const customData = {
+    isCustomMessage: true,
+    type: 1002,
+    data: {
+      title: '这是一条商品卡片',
+      url: 'https://example.com/product/123'
+    }
+  };
+  
+  // 将自定义数据转为JSON字符串
+  const customStr = JSON.stringify(customData);
+  
+  // 创建自定义消息
+  const message = uni.$UIKitNIM.V2NIMMessageCreator.createCustomMessage(
+        'this is a custom message' + Date.now(),
+        customStr,
+      )
+  
+  // 调用 uikit 封装的 store 方法发送消息
+  uni.$UIKitStore.msgStore.sendMessageActive({
+    msg: message as unknown as V2NIMMessage,
+    conversationId,
+    sendBefore: () => {
+      scrollBottom()
+    }
+  }).then(()=>{
+      scrollBottom()
+  })
+};
+自定义消息 UI 展示
+若需要在会话界面将自定义消息按照您自定义的 UI 样式进行展示，您需要在 message-item.vue 文件中添加相应的渲染逻辑。
+
+解析并获取消息中的自定义字段
+在 uni-app 中，自定义消息的 UI 渲染通过在 Vue 组件中添加条件渲染来实现。您可以在 IM UIKit 的消息组件中添加自定义模板。
+
+<!-- 在 /NEUIKit/pages/Chat/message/message-item.vue 的 script 下 -->
+
+const props = withDefaults(...)
+  //在props定义后添加
+  // 解析消息体上的 props.attachment 上的自定义字段
+ const raw = props?.msg?.attachment?.raw || '{}';
+   // 这里根据发送时的标记位进行判断是否为自定义消息
+ const isCustomMessage = JSON.parse(raw).isCustomMessage;
+增加渲染逻辑
+在 uni-app 中，自定义 UI 渲染的注册过程简化为在消息渲染组件中直接编写逻辑。您只需在 message-item.vue 中添加判断条件和对应的 UI 模板即可。
+
+<!-- 在 /NEUIKit/pages/Chat/message/message-item.vue 的 template 下 -->
+ 
+<template>
+  <div :id="MSG_ID_FLAG + props.msg.messageClientId"
+    :key="props.msg.createTime">
+    <!-- 其他消息类型的渲染逻辑... -->
+    
+    <!-- 自定义消息的渲染逻辑 -->
+    <!-- 使用 v-if 判断是否为自定义消息 -->
+    <div class="msg-common" v-else-if="props.msg.messageType === V2NIMConst.V2NIMMessageType.V2NIM_MESSAGE_TYPE_CUSTOM " :style="{ flexDirection: !props.msg.isSelf ? 'row' : 'row-reverse' }"
+            >
+        <!-- 自行实现任意的自定义消息 UI 展示 -->
+        <div class="custom-card">
+        <text class="title">{{itemTitle}}</text>
+        <text class="content">{{ itemUrl}}</text>
+        <button @click="openLink(raw.custom.data.url)">查看详情</button>
+    </div>
+    </div>
+   </div>
+</template>
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+消息引用/回复
+消息引用/回复
+
+更新时间： 2025/09/03 15:51:05
+
+UIKit 支持消息引用功能，功能允许用户在对话中引用先前的消息进行回复，增强对话的上下文关联性。用户可以通过点击引用部分直接跳转到原始消息，并伴随高亮闪烁效果提升用户体验。
+
+效果展示
+您可以在 UIKit 中使用消息引用/回复功能，体验效果如下：
+
+引用	取消引用
+	
+前提条件
+已在云信控制台开通 会话消息回复 功能，如何开通具体请参考 开启/关闭功能。
+
+实现消息引用
+引用一条消息
+长按消息，消息上会弹出消息工具栏。单击工具栏中的引用按钮，对该消息进行引用。
+
+在点击引用按钮时，会对应调用 /pages/Chat/message/message-bubble.vue 中的 handleReplyMsg() 方法，并将消息的引用记录到 Store 中。
+
+<div
+          v-if="
+            props.msg.messageType !==
+            V2NIMConst.V2NIMMessageType.V2NIM_MESSAGE_TYPE_CALL
+          "
+          class="msg-action-btn"
+          @tap="handleReplyMsg"
+        >
+
+// 回复消息
+const handleReplyMsg = async () => {
+  const _msg = deepClone(props.msg)
+
+  uni.$UIKitStore.msgStore.replyMsgActive(_msg)
+  closeTooltip()
+  uni.$emit(events.REPLY_MSG, props.msg)
+
+  // 在群里回复其他人的消息，也是@被回复人
+  if (
+    conversationType ===
+      V2NIMConst.V2NIMConversationType.V2NIM_CONVERSATION_TYPE_TEAM &&
+    !props.msg.isSelf
+  ) {
+    uni.$emit(events.AIT_TEAM_MEMBER, {
+      accountId: props.msg.senderId,
+      appellation: uni.$UIKitStore.uiStore.getAppellation({
+        account: props.msg.senderId,
+        teamId: props.msg.receiverId,
+        ignoreAlias: true,
+      }),
+    })
+  }
+}
+查看被引用的消息
+点击引用内容后的跳转行为：
+
+原始消息在可视范围内：直接高亮闪烁。
+原始消息在列表中但不可见：自动滚动至该位置并高亮。
+原始消息已被删除或撤回：显示 该消息已撤回或删除 提示。
+在输入框组件中监听引用记录的变化，在 pages/Chat/message/message-input.vue 通过回调函数可以获取被引用的消息。
+
+uni.$on(events.REPLY_MSG, (msg: V2NIMMessageForUI) => {
+    isReplyMsg.value = true
+    isFocus.value = true
+    replyMsg.value = msg
+})
+常见问题
+如何屏蔽引用功能？
+//在src/pages/Chat/message/message-input.vue的 template 中注释以下代码
+
+//源码282行
+<!--        <div
+          v-if="
+            props.msg.messageType !==
+            V2NIMConst.V2NIMMessageType.V2NIM_MESSAGE_TYPE_CALL
+          "
+          class="msg-action-btn"
+          @tap="handleReplyMsg"
+        >
+          <Icon
+            :size="18"
+            color="#656A72"
+            class="msg-action-btn-icon"
+            type="icon-huifu"
+          ></Icon>
+          <text class="msg-action-btn-text">{{ t('replyText') }}</text>
+        </div> -->
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+用户在线状态
+用户在线状态
+
+更新时间： 2025/09/02 16:09:02
+
+概述
+用户在线状态功能可以让您的应用显示联系人的实时在线情况，提升用户互动体验。
+
+开启此功能后，在会话列表和联系人列表的用户头像上将显示用户的在线状态。当绿圈出现时表示对方在线，灰色圆圈则表示对方当前离线。
+关闭此功能时，不再显示好友的用户在线状态。
+效果展示
+
+前提条件
+使用此功能前，您需要在 网易云信控制台 开通 用户在线状态 功能，具体请参考 配置群组功能。
+
+
+开启用户状态显示
+在 UIKit 初始化时，将 localOptions 中的 loginStateVisible 配置为 true。
+
+Java
+//初始化 UIKit
+const nim = (uni.$UIKitNIM = V2NIM.getInstance(
+{
+    appkey: "your app key",
+    needReconnect: true,
+    debugLevel: "debug",
+    apiVersion: "v2",
+},
+{
+    V2NIMLoginServiceConfig: {
+    lbsUrls: isWxApp
+        ? ["https://lbs.netease.im/lbs/wxwebconf.jsp"]
+        : ["https://lbs.netease.im/lbs/webconf.jsp"],
+    linkUrl: isWxApp ? "wlnimsc0.netease.im" : "weblink.netease.im",
+    isFixedDeviceId: true,
+    },
+}
+));
+
+const store = (uni.$UIKitStore = new RootStore(
+nim,
+{
+    // 启用用户在线状态, 默认为 false
+    loginStateVisible: true
+},
+"UniApp"
+));
+
+//登录
+nim.V2NIMLoginService.login(...)
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助
+开发者中心
+
+IM 即时通讯 UIKit
+
+集成开发
+
+消息已读回执
+消息已读回执
+
+更新时间： 2025/09/02 16:09:02
+
+概述
+已读回执（Read Receipt）是即时通讯应用中的核心功能，它能让消息发送者知道接收方是否已阅读了消息。当接收方查看消息后，系统会自动向服务器上报消息已读状态，服务器生成通知并发送给原发送方。
+
+在现代即时通讯工具（如微信、WhatsApp）中，已读回执通常以特定图标（如对勾标记）或文字形式（如 已读）显示。
+
+回执（Receipt） 源自传统通信领域，指 确认接收的凭证。在消息系统中，已读回执相当于接收方向发送方提供的一份确认，表明 您的消息已被我查看 的电子凭证。
+
+效果展示
+
+单聊已读回执
+IM UIKit 默认关闭单聊已读回执功能。
+
+您可在 UIKit 初始化时设置 localOptions 中的 p2pMsgReceiptVisible 全局控制单聊消息已读/未读状态的显示。
+
+Objective-C
+//初始化 UIKit
+const nim = (uni.$UIKitNIM = V2NIM.getInstance(
+{
+    appkey: "your app key",
+    needReconnect: true,
+    debugLevel: "debug",
+    apiVersion: "v2",
+},
+{
+    V2NIMLoginServiceConfig: {
+    lbsUrls: isWxApp
+        ? ["https://lbs.netease.im/lbs/wxwebconf.jsp"]
+        : ["https://lbs.netease.im/lbs/webconf.jsp"],
+    linkUrl: isWxApp ? "wlnimsc0.netease.im" : "weblink.netease.im",
+    isFixedDeviceId: true,
+    },
+}
+));
+
+const store = (uni.$UIKitStore = new RootStore(
+nim,
+{
+    // 是否需要显示单聊消息、单聊会话列表消息已读未读，默认 false
+    p2pMsgReceiptVisible: true，
+    // 是否需要显示群聊消息、群聊会话列表消息已读未读，默认 false
+    teamMsgReceiptVisible：true
+},
+"UniApp"
+));
+
+//登录
+nim.V2NIMLoginService.login(...)
+群聊已读回执
+前提条件
+群聊消息已读回执 功能仅 IM 旗舰版 或 IM 专属版 套餐支持，使用前请确认已开通旗舰版或专属版套餐。
+
+群聊消息已读回执 功能仅支持 200 人以内的高级群。
+
+群聊消息已读回执 功能需要在在 网易云信控制台 开通，具体请参考 配置群组功能。
+
+
+群聊已读回执功能配置
+群聊已读回执功能开通后，在 UIKit 初始化时设置 localOptions 中的 teamMsgReceiptVisible 全局控制群聊消息已读/未读状态的显示。
+
+具体示例请参考 单聊已读回执 部分。
+
+
+如果遇到相关问题，您可 提交工单 或找 在线客服 寻求帮助

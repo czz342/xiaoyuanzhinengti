@@ -261,7 +261,112 @@
 				"navigationBarTextStyle": "white",
 				"backgroundColor": "#f5f5f5"
 			}
-		}
+		},
+        {
+            "path": "pages/NEUIKit/pages/Conversation/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Chat/index",
+            "style": {
+                "navigationBarBackgroundColor": "#F6F8FA",
+                "navigationBarTextStyle": "black",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false,
+                "app-plus": {
+                    "softinputNavBar": "none",
+                    "bounce": "none"
+                }
+            }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Contact/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/user-card/my/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Chat/video-play",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-member/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-create/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-add/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Friend/add-friend/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/group-info-edit",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/group-manage",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/add-group-manager",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/nick-in-team",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Group/group-set/transform-team",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/user-card/friend/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/user-card/my/setting",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/user-card/my-detail/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/user-card/detail-item/index",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Chat/forward",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Contact/contact-list/black-list",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Contact/contact-list/friend-list",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Contact/contact-list/group-list",
+            "style": { "navigationStyle": "custom" }
+        },
+        {
+            "path": "pages/NEUIKit/pages/Contact/contact-list/valid-list",
+            "style": { "navigationStyle": "custom" }
+        }
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "white",
@@ -293,6 +398,12 @@
 				"selectedIconPath": "static/images/服务大厅-active.png",
 				"text": "服务大厅"
 			},
+            {
+              "text": "消息",
+              "iconPath": "static/YX_IMG/conversation.png",
+              "selectedIconPath": "static/YX_IMG/conversation-selected.png",
+              "pagePath": "pages/NEUIKit/pages/Conversation/index"
+            },
 			{
 				"pagePath": "pages/personal/index",
 				"iconPath": "static/images/个人中心.png",
