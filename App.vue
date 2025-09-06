@@ -3,17 +3,12 @@ import RootStore from '@xkit-yx/im-store'
 import { NimKitCore } from '@xkit-yx/core-kit/dist/uniapp-nim-core'
 import { getMsgContentTipByType } from './pages/NEUIKit/utils/msg'
 import { getUniPlatform } from './pages/NEUIKit/utils'
-// #ifdef APP-PLUS
-const nimPushPlugin = uni.requireNativePlugin('NIMUniPlugin-PluginModule')
-// #endif
 
 export default {
   onLaunch: function () {
     console.log('App Launch')
-    // 检查用户是否已登录我们自己的应用
     const token = uni.getStorageSync('token')
     if (token) {
-      // 如果已登录，则开始初始化IM
       this.initNim()
     }
   },
@@ -25,8 +20,10 @@ export default {
   },
   methods: {
     async initNim() {
+      // 关键修复：每次初始化前，都先确保上一个实例被彻底销毁
+      this.logoutNim(); 
+
       try {
-        // 1. 从我们自己的后端获取IM的accid和token
         const res = await uni.request({
           url: 'http://localhost:3000/api/im/register', // 请确保这是您后端服务的正确地址
           method: 'POST',
@@ -41,9 +38,7 @@ export default {
 
         const { account, imToken, appKey } = res.data;
 
-        // 2. 严格按照官方文档初始化NimKitCore和RootStore
         const isWeixinApp = getUniPlatform() === 'mp-weixin'
-        // @ts-ignore
         const nim = uni.$UIKitNIM = new NimKitCore({
           initOptions: {
             "appkey": appKey,
@@ -62,7 +57,6 @@ export default {
           platform: 'UniApp',
         })
         
-        // @ts-ignore
         const store = uni.$UIKitStore = new RootStore(nim, {
           addFriendNeedVerify: false,
           teamBeInviteMode: 'noVerify',
@@ -70,12 +64,12 @@ export default {
           teamUpdateExtMode: 'all',
           teamUpdateTeamMode: 'all',
           teamInviteMode: 'all',
-          // ... 其他配置可以根据文档添加
         })
 
-        // 3. 连接IM服务器
-        nim.connect()
-        console.log('NEUIKit 初始化成功')
+        nim.connect().then(() => {
+          console.log('NEUIKit 初始化并连接成功');
+          uni.$emit('IM_LOGIN_SUCCESS'); // 发送登录成功通知
+        });
 
       } catch (error) {
         console.error('初始化 NEUIKit 失败:', error)
@@ -84,6 +78,18 @@ export default {
           icon: 'none',
         });
       }
+    },
+    logoutNim() {
+      // 关键修复：同时销毁NIM实例和Store实例
+      if (uni.$UIKitNIM) {
+        uni.$UIKitNIM.destroy();
+      }
+      if (uni.$UIKitStore) {
+        uni.$UIKitStore.destroy();
+      }
+      uni.$UIKitNIM = null;
+      uni.$UIKitStore = null;
+      console.log('IM instance and store destroyed.');
     }
   }
 }

@@ -110,10 +110,8 @@ var _utils = __webpack_require__(/*! ./pages/NEUIKit/utils */ 89);
 var _default = {
   onLaunch: function onLaunch() {
     console.log('App Launch');
-    // 检查用户是否已登录我们自己的应用
     var token = uni.getStorageSync('token');
     if (token) {
-      // 如果已登录，则开始初始化IM
       this.initNim();
     }
   },
@@ -125,14 +123,17 @@ var _default = {
   },
   methods: {
     initNim: function initNim() {
+      var _this = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
         var res, _res$data, account, imToken, appKey, isWeixinApp, nim, store;
         return _regenerator.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                _context.prev = 0;
-                _context.next = 3;
+                // 关键修复：每次初始化前，都先确保上一个实例被彻底销毁
+                _this.logoutNim();
+                _context.prev = 1;
+                _context.next = 4;
                 return uni.request({
                   url: 'http://localhost:3000/api/im/register',
                   // 请确保这是您后端服务的正确地址
@@ -141,16 +142,16 @@ var _default = {
                     'Authorization': "Bearer ".concat(uni.getStorageSync('token'))
                   }
                 });
-              case 3:
+              case 4:
                 res = _context.sent;
                 if (res.data.success) {
-                  _context.next = 6;
+                  _context.next = 7;
                   break;
                 }
                 throw new Error(res.data.message || '获取IM凭证失败');
-              case 6:
-                _res$data = res.data, account = _res$data.account, imToken = _res$data.imToken, appKey = _res$data.appKey; // 2. 严格按照官方文档初始化NimKitCore和RootStore
-                isWeixinApp = (0, _utils.getUniPlatform)() === 'mp-weixin'; // @ts-ignore
+              case 7:
+                _res$data = res.data, account = _res$data.account, imToken = _res$data.imToken, appKey = _res$data.appKey;
+                isWeixinApp = (0, _utils.getUniPlatform)() === 'mp-weixin';
                 nim = uni.$UIKitNIM = new _uniappNimCore.NimKitCore({
                   initOptions: {
                     "appkey": appKey,
@@ -163,7 +164,7 @@ var _default = {
                     debugLevel: 'debug'
                   },
                   platform: 'UniApp'
-                }); // @ts-ignore
+                });
                 store = uni.$UIKitStore = new _imStore.default(nim, {
                   addFriendNeedVerify: false,
                   teamBeInviteMode: 'noVerify',
@@ -171,16 +172,16 @@ var _default = {
                   teamUpdateExtMode: 'all',
                   teamUpdateTeamMode: 'all',
                   teamInviteMode: 'all'
-                  // ... 其他配置可以根据文档添加
-                }); // 3. 连接IM服务器
-
-                nim.connect();
-                console.log('NEUIKit 初始化成功');
+                });
+                nim.connect().then(function () {
+                  console.log('NEUIKit 初始化并连接成功');
+                  uni.$emit('IM_LOGIN_SUCCESS'); // 发送登录成功通知
+                });
                 _context.next = 18;
                 break;
               case 14:
                 _context.prev = 14;
-                _context.t0 = _context["catch"](0);
+                _context.t0 = _context["catch"](1);
                 console.error('初始化 NEUIKit 失败:', _context.t0);
                 uni.showToast({
                   title: _context.t0.message || 'IM连接失败',
@@ -191,8 +192,20 @@ var _default = {
                 return _context.stop();
             }
           }
-        }, _callee, null, [[0, 14]]);
+        }, _callee, null, [[1, 14]]);
       }))();
+    },
+    logoutNim: function logoutNim() {
+      // 关键修复：同时销毁NIM实例和Store实例
+      if (uni.$UIKitNIM) {
+        uni.$UIKitNIM.destroy();
+      }
+      if (uni.$UIKitStore) {
+        uni.$UIKitStore.destroy();
+      }
+      uni.$UIKitNIM = null;
+      uni.$UIKitStore = null;
+      console.log('IM instance and store destroyed.');
     }
   }
 };

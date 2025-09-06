@@ -134,6 +134,9 @@ export default {
 					uni.setStorageSync('userInfo', userData.user);
 					uni.setStorageSync('token', userData.token);
 					uni.setStorageSync('isLoggedIn', true);
+
+                    // 调用App.vue中的方法初始化IM
+                    getApp().initNim();
 					
 					uni.showToast({
 						title: '登录成功',
