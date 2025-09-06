@@ -283,65 +283,6 @@ var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/r
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
 var _default = {
   data: function data() {
     return {
@@ -402,6 +343,48 @@ var _default = {
     this.checkLoginStatus();
   },
   methods: {
+    // 我的预约 - 各子入口
+    goToMyClassroomReservations: function goToMyClassroomReservations() {
+      uni.navigateTo({
+        url: '/pages/features/my-classroom-reservations'
+      });
+    },
+    goToMyStudyroomReservations: function goToMyStudyroomReservations() {
+      uni.navigateTo({
+        url: '/pages/features/my-studyroom-reservations'
+      });
+    },
+    goToPsychologicalReservations: function goToPsychologicalReservations() {
+      uni.navigateTo({
+        url: '/pages/features/psychological-assessment'
+      });
+    },
+    goToMedicalReservations: function goToMedicalReservations() {
+      uni.navigateTo({
+        url: '/pages/features/medical'
+      });
+    },
+    // 我的订单 - 各子入口
+    goToFoodOrders: function goToFoodOrders() {
+      uni.navigateTo({
+        url: '/pages/features/food-history'
+      });
+    },
+    goToErrandOrders: function goToErrandOrders() {
+      uni.navigateTo({
+        url: '/pages/features/errand-service'
+      });
+    },
+    goToLaundryOrders: function goToLaundryOrders() {
+      uni.navigateTo({
+        url: '/pages/features/laundry-history'
+      });
+    },
+    goToPrintingOrders: function goToPrintingOrders() {
+      uni.navigateTo({
+        url: '/pages/features/printing-history'
+      });
+    },
     // 检查登录状态
     checkLoginStatus: function checkLoginStatus() {
       var token = uni.getStorageSync('token');

@@ -591,7 +591,7 @@ export default {
 			uni.showToast({
 					title: '活动数据错误',
 				icon: 'none'
-				});
+			});
 				return;
 			}
 			

@@ -35,130 +35,71 @@
 			</view>
 		</view>
 		
-		<!-- 账户信息面板 -->
-		<view class="account-panel">
+		<!-- 我的预约卡片 -->
+		<view v-if="isLoggedIn" class="feature-card">
 			<view class="panel-header">
-				<text class="panel-title">账户信息</text>
+				<text class="panel-title">我的预约</text>
 			</view>
-			<view class="account-items">
-				<view class="account-item" @tap="navigateTo('wallet')">
-					<view class="item-icon wallet">
-						<image src="/static/images/wallet.png" mode="aspectFit"></image>
+			<view class="feature-grid">
+				<view class="feature-item" @tap="goToMyClassroomReservations">
+					<view class="feature-icon academic">
+						<image src="/static/images/classroom.png" mode="aspectFit"></image>
 					</view>
-					<view class="item-content">
-						<text class="item-label">校园钱包</text>
-						<text class="item-value">余额：¥ {{wallet.balance}}</text>
-					</view>
-					<view class="item-arrow">
-						<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-					</view>
+					<text class="feature-text">教室预约</text>
 				</view>
-				
-				<view class="account-item" @tap="navigateTo('credits')">
-					<view class="item-icon credits">
-						<image src="/static/images/credits.png" mode="aspectFit"></image>
+				<view class="feature-item" @tap="goToMyStudyroomReservations">
+					<view class="feature-icon academic">
+						<image src="/static/images/study.png" mode="aspectFit"></image>
 					</view>
-					<view class="item-content">
-						<text class="item-label">学分情况</text>
-						<text class="item-value">已修：{{credits.earned}} / 总学分：{{credits.total}}</text>
-					</view>
-					<view class="item-arrow">
-						<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-					</view>
+					<text class="feature-text">自习室预约</text>
 				</view>
-				
-				<view class="account-item" @tap="navigateTo('awards')">
-					<view class="item-icon awards">
-						<image src="/static/images/awards.png" mode="aspectFit"></image>
+				<view class="feature-item" @tap="goToPsychologicalReservations">
+					<view class="feature-icon health">
+						<image src="/static/images/psychology.png" mode="aspectFit"></image>
 					</view>
-					<view class="item-content">
-						<text class="item-label">奖惩记录</text>
-						<text class="item-value">{{awards.count}}条记录</text>
-					</view>
-					<view class="item-arrow">
-						<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-					</view>
+					<text class="feature-text">心理咨询预约</text>
 				</view>
-				
-				<view class="account-item" @tap="navigateTo('certificates')">
-					<view class="item-icon certificates">
-						<image src="/static/images/certificates.png" mode="aspectFit"></image>
+				<view class="feature-item" @tap="goToMedicalReservations">
+					<view class="feature-icon health">
+						<image src="/static/images/medical.png" mode="aspectFit"></image>
 					</view>
-					<view class="item-content">
-						<text class="item-label">证书成绩</text>
-						<text class="item-value">{{certificates.count}}个证书</text>
-					</view>
-					<view class="item-arrow">
-						<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-					</view>
+					<text class="feature-text">校医挂号</text>
 				</view>
 			</view>
 		</view>
-		
-		<!-- 通知中心 -->
-		<view class="notification-panel">
+
+		<!-- 我的订单卡片 -->
+		<view v-if="isLoggedIn" class="feature-card">
 			<view class="panel-header">
-				<text class="panel-title">通知中心</text>
-				<view class="panel-more" @tap="viewAllNotifications">
-					<text>查看全部</text>
-					<image src="/static/images/arrow-right.png" mode="aspectFit"></image>
-				</view>
+				<text class="panel-title">我的订单</text>
 			</view>
-			
-			<view class="notification-list">
-				<view class="notification-card" v-for="(notification, index) in notifications" :key="index" @tap="readNotification(notification)">
-					<view class="notification-icon" :class="notification.typeCls">
-						<image :src="notification.icon" mode="aspectFit"></image>
+			<view class="feature-grid">
+				<view class="feature-item" @tap="goToFoodOrders">
+					<view class="feature-icon lifestyle">
+						<image src="/static/images/food.png" mode="aspectFit"></image>
 					</view>
-					<view class="notification-content">
-						<view class="notification-header">
-							<text class="notification-title">{{notification.title}}</text>
-							<text class="notification-time">{{notification.time}}</text>
-						</view>
-						<text class="notification-desc">{{notification.content}}</text>
+					<text class="feature-text">食堂点餐</text>
+				</view>
+				<view class="feature-item" @tap="goToErrandOrders">
+					<view class="feature-icon lifestyle">
+						<image src="/static/images/expressrun.png" mode="aspectFit"></image>
 					</view>
-					<view class="notification-status" v-if="!notification.read"></view>
+					<text class="feature-text">跑腿代办</text>
+				</view>
+				<view class="feature-item" @tap="goToLaundryOrders">
+					<view class="feature-icon lifestyle">
+						<image src="/static/images/devices.png" mode="aspectFit"></image>
+					</view>
+					<text class="feature-text">洗衣订单</text>
+				</view>
+				<view class="feature-item" @tap="goToPrintingOrders">
+					<view class="feature-icon lifestyle">
+						<image src="/static/images/devices.png" mode="aspectFit"></image>
+					</view>
+					<text class="feature-text">打印订单</text>
 				</view>
 			</view>
 		</view>
-		
-		<!-- 系统功能 -->
-		<view class="system-panel">
-			<view class="panel-header">
-				<text class="panel-title">系统功能</text>
-			</view>
-			
-			<view class="system-items">
-				<view class="system-item" @tap="navigateTo('feedback')">
-					<view class="item-icon feedback">
-						<image src="/static/images/feedback.png" mode="aspectFit"></image>
-					</view>
-					<text class="item-label">意见反馈</text>
-				</view>
-				
-				<view class="system-item" @tap="navigateTo('settings')">
-					<view class="item-icon settings">
-						<image src="/static/images/settings.png" mode="aspectFit"></image>
-					</view>
-					<text class="item-label">系统设置</text>
-				</view>
-				
-				<view class="system-item" @tap="navigateTo('privacy')">
-					<view class="item-icon privacy">
-						<image src="/static/images/privacy.png" mode="aspectFit"></image>
-					</view>
-					<text class="item-label">隐私政策</text>
-				</view>
-				
-				<view class="system-item" @tap="navigateTo('about')">
-					<view class="item-icon about">
-						<image src="/static/images/about.png" mode="aspectFit"></image>
-					</view>
-					<text class="item-label">关于我们</text>
-				</view>
-			</view>
-		</view>
-		
 		<!-- 二维码弹窗 -->
 		<view class="qrcode-popup" v-if="showQRCode">
 			<view class="popup-mask" @tap="hideMyCode"></view>
@@ -269,6 +210,32 @@ export default {
 	},
 	
 	methods: {
+		// 我的预约 - 各子入口
+		goToMyClassroomReservations() {
+			uni.navigateTo({ url: '/pages/features/my-classroom-reservations' });
+		},
+		goToMyStudyroomReservations() {
+			uni.navigateTo({ url: '/pages/features/my-studyroom-reservations' });
+		},
+		goToPsychologicalReservations() {
+			uni.navigateTo({ url: '/pages/features/psychological-assessment' });
+		},
+		goToMedicalReservations() {
+			uni.navigateTo({ url: '/pages/features/medical' });
+		},
+		// 我的订单 - 各子入口
+		goToFoodOrders() {
+			uni.navigateTo({ url: '/pages/features/food-history' });
+		},
+		goToErrandOrders() {
+			uni.navigateTo({ url: '/pages/features/errand-service' });
+		},
+		goToLaundryOrders() {
+			uni.navigateTo({ url: '/pages/features/laundry-history' });
+		},
+		goToPrintingOrders() {
+			uni.navigateTo({ url: '/pages/features/printing-history' });
+		},
 		// 检查登录状态
 		checkLoginStatus() {
 			const token = uni.getStorageSync('token');
@@ -999,5 +966,117 @@ export default {
 .action-btn.secondary {
 	background-color: #f5f5f5;
 	color: #333;
+}
+
+/* 快捷功能入口 */
+.quick-actions {
+	margin: 20rpx 30rpx 0 30rpx;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 20rpx;
+	box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.12);
+	border: 1rpx solid rgba(102, 126, 234, 0.08);
+	padding: 20rpx;
+	display: flex;
+	justify-content: space-around;
+}
+
+.quick-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20rpx 10rpx;
+}
+
+.quick-icon {
+	width: 64rpx;
+	height: 64rpx;
+	margin-bottom: 12rpx;
+}
+
+.quick-label {
+	font-size: 26rpx;
+	color: #333;
+	font-weight: 600;
+}
+
+/* 新增：功能卡片与按钮 */
+.feature-card {
+	margin: 20rpx 30rpx 0 30rpx;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 24rpx;
+	box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.12);
+	border: 1rpx solid rgba(102, 126, 234, 0.08);
+	overflow: hidden;
+}
+
+.feature-grid {
+	display: flex;
+	flex-wrap: wrap;
+	padding: 20rpx 20rpx 30rpx 20rpx;
+	gap: 20rpx 0;
+}
+
+.feature-btn {
+	width: 50%;
+	background-color: transparent;
+	border: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 20rpx 0;
+}
+
+.feature-btn image {
+	width: 56rpx;
+	height: 56rpx;
+	margin-bottom: 10rpx;
+}
+
+.feature-btn text {
+	font-size: 26rpx;
+	color: #333;
+	font-weight: 600;
+}
+
+/* 网格项风格（与服务大厅一致） */
+.feature-grid {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	padding: 20rpx 20rpx 10rpx 20rpx;
+}
+
+.feature-item {
+	width: 48%;
+	text-align: center;
+	position: relative;
+	margin-bottom: 20rpx;
+}
+
+.feature-icon {
+	width: 100rpx;
+	height: 100rpx;
+	margin: 0 auto;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.feature-icon.academic { background-color: #e6f2ff; }
+.feature-icon.lifestyle { background-color: #e6fff2; }
+.feature-icon.health { background-color: #fff2e6; }
+
+.feature-icon image {
+	width: 60rpx;
+	height: 60rpx;
+}
+
+.feature-text {
+	font-size: 26rpx;
+	color: #333;
+	margin-top: 10rpx;
+	display: block;
 }
 </style> 
