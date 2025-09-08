@@ -88,6 +88,23 @@ router.get('/list', async (req, res) => {
   }
 });
 
+// 根据学号获取用户信息
+router.get('/by-student-id/:studentId', authenticateToken, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    const user = await User.findByStudentId(studentId);
+    if (!user) {
+      return error(res, '用户不存在', 404);
+    }
+
+    success(res, user, '获取用户信息成功');
+  } catch (err) {
+    console.error('根据学号获取用户信息错误:', err);
+    error(res, '获取用户信息失败', 500);
+  }
+});
+
 // 获取指定用户信息
 router.get('/:id', async (req, res) => {
   try {

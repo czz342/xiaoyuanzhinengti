@@ -82,8 +82,8 @@
 		</view>
 
 		<view class="action-buttons">
-			<button class="action-btn secondary" @tap="goToOrders">查看所有订单</button>
-			<button class="action-btn primary" @tap="refreshProgress">刷新进度</button>
+			<button class="action-btn contact" @tap="chatWith('canteen', order.canteen_id)">联系食堂</button>
+			<button class="action-btn contact rider" @tap="chatWith('rider', 'rider_test_001')">联系骑手</button>
 		</view>
 	</view>
 </template>
@@ -271,6 +271,61 @@ export default {
 			uni.navigateTo({
 				url: '/pages/features/food-history'
 			});
+		},
+
+		async chatWith(type, entityId) {
+		  if (!entityId) return;
+
+		  uni.showLoading({ title: '正在连接...' });
+
+		  try {
+		    const token = uni.getStorageSync('token');
+		    let url = '';
+
+		    if (type === 'canteen') {
+		      url = `http://localhost:3000/api/im/get-canteen-accid/${entityId}`;
+		    } else if (type === 'rider') {
+              // 硬编码使用测试骑手的用户名
+		      url = `http://localhost:3000/api/im/get-user-accid/rider_test_001`;
+		    }
+
+		    const res = await uni.request({
+		      url,
+		      method: 'GET',
+		      header: {
+		        'Authorization': `Bearer ${token}`
+		      }
+		    });
+
+		    if (res.data.success) {
+		      const accid = res.data.accid;
+		      
+		      // 检查 IM 是否已初始化
+		      if (!uni.$UIKitStore) {
+		        throw new Error('IM服务未初始化，请重新登录');
+		      }
+		      
+		      const sessionId = `p2p-${accid}`;
+		      
+		      // 安全地选择会话
+		      if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+		        await uni.$UIKitStore.uiStore.selectSession(sessionId);
+		      }
+		      
+		      uni.navigateTo({
+		        url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+		      });
+		    } else {
+		      throw new Error(res.data.message || '获取IM账号失败');
+		    }
+		  } catch (error) {
+		    uni.showToast({
+		      title: error.message || '无法发起聊天',
+		      icon: 'none'
+		    });
+		  } finally {
+		    uni.hideLoading();
+		  }
 		}
 	}
 }
@@ -551,5 +606,15 @@ export default {
 .action-btn.primary {
 	background-color: #007AFF;
 	color: #ffffff;
+}
+
+.action-btn.contact {
+	background-color: #4cd964;
+	color: #ffffff;
+	margin-right: 20rpx;
+}
+
+.action-btn.contact.rider {
+	background-color: #ff9500;
 }
 </style>

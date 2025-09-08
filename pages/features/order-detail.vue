@@ -9,6 +9,31 @@
 			</view>
 		</view>
 
+		<!-- 接单人信息 -->
+		<view class="publisher-card" v-if="orderDetail.accepterInfo">
+			<view class="card-title">
+				<view class="title-icon">👤</view>
+				<text>接单人信息</text>
+			</view>
+			<view class="publisher-info">
+				<image :src="orderDetail.accepterInfo.avatar" mode="aspectFit" class="publisher-avatar"></image>
+				<view class="publisher-details">
+					<text class="publisher-name">{{ orderDetail.accepterInfo.name }}</text>
+					<view class="publisher-stats">
+						<view class="rating-info">
+							<text class="rating-label">评分</text>
+							<text class="rating-value">{{ (orderDetail.accepterInfo.rating || 5.0).toFixed(1) }}</text>
+						</view>
+						<view class="orders-info">
+							<text class="rating-label">完成</text>
+							<text class="orders-value">{{ orderDetail.accepterInfo.completedOrders }}单</text>
+						</view>
+					</view>
+					<button class="chat-btn" @tap="chatWithUser(orderDetail.accepterInfo.id)">联系接单人</button>
+				</view>
+			</view>
+		</view>
+
 		<!-- 发布者信息 -->
 		<view class="publisher-card" v-if="orderDetail.publisherInfo">
 			<view class="card-title">
@@ -18,17 +43,20 @@
 			<view class="publisher-info">
 				<image :src="orderDetail.publisherInfo.avatar" mode="aspectFit" class="publisher-avatar"></image>
 				<view class="publisher-details">
-					<text class="publisher-name">{{ orderDetail.publisherInfo.name }}</text>
-					<view class="publisher-stats">
-						<view class="rating-info">
-							<text class="rating-label">评分</text>
-							<text class="rating-value">{{ (orderDetail.publisherInfo.rating || 5.0).toFixed(1) }}</text>
-						</view>
-						<view class="orders-info">
-							<text class="rating-label">完成</text>
-							<text class="orders-value">{{ orderDetail.publisherInfo.completedOrders }}单</text>
+					<view>
+						<text class="publisher-name">{{ orderDetail.publisherInfo.name }}</text>
+						<view class="publisher-stats">
+							<view class="rating-info">
+								<text class="rating-label">评分</text>
+								<text class="rating-value">{{ (orderDetail.publisherInfo.rating || 5.0).toFixed(1) }}</text>
+							</view>
+							<view class="orders-info">
+								<text class="rating-label">完成</text>
+								<text class="orders-value">{{ orderDetail.publisherInfo.completedOrders }}单</text>
+							</view>
 						</view>
 					</view>
+					<button class="chat-btn" @tap="chatWithUser(orderDetail.publisherInfo.id)">联系发布人</button>
 				</view>
 			</view>
 		</view>
@@ -220,11 +248,19 @@ export default {
 						createdTime: this.formatDateTime(r.created_time),
 						acceptedTime: r.accepted_time ? this.formatDateTime(r.accepted_time) : null,
 						publisherInfo: {
+							id: r.publisher_id,
 							name: r.publisher_name || '同学',
 							avatar: this.resolveAvatar(r.publisher_avatar),
 							rating: Number(r.creditScore || 5.0),
 							completedOrders: Number(r.completedOrders || 0)
-						}
+						},
+						accepterInfo: r.accepter_id ? {
+							id: r.accepter_id,
+							name: r.accepter_name || '同学',
+							avatar: this.resolveAvatar(r.accepter_avatar),
+							rating: Number(r.accepterCreditScore || 5.0),
+							completedOrders: Number(r.accepterCompletedOrders || 0)
+						} : null
 					};
 					
 					console.log('处理后的订单详情:', this.orderDetail);
@@ -394,6 +430,60 @@ export default {
 				}
 			} catch (e) {
 				uni.showToast({ title: e.message || '取消失败', icon: 'none' });
+			}
+		},
+
+		async chatWithUser(userId) {
+			if (!userId) {
+				uni.showToast({ title: '无效的用户ID', icon: 'none' });
+				return;
+			}
+
+			uni.showLoading({ title: '正在连接...' });
+
+			try {
+				const token = uni.getStorageSync('token');
+				const res = await uni.request({
+					url: `http://localhost:3000/api/im/get-user-info/${userId}`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+
+				if (res.data.success) {
+					const { accid, uinfo } = res.data;
+					
+					// 检查 IM 是否已初始化
+					if (!uni.$UIKitStore) {
+						throw new Error('IM服务未初始化，请重新登录');
+					}
+					
+					// 安全地更新用户信息
+					if (uinfo && uni.$UIKitStore.userStore && typeof uni.$UIKitStore.userStore.updateUser === 'function') {
+						uni.$UIKitStore.userStore.updateUser(uinfo);
+					}
+
+					const sessionId = `p2p-${accid}`;
+					
+					// 安全地选择会话
+					if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+						await uni.$UIKitStore.uiStore.selectSession(sessionId);
+					}
+					
+					uni.navigateTo({
+						url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+					});
+				} else {
+					throw new Error(res.data.message || '获取用户IM账号失败');
+				}
+			} catch (error) {
+				uni.showToast({
+					title: error.message || '无法发起聊天',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
 			}
 		},
 
@@ -741,9 +831,21 @@ export default {
 	display: block;
 }
 
-.publisher-stats {
+.publisher-details {
+	flex: 1;
 	display: flex;
-	gap: 30rpx;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.chat-btn {
+	background-color: #007AFF;
+	color: #ffffff;
+	border: none;
+	border-radius: 20rpx;
+	font-size: 24rpx;
+	padding: 8rpx 16rpx;
+	margin-left: 20rpx;
 }
 
 .rating-info, .orders-info {

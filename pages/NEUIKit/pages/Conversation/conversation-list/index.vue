@@ -11,7 +11,7 @@
           src="https://yx-web-nosdn.netease.im/common/bbcd9929e31bfee02663fc0bcdabe1c5/yx-logo.png"
           class="logo-img"
         />
-        <div>{{ t('appText') }}</div>
+        <div class="logo-text">消息列表</div>
       </div>
       <div :class="buttonClass">
         <!-- #ifdef MP -->
@@ -38,6 +38,10 @@
                 :style="{ marginRight: '5px' }"
               />
               {{ t('createTeamText') }}
+            </div>
+            <div class="add-menu-item add-menu-item-danger" @tap="onDropdownClick('clearAllSessions')">
+              <Icon type="icon-shanchu" :style="{ marginRight: '5px' }" />
+              {{ t('clearAllSessionsText') }}
             </div>
           </div>
         </div>
@@ -185,6 +189,12 @@ const hideAddDropdown = () => {
 }
 
 const onDropdownClick = (urlType: string) => {
+  if (urlType === 'clearAllSessions') {
+    addDropdownVisible.value = false
+    clearAllSessions()
+    return
+  }
+  
   const urlMap = {
     // 添加好友
     addFriend: '/pages/Friend/add-friend/index',
@@ -195,6 +205,71 @@ const onDropdownClick = (urlType: string) => {
   customNavigateTo({
     // @ts-ignore
     url: urlMap[urlType],
+  })
+}
+
+// 清空所有会话
+const clearAllSessions = () => {
+  uni.showModal({
+    title: t('clearAllSessionsText'),
+    content: t('clearAllSessionsConfirmText'),
+    showCancel: true,
+    confirmText: t('clearText'),
+    confirmColor: '#ff4444',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          uni.showLoading({ title: t('clearingAllSessionsText') })
+          
+          // 获取所有会话
+          const sessions = sessionList.value || []
+          
+          if (sessions.length === 0) {
+            uni.hideLoading()
+            uni.showToast({
+              title: t('noSessionsToClearText'),
+              icon: 'none'
+            })
+            return
+          }
+          
+          // 批量删除所有会话
+          for (const session of sessions) {
+            try {
+              // @ts-ignore
+              await uni.$UIKitStore.sessionStore.deleteSessionActive(session.id)
+            } catch (error) {
+              console.error(`删除会话 ${session.id} 失败:`, error)
+            }
+          }
+          
+          uni.hideLoading()
+          uni.showToast({
+            title: t('clearAllSessionsSuccessText'),
+            icon: 'success'
+          })
+          
+          // 刷新会话列表
+          setTimeout(() => {
+            // @ts-ignore
+            if (uni.$UIKitStore) {
+              // @ts-ignore
+              uni.$UIKitStore.uiStore.selectSession('')
+              setTabUnread()
+              setContactTabUnread()
+            }
+          }, 1000)
+          
+        } catch (error) {
+          console.error('清空所有会话失败:', error)
+          uni.hideLoading()
+          uni.showToast({
+            title: t('clearAllSessionsFailText'),
+            icon: 'error'
+          })
+        }
+      }
+    }
   })
 }
 
@@ -299,6 +374,13 @@ autorun(() => {
     height: 32px;
     margin-right: 10px;
   }
+
+  .logo-text {
+    margin-left: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333333;
+  }
 }
 
 .button-icon-add {
@@ -345,9 +427,25 @@ autorun(() => {
     line-height: 30px;
     display: flex;
     align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
 
     &:last-child {
       margin-bottom: 0;
+    }
+
+    &.add-menu-item-danger {
+      color: #ff4444;
+      font-weight: 500;
+      
+      &:hover {
+        background-color: #fff5f5;
+      }
     }
   }
 }

@@ -24,19 +24,30 @@ export default {
       this.logoutNim(); 
 
       try {
+        const token = uni.getStorageSync('token');
+        console.log('🔍 开始初始化NEUIKit，token:', token ? '存在' : '不存在');
+        
+        if (!token) {
+          throw new Error('用户未登录，无法初始化IM服务');
+        }
+
+        console.log('📡 正在请求IM注册...');
         const res = await uni.request({
-          url: 'http://localhost:3000/api/im/register', // 请确保这是您后端服务的正确地址
+          url: 'http://localhost:3000/api/im/register',
           method: 'POST',
           header: {
-            'Authorization': `Bearer ${uni.getStorageSync('token')}`
+            'Authorization': `Bearer ${token}`
           }
         })
 
-        if (!res.data.success) {
-          throw new Error(res.data.message || '获取IM凭证失败')
+        console.log('📡 IM注册响应:', res);
+
+        if (!res.data || !res.data.success) {
+          throw new Error(res.data?.message || '获取IM凭证失败')
         }
 
         const { account, imToken, appKey } = res.data;
+        console.log('✅ 获取到IM凭证:', { account, appKey, tokenLength: imToken?.length });
 
         const isWeixinApp = getUniPlatform() === 'mp-weixin'
         const nim = uni.$UIKitNIM = new NimKitCore({
@@ -64,6 +75,20 @@ export default {
           teamUpdateExtMode: 'all',
           teamUpdateTeamMode: 'all',
           teamInviteMode: 'all',
+          // 添加消息相关配置
+          sendMsgBefore: async (options, type) => {
+            const pushContent = getMsgContentTipByType({ body: options.body, type })
+            const pushInfo = {
+              needPush: true,
+              needPushBadge: true,
+              pushPayload: '{}',
+              pushContent,
+              needForcePush: false,
+              forcePushIDsList: '[]',
+              forcePushContent: pushContent,
+            }
+            return { ...options, pushInfo }
+          },
         })
 
         nim.connect().then(() => {
@@ -72,10 +97,17 @@ export default {
         });
 
       } catch (error) {
-        console.error('初始化 NEUIKit 失败:', error)
+        console.error('❌ 初始化 NEUIKit 失败:', error);
+        console.error('❌ 错误详情:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response || '无响应数据'
+        });
+        
         uni.showToast({
-          title: error.message || 'IM连接失败',
+          title: `IM服务初始化失败: ${error.message}`,
           icon: 'none',
+          duration: 5000
         });
       }
     },

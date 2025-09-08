@@ -52,13 +52,21 @@ class ErrandOrder {
         return rows[0] || null;
     }
 
+    static async findByTitle(title) {
+        const [rows] = await db.execute('SELECT * FROM errand_orders WHERE title = ?', [title]);
+        return rows[0] || null;
+    }
+
     static async findDetailById(id) {
         const sql = `
             SELECT eo.*, 
-                   u.displayName AS publisher_name, u.picture AS publisher_avatar,
-                   u.creditScore, u.completedOrders
+                   p.displayName AS publisher_name, p.picture AS publisher_avatar,
+                   p.creditScore AS publisherCreditScore, p.completedOrders AS publisherCompletedOrders,
+                   a.displayName AS accepter_name, a.picture AS accepter_avatar,
+                   a.creditScore AS accepterCreditScore, a.completedOrders AS accepterCompletedOrders
             FROM errand_orders eo
-            LEFT JOIN users u ON eo.publisher_id = u.id
+            LEFT JOIN users p ON eo.publisher_id = p.id
+            LEFT JOIN users a ON eo.accepter_id = a.id
             WHERE eo.id = ?
         `;
         const [rows] = await db.execute(sql, [id]);

@@ -137,11 +137,14 @@
 						<text class="label">实付金额</text>
 						<text class="value total">¥{{ parseFloat(selectedOrder.final_amount).toFixed(2) }}</text>
 					</view>
-					<view class="detail-row">
+								<view class="detail-row">
 						<text class="label">下单时间</text>
 						<text class="value">{{ formatDate(selectedOrder.order_time) }}</text>
 					</view>
 				</view>
+                <view class="popup-actions">
+                    <button class="action-button contact" @tap="chatWithCanteen(selectedOrder.canteen_id)">联系食堂</button>
+                </view>
 				<view class="close-btn" @tap="closeOrderDetail">
 					<uni-icons type="close" size="24" color="#999"></uni-icons>
 				</view>
@@ -266,6 +269,145 @@ export default {
 			uni.navigateTo({
 				url: '/pages/features/food'
 			});
+		},
+
+		async chatWithCanteen(canteenId) {
+		  if (!canteenId) return;
+
+		  uni.showLoading({ title: '正在连接...' });
+
+		  try {
+		    const token = uni.getStorageSync('token');
+		    const res = await uni.request({
+		      url: `http://localhost:3000/api/im/get-canteen-accid/${canteenId}`,
+		      method: 'GET',
+		      header: {
+		        'Authorization': `Bearer ${token}`
+		      }
+		    });
+
+		    if (res.data.success) {
+		      const { accid, uinfo } = res.data;
+		      
+		      // 检查 IM 是否已初始化
+		      if (!uni.$UIKitStore) {
+		        throw new Error('IM服务未初始化，请重新登录');
+		      }
+		      
+		      // 安全地更新用户信息
+		      if (uinfo && uni.$UIKitStore.userStore && typeof uni.$UIKitStore.userStore.updateUser === 'function') {
+		        uni.$UIKitStore.userStore.updateUser(uinfo);
+		      }
+
+		      const sessionId = `p2p-${accid}`;
+		      
+		      // 安全地选择会话
+		      if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+		        await uni.$UIKitStore.uiStore.selectSession(sessionId);
+		      }
+		      uni.navigateTo({
+		        url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+		      });
+		    } else {
+		      throw new Error(res.data.message || '获取食堂IM账号失败');
+		    }
+		  } catch (error) {
+		    uni.showToast({
+		      title: error.message || '无法发起聊天',
+		      icon: 'none'
+		    });
+		  } finally {
+		    uni.hideLoading();
+		  }
+		},
+
+		async chatWithCanteen(canteenId) {
+		  if (!canteenId) return;
+
+		  uni.showLoading({ title: '正在连接...' });
+
+		  try {
+		    const token = uni.getStorageSync('token');
+		    const res = await uni.request({
+		      url: `http://localhost:3000/api/im/get-canteen-accid/${canteenId}`,
+		      method: 'GET',
+		      header: {
+		        'Authorization': `Bearer ${token}`
+		      }
+		    });
+
+		    if (res.data.success) {
+      const accid = res.data.accid;
+      
+      // 检查 IM 是否已初始化
+      if (!uni.$UIKitStore) {
+        throw new Error('IM服务未初始化，请重新登录');
+      }
+      
+      const sessionId = `p2p-${accid}`;
+      
+      // 安全地选择会话
+      if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+        await uni.$UIKitStore.uiStore.selectSession(sessionId);
+      }
+		      uni.navigateTo({
+		        url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+		      });
+		    } else {
+		      throw new Error(res.data.message || '获取食堂IM账号失败');
+		    }
+		  } catch (error) {
+		    uni.showToast({
+		      title: error.message || '无法发起聊天',
+		      icon: 'none'
+		    });
+		  } finally {
+		    uni.hideLoading();
+		  }
+		},
+		async chatWithCanteen(canteenId) {
+		  if (!canteenId) return;
+
+		  uni.showLoading({ title: '正在连接...' });
+
+		  try {
+		    const token = uni.getStorageSync('token');
+		    const res = await uni.request({
+		      url: `http://localhost:3000/api/im/get-canteen-accid/${canteenId}`,
+		      method: 'GET',
+		      header: {
+		        'Authorization': `Bearer ${token}`
+		      }
+		    });
+
+		    if (res.data.success) {
+      const accid = res.data.accid;
+      
+      // 检查 IM 是否已初始化
+      if (!uni.$UIKitStore) {
+        throw new Error('IM服务未初始化，请重新登录');
+      }
+      
+      const sessionId = `p2p-${accid}`;
+      
+      // 安全地选择会话
+      if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+        await uni.$UIKitStore.uiStore.selectSession(sessionId);
+      }
+		      uni.navigateTo({
+		        url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+		      });
+		    } else {
+		      throw new Error(res.data.message || '获取食堂IM账号失败');
+		    }
+		  } catch (error) {
+		    uni.showToast({
+		      title: error.message || '无法发起聊天',
+		      icon: 'none'
+		    });
+		  } finally {
+		    uni.hideLoading();
+		  }
 		}
 	}
 };
@@ -606,5 +748,24 @@ export default {
 	align-items: center;
 	background-color: #f0f0f0;
 	border-radius: 50%;
+}
+
+.popup-actions {
+	padding: 20rpx 30rpx;
+	border-top: 1rpx solid #f0f0f0;
+}
+
+.action-button.contact {
+	background-color: #007AFF;
+	color: #ffffff;
+	width: 100%;
+	height: 80rpx;
+	border-radius: 40rpx;
+	font-size: 28rpx;
+	font-weight: bold;
+	border: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 </style> 

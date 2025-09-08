@@ -150,7 +150,8 @@
     "import:medical": "node scripts/import-medical-from-csv.js",
     "init-errand": "node scripts/init-errand.js",
     "init-activities": "node scripts/init-activity-data.js",
-    "init-smart-recommendation": "node scripts/init-smart-recommendation-data.js"
+    "init-smart-recommendation": "node scripts/init-smart-recommendation-data.js",
+    "create-entity-users": "node scripts/create-entity-users.js"
   },
   "keywords": [],
   "author": "",

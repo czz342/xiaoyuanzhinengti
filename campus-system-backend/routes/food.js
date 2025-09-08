@@ -4,6 +4,7 @@ const Canteen = require('../models/Canteen');
 const Food = require('../models/Food');
 const FoodOrder = require('../models/FoodOrder');
 const FoodOrderItem = require('../models/FoodOrderItem');
+const ErrandOrder = require('../models/ErrandOrder');
 const { authenticateToken } = require('../middleware/auth');
 const { success, error } = require('../utils/response');
 
@@ -231,7 +232,21 @@ router.get('/orders/:orderId', authenticateToken, async (req, res) => {
         }
 
         const items = await FoodOrderItem.findByOrderId(orderId);
-        return res.json(success('获取订单详情成功', { ...order, items }));
+
+        let orderWithRider = { ...order, items };
+
+        // 如果是外卖订单，尝试查找关联的跑腿订单以获取骑手信息
+        if (order.dining_type === 'delivery') {
+            // 我们需要一个方法来通过food_order_id找到errand_order
+            // 假设这个方法是 ErrandOrder.findByFoodOrderId(orderId)
+            // 并且假设跑腿订单的标题包含了食品订单号
+            const errandOrder = await ErrandOrder.findByTitle(`外卖订单：${order.order_number}`);
+            if (errandOrder) {
+                orderWithRider.accepter_id = errandOrder.accepter_id;
+            }
+        }
+
+        return res.json(success('获取订单详情成功', orderWithRider));
     } catch (err) {
         console.error('GET /api/food/orders/:orderId', err);
         return res.status(500).json(error('获取订单详情失败'));

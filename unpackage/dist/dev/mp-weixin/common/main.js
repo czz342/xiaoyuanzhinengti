@@ -102,11 +102,14 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/regenerator */ 30));
+var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 32));
 var _imStore = _interopRequireDefault(__webpack_require__(/*! @xkit-yx/im-store */ 33));
 var _uniappNimCore = __webpack_require__(/*! @xkit-yx/core-kit/dist/uniapp-nim-core */ 75);
 var _msg = __webpack_require__(/*! ./pages/NEUIKit/utils/msg */ 84);
 var _utils = __webpack_require__(/*! ./pages/NEUIKit/utils */ 89);
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 var _default = {
   onLaunch: function onLaunch() {
     console.log('App Launch');
@@ -124,33 +127,47 @@ var _default = {
   methods: {
     initNim: function initNim() {
       var _this = this;
-      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
-        var res, _res$data, account, imToken, appKey, isWeixinApp, nim, store;
-        return _regenerator.default.wrap(function _callee$(_context) {
+      return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee2() {
+        var token, res, _res$data, _res$data2, account, imToken, appKey, isWeixinApp, nim, store;
+        return _regenerator.default.wrap(function _callee2$(_context2) {
           while (1) {
-            switch (_context.prev = _context.next) {
+            switch (_context2.prev = _context2.next) {
               case 0:
                 // 关键修复：每次初始化前，都先确保上一个实例被彻底销毁
                 _this.logoutNim();
-                _context.prev = 1;
-                _context.next = 4;
-                return uni.request({
-                  url: 'http://localhost:3000/api/im/register',
-                  // 请确保这是您后端服务的正确地址
-                  method: 'POST',
-                  header: {
-                    'Authorization': "Bearer ".concat(uni.getStorageSync('token'))
-                  }
-                });
-              case 4:
-                res = _context.sent;
-                if (res.data.success) {
-                  _context.next = 7;
+                _context2.prev = 1;
+                token = uni.getStorageSync('token');
+                console.log('🔍 开始初始化NEUIKit，token:', token ? '存在' : '不存在');
+                if (token) {
+                  _context2.next = 6;
                   break;
                 }
-                throw new Error(res.data.message || '获取IM凭证失败');
-              case 7:
-                _res$data = res.data, account = _res$data.account, imToken = _res$data.imToken, appKey = _res$data.appKey;
+                throw new Error('用户未登录，无法初始化IM服务');
+              case 6:
+                console.log('📡 正在请求IM注册...');
+                _context2.next = 9;
+                return uni.request({
+                  url: 'http://localhost:3000/api/im/register',
+                  method: 'POST',
+                  header: {
+                    'Authorization': "Bearer ".concat(token)
+                  }
+                });
+              case 9:
+                res = _context2.sent;
+                console.log('📡 IM注册响应:', res);
+                if (!(!res.data || !res.data.success)) {
+                  _context2.next = 13;
+                  break;
+                }
+                throw new Error(((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.message) || '获取IM凭证失败');
+              case 13:
+                _res$data2 = res.data, account = _res$data2.account, imToken = _res$data2.imToken, appKey = _res$data2.appKey;
+                console.log('✅ 获取到IM凭证:', {
+                  account: account,
+                  appKey: appKey,
+                  tokenLength: imToken === null || imToken === void 0 ? void 0 : imToken.length
+                });
                 isWeixinApp = (0, _utils.getUniPlatform)() === 'mp-weixin';
                 nim = uni.$UIKitNIM = new _uniappNimCore.NimKitCore({
                   initOptions: {
@@ -171,28 +188,70 @@ var _default = {
                   teamJoinMode: 'noVerify',
                   teamUpdateExtMode: 'all',
                   teamUpdateTeamMode: 'all',
-                  teamInviteMode: 'all'
+                  teamInviteMode: 'all',
+                  // 添加消息相关配置
+                  sendMsgBefore: function () {
+                    var _sendMsgBefore = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee(options, type) {
+                      var pushContent, pushInfo;
+                      return _regenerator.default.wrap(function _callee$(_context) {
+                        while (1) {
+                          switch (_context.prev = _context.next) {
+                            case 0:
+                              pushContent = (0, _msg.getMsgContentTipByType)({
+                                body: options.body,
+                                type: type
+                              });
+                              pushInfo = {
+                                needPush: true,
+                                needPushBadge: true,
+                                pushPayload: '{}',
+                                pushContent: pushContent,
+                                needForcePush: false,
+                                forcePushIDsList: '[]',
+                                forcePushContent: pushContent
+                              };
+                              return _context.abrupt("return", _objectSpread(_objectSpread({}, options), {}, {
+                                pushInfo: pushInfo
+                              }));
+                            case 3:
+                            case "end":
+                              return _context.stop();
+                          }
+                        }
+                      }, _callee);
+                    }));
+                    function sendMsgBefore(_x, _x2) {
+                      return _sendMsgBefore.apply(this, arguments);
+                    }
+                    return sendMsgBefore;
+                  }()
                 });
                 nim.connect().then(function () {
                   console.log('NEUIKit 初始化并连接成功');
                   uni.$emit('IM_LOGIN_SUCCESS'); // 发送登录成功通知
                 });
-                _context.next = 18;
+                _context2.next = 26;
                 break;
-              case 14:
-                _context.prev = 14;
-                _context.t0 = _context["catch"](1);
-                console.error('初始化 NEUIKit 失败:', _context.t0);
-                uni.showToast({
-                  title: _context.t0.message || 'IM连接失败',
-                  icon: 'none'
+              case 21:
+                _context2.prev = 21;
+                _context2.t0 = _context2["catch"](1);
+                console.error('❌ 初始化 NEUIKit 失败:', _context2.t0);
+                console.error('❌ 错误详情:', {
+                  message: _context2.t0.message,
+                  stack: _context2.t0.stack,
+                  response: _context2.t0.response || '无响应数据'
                 });
-              case 18:
+                uni.showToast({
+                  title: "IM\u670D\u52A1\u521D\u59CB\u5316\u5931\u8D25: ".concat(_context2.t0.message),
+                  icon: 'none',
+                  duration: 5000
+                });
+              case 26:
               case "end":
-                return _context.stop();
+                return _context2.stop();
             }
           }
-        }, _callee, null, [[1, 14]]);
+        }, _callee2, null, [[1, 21]]);
       }))();
     },
     logoutNim: function logoutNim() {

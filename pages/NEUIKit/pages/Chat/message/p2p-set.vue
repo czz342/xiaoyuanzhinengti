@@ -23,6 +23,12 @@
           <switch :checked="isStickTop" @change="changeStickTopInfo" />
         </div>
       </div>
+      <div class="p2p-set-card">
+        <div class="p2p-set-item p2p-set-item-clickable" @tap="clearChatHistory">
+          <div class="p2p-set-item-danger">{{ t('clearChatHistoryText') }}</div>
+          <Icon type="icon-jiantou" :size="16" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -108,6 +114,65 @@ const changeStickTopInfo = async (e: any) => {
   }
 }
 
+// 清空聊天记录
+const clearChatHistory = () => {
+  uni.showModal({
+    title: t('clearChatHistoryText'),
+    content: t('clearChatHistoryConfirmText'),
+    showCancel: true,
+    confirmText: t('clearText'),
+    confirmColor: '#ff4444',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          uni.showLoading({ title: t('clearingText') })
+          
+          // 获取当前会话的所有消息
+          const sessionId = 'p2p-' + account.value
+          // @ts-ignore
+          const messages = uni.$UIKitStore.msgStore.msgsBySessionId(sessionId) || []
+          
+          if (messages.length === 0) {
+            uni.hideLoading()
+            uni.showToast({
+              title: t('noMessagesToClearText'),
+              icon: 'none'
+            })
+            return
+          }
+          
+          // 批量删除消息
+          // @ts-ignore
+          await uni.$UIKitStore.msgStore.deleteMsgActive(messages)
+          
+          uni.hideLoading()
+          uni.showToast({
+            title: t('clearChatHistorySuccessText'),
+            icon: 'success'
+          })
+        } catch (error) {
+          console.error('清空聊天记录失败:', error)
+          uni.hideLoading()
+          
+          // 检查是否是权限错误
+          if (error && ((error as any).code === 403 || (error as any).name === 'cmdError')) {
+            uni.showToast({
+              title: '暂无删除权限，请联系管理员',
+              icon: 'none',
+              duration: 3000
+            })
+          } else {
+            uni.showToast({
+              title: t('clearChatHistoryFailText'),
+              icon: 'error'
+            })
+          }
+        }
+      }
+    }
+  })
+}
+
 onUnmounted(() => {
   uninstallP2pSetWatch()
 })
@@ -158,6 +223,21 @@ page {
 
 .p2p-set-item-flex-sb {
   justify-content: space-between;
+}
+
+.p2p-set-item-clickable {
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:active {
+    background-color: #f5f5f5;
+  }
+}
+
+.p2p-set-item-danger {
+  color: #ff4444;
+  font-weight: 500;
 }
 
 .p2p-set-my-info {

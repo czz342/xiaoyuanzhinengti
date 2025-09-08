@@ -87,6 +87,19 @@ router.get('/posts/:id', async (req, res) => {
     // 增加浏览数
     await Post.incrementViewCount(id);
 
+    // 获取作者的用户数据库ID
+    let authorDbId = null;
+    if (post.author_id) {
+      try {
+        const author = await User.findByStudentId(post.author_id);
+        if (author) {
+          authorDbId = author.id;
+        }
+      } catch (err) {
+        console.error('获取作者数据库ID失败:', err);
+      }
+    }
+
     // 获取用户点赞状态（如果已登录）
     const token = req.headers.authorization?.replace('Bearer ', '');
     let isLiked = false;
@@ -103,6 +116,7 @@ router.get('/posts/:id', async (req, res) => {
 
     return res.json(success('获取帖子详情成功', {
       ...post,
+      author_db_id: authorDbId,
       is_liked: isLiked
     }));
 
@@ -243,10 +257,25 @@ router.get('/posts/:id/comments', async (req, res) => {
       }
     }
 
-    // 为每个评论添加点赞状态
-    const commentsWithLikes = comments.map(comment => ({
-      ...comment,
-      is_liked: likedComments[`comment_${comment.id}`] || false
+    // 为每个评论添加点赞状态和用户数据库ID
+    const commentsWithLikes = await Promise.all(comments.map(async (comment) => {
+      let userDbId = null;
+      if (comment.user_id) {
+        try {
+          const user = await User.findByStudentId(comment.user_id);
+          if (user) {
+            userDbId = user.id;
+          }
+        } catch (err) {
+          console.error('获取评论者数据库ID失败:', err);
+        }
+      }
+      
+      return {
+        ...comment,
+        user_db_id: userDbId,
+        is_liked: likedComments[`comment_${comment.id}`] || false
+      };
     }));
 
     return res.json(success('获取评论成功', {

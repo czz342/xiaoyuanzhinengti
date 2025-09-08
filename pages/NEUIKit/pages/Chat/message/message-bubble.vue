@@ -540,10 +540,20 @@ const handleDeleteMsg = () => {
             })
           })
           .catch((error: any) => {
-            uni.showToast({
-              title: t('deleteMsgFailText'),
-              icon: 'error',
-            })
+            console.error('删除消息失败:', error);
+            // 检查是否是权限错误
+            if (error && (error.code === 403 || error.name === 'cmdError')) {
+              uni.showToast({
+                title: '暂无删除权限，请联系管理员',
+                icon: 'none',
+                duration: 3000
+              })
+            } else {
+              uni.showToast({
+                title: t('deleteMsgFailText'),
+                icon: 'error',
+              })
+            }
           })
       }
     },

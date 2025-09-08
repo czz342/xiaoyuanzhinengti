@@ -18,7 +18,7 @@
 				<!-- 用户信息 -->
 				<view class="post-header">
 					<view class="user-info">
-						<image :src="post.author_avatar" mode="aspectFill" class="user-avatar"></image>
+						<image :src="post.author_avatar" mode="aspectFill" class="user-avatar" @tap="showUserDetail(post.author_db_id, post.author_name, post.author_avatar)"></image>
 						<view class="user-details">
 							<text class="user-name">{{ post.author_name }}</text>
 							<text class="post-time">{{ formatTime(post.created_at) }}</text>
@@ -91,7 +91,7 @@
 						v-for="comment in comments" 
 						:key="comment.id"
 					>
-						<image :src="comment.user_avatar" mode="aspectFill" class="comment-avatar"></image>
+						<image :src="comment.user_avatar" mode="aspectFill" class="comment-avatar" @tap="showUserDetail(comment.user_db_id, comment.user_name, comment.user_avatar)"></image>
 						<view class="comment-content">
 							<view class="comment-header">
 								<text class="comment-author">{{ comment.user_name }}</text>
@@ -150,6 +150,31 @@
 			</view>
 		</view>
 		
+		<!-- 用户详情弹窗 -->
+		<view class="user-detail-popup" v-if="showUserModal" @tap="hideUserModal">
+			<view class="user-detail-content" @tap.stop>
+				<view class="user-detail-header">
+					<image :src="selectedUser.avatar" mode="aspectFill" class="user-detail-avatar"></image>
+					<view class="user-detail-info">
+						<text class="user-detail-name">{{ selectedUser.name }}</text>
+						<text class="user-detail-id">ID: {{ selectedUser.id }}</text>
+					</view>
+					<view class="user-detail-close" @tap="hideUserModal">
+						<text class="close-text">×</text>
+					</view>
+				</view>
+				
+				<view class="user-detail-actions">
+					<view class="action-button primary" @tap="addFriend" v-if="!isCurrentUser">
+						<text class="action-button-text">添加好友</text>
+					</view>
+					<view class="action-button secondary" @tap="startChat" v-if="!isCurrentUser">
+						<text class="action-button-text">发起聊天</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
 		<!-- 更多操作弹窗 -->
 		<view class="action-popup" v-if="showActionModal" @tap="hideMoreActions">
 			<view class="action-content" @tap.stop>
@@ -180,7 +205,13 @@ export default {
 			isLoading: true,
 			commentText: '',
 			isCommentFocused: false,
-			showActionModal: false
+			showActionModal: false,
+			showUserModal: false,
+			selectedUser: {
+				id: '',
+				name: '',
+				avatar: ''
+			}
 		}
 	},
 	
@@ -195,6 +226,20 @@ export default {
 				const decoded = jwt.verify(token, 'your-secret-key');
 				const userId = decoded.studentId || decoded.userId || decoded.id;
 				return this.post.author_id === userId;
+			} catch (error) {
+				return false;
+			}
+		},
+		isCurrentUser() {
+			if (!this.selectedUser.id) return false;
+			const token = uni.getStorageSync('token');
+			if (!token) return false;
+			
+			try {
+				const jwt = require('jsonwebtoken');
+				const decoded = jwt.verify(token, 'your-secret-key');
+				const userId = decoded.studentId || decoded.userId || decoded.id;
+				return this.selectedUser.id === userId;
 			} catch (error) {
 				return false;
 			}
@@ -591,6 +636,151 @@ export default {
 				return Math.floor(diff / 86400000) + '天前';
 			} else {
 				return time.toLocaleDateString();
+			}
+		},
+		
+		// 显示用户详情
+		showUserDetail(userId, userName, userAvatar) {
+			this.selectedUser = {
+				id: userId,
+				name: userName,
+				avatar: userAvatar
+			};
+			this.showUserModal = true;
+		},
+		
+		// 隐藏用户详情
+		hideUserModal() {
+			this.showUserModal = false;
+			this.selectedUser = {
+				id: '',
+				name: '',
+				avatar: ''
+			};
+		},
+		
+		// 添加好友
+		async addFriend() {
+			if (!this.selectedUser.id) return;
+			
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			try {
+				// 检查IM服务是否初始化
+				if (!uni.$UIKitStore) {
+					uni.showToast({
+						title: 'IM服务未初始化，请重新登录',
+						icon: 'none'
+					});
+					return;
+				}
+				
+				// 直接使用数据库ID获取用户的IM账号信息
+				const response = await uni.request({
+					url: `http://localhost:3000/api/im/get-user-info/${this.selectedUser.id}`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				if (response.data && response.data.success) {
+					const { accid } = response.data;
+					
+					// 使用NEUIKit的添加好友功能
+					await uni.$UIKitStore.friendStore.addFriendActive(accid, '你好，我想添加你为好友');
+					
+					uni.showToast({
+						title: '好友申请已发送',
+						icon: 'success'
+					});
+					
+					this.hideUserModal();
+				} else {
+					uni.showToast({
+						title: response.data.message || '获取用户信息失败',
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error('添加好友失败:', error);
+				uni.showToast({
+					title: '添加好友失败',
+					icon: 'none'
+				});
+			}
+		},
+		
+		// 发起聊天
+		async startChat() {
+			if (!this.selectedUser.id) return;
+			
+			const token = uni.getStorageSync('token');
+			if (!token) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			try {
+				// 检查IM服务是否初始化
+				if (!uni.$UIKitStore) {
+					uni.showToast({
+						title: 'IM服务未初始化，请重新登录',
+						icon: 'none'
+					});
+					return;
+				}
+				
+				// 直接使用数据库ID获取用户的IM账号信息
+				const response = await uni.request({
+					url: `http://localhost:3000/api/im/get-user-info/${this.selectedUser.id}`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				if (response.data && response.data.success) {
+					const { accid, uinfo } = response.data;
+					
+					// 更新用户信息到IM
+					if (uni.$UIKitStore.userStore && typeof uni.$UIKitStore.userStore.updateUser === 'function') {
+						uni.$UIKitStore.userStore.updateUser(uinfo);
+					}
+					
+					// 选择会话并跳转到聊天页面
+					const sessionId = `p2p-${accid}`;
+					if (uni.$UIKitStore.uiStore && typeof uni.$UIKitStore.uiStore.selectSession === 'function') {
+						await uni.$UIKitStore.uiStore.selectSession(sessionId);
+					}
+					
+					uni.navigateTo({
+						url: `/pages/NEUIKit/pages/Chat/index?sessionId=${sessionId}`
+					});
+					
+					this.hideUserModal();
+				} else {
+					uni.showToast({
+						title: response.data.message || '获取用户信息失败',
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error('发起聊天失败:', error);
+				uni.showToast({
+					title: '发起聊天失败',
+					icon: 'none'
+				});
 			}
 		}
 	}
@@ -1022,5 +1212,127 @@ export default {
 .action-item-text {
 	font-size: 30rpx;
 	color: #333;
+}
+
+/* 用户详情弹窗 */
+.user-detail-popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1001;
+}
+
+.user-detail-content {
+	background-color: #fff;
+	border-radius: 20rpx;
+	padding: 40rpx;
+	margin: 0 40rpx;
+	min-width: 500rpx;
+	max-width: 600rpx;
+}
+
+.user-detail-header {
+	display: flex;
+	align-items: center;
+	margin-bottom: 40rpx;
+	position: relative;
+}
+
+.user-detail-avatar {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 60rpx;
+	margin-right: 30rpx;
+	box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.15);
+}
+
+.user-detail-info {
+	flex: 1;
+}
+
+.user-detail-name {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 10rpx;
+	display: block;
+}
+
+.user-detail-id {
+	font-size: 28rpx;
+	color: #666;
+	display: block;
+}
+
+.user-detail-close {
+	position: absolute;
+	top: -10rpx;
+	right: -10rpx;
+	width: 60rpx;
+	height: 60rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #f5f5f5;
+	border-radius: 30rpx;
+}
+
+.close-text {
+	font-size: 40rpx;
+	color: #999;
+	line-height: 1;
+}
+
+.user-detail-actions {
+	display: flex;
+	gap: 20rpx;
+}
+
+.action-button {
+	flex: 1;
+	padding: 25rpx 30rpx;
+	border-radius: 25rpx;
+	text-align: center;
+	transition: all 0.3s ease;
+}
+
+.action-button.primary {
+	background-color: #007AFF;
+}
+
+.action-button.secondary {
+	background-color: #f5f5f5;
+	border: 1rpx solid #ddd;
+}
+
+.action-button-text {
+	font-size: 30rpx;
+	font-weight: 500;
+}
+
+.action-button.primary .action-button-text {
+	color: #fff;
+}
+
+.action-button.secondary .action-button-text {
+	color: #333;
+}
+
+.action-button:active {
+	transform: scale(0.98);
+}
+
+.action-button.primary:active {
+	background-color: #0056CC;
+}
+
+.action-button.secondary:active {
+	background-color: #e8e8e8;
 }
 </style>
