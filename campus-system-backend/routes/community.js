@@ -512,4 +512,158 @@ router.get('/users/:userId/comments', async (req, res) => {
   }
 });
 
+// 举报管理相关路由
+// 获取举报列表
+router.get('/reports', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, type } = req.query;
+
+    // 检查管理员权限
+    if (req.user.role !== 'admin' && req.user.role !== 'community_admin') {
+      return res.status(403).json(error('无权限访问举报管理'));
+    }
+
+    const filters = {
+      status,
+      type,
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit)
+    };
+
+    // 模拟举报数据
+    const mockReports = [
+      {
+        id: 1,
+        type: 'post',
+        target_id: 101,
+        target_title: '出售二手iPhone 13',
+        reporter_id: 'USER001',
+        reporter_name: '张三',
+        reason: 'spam',
+        reason_text: '垃圾信息',
+        description: '发布虚假信息，多次重复发布',
+        status: 'pending',
+        created_at: '2024-01-15T10:30:00Z',
+        updated_at: '2024-01-15T10:30:00Z'
+      },
+      {
+        id: 2,
+        type: 'comment',
+        target_id: 205,
+        target_title: '评论内容',
+        reporter_id: 'USER002',
+        reporter_name: '李四',
+        reason: 'inappropriate',
+        reason_text: '不当内容',
+        description: '包含不当言论和人身攻击',
+        status: 'approved',
+        created_at: '2024-01-14T15:20:00Z',
+        updated_at: '2024-01-14T16:45:00Z'
+      },
+      {
+        id: 3,
+        type: 'post',
+        target_id: 102,
+        target_title: '寻找学习伙伴',
+        reporter_id: 'USER003',
+        reporter_name: '王五',
+        reason: 'harassment',
+        reason_text: '骚扰行为',
+        description: '发布不当交友信息，涉嫌骚扰',
+        status: 'rejected',
+        created_at: '2024-01-13T09:15:00Z',
+        updated_at: '2024-01-13T11:30:00Z'
+      }
+    ];
+
+    // 根据筛选条件过滤
+    let filteredReports = mockReports;
+    if (status) {
+      filteredReports = filteredReports.filter(report => report.status === status);
+    }
+    if (type) {
+      filteredReports = filteredReports.filter(report => report.type === type);
+    }
+
+    return res.json(success('获取举报列表成功', {
+      reports: filteredReports,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: filteredReports.length
+      }
+    }));
+
+  } catch (err) {
+    console.error('GET /api/community/reports', err);
+    return res.status(500).json(error('获取举报列表失败'));
+  }
+});
+
+// 处理举报
+router.put('/reports/:id/handle', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_comment } = req.body;
+
+    // 检查管理员权限
+    if (req.user.role !== 'admin' && req.user.role !== 'community_admin') {
+      return res.status(403).json(error('无权限处理举报'));
+    }
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json(error('无效的处理状态'));
+    }
+
+    // 模拟处理举报
+    const mockReport = {
+      id: parseInt(id),
+      status,
+      admin_comment,
+      handled_by: req.user.userName || 'admin',
+      handled_at: new Date().toISOString()
+    };
+
+    return res.json(success('处理举报成功', mockReport));
+
+  } catch (err) {
+    console.error('PUT /api/community/reports/:id/handle', err);
+    return res.status(500).json(error('处理举报失败'));
+  }
+});
+
+// 获取举报统计
+router.get('/reports/stats', authenticateToken, async (req, res) => {
+  try {
+    // 检查管理员权限
+    if (req.user.role !== 'admin' && req.user.role !== 'community_admin') {
+      return res.status(403).json(error('无权限访问举报统计'));
+    }
+
+    // 模拟统计数据
+    const stats = {
+      total: 156,
+      pending: 23,
+      approved: 98,
+      rejected: 35,
+      by_type: {
+        post: 89,
+        comment: 67
+      },
+      by_reason: {
+        spam: 45,
+        inappropriate: 38,
+        harassment: 28,
+        other: 45
+      }
+    };
+
+    return res.json(success('获取举报统计成功', stats));
+
+  } catch (err) {
+    console.error('GET /api/community/reports/stats', err);
+    return res.status(500).json(error('获取举报统计失败'));
+  }
+});
+
 module.exports = router;

@@ -40,6 +40,26 @@ const StudyRoom = {
     async findByNumber(number) {
         const rows = await query('SELECT * FROM study_rooms WHERE number = ?', [number]);
         return rows[0] || null;
+    },
+
+    async update(id, payload) {
+        const fields = [];
+        const params = [];
+        if (payload.number !== undefined) { fields.push('number = ?'); params.push(payload.number); }
+        if (payload.name !== undefined) { fields.push('name = ?'); params.push(payload.name); }
+        if (payload.location !== undefined) { fields.push('location = ?'); params.push(payload.location); }
+        if (payload.open_time !== undefined) { fields.push('open_time = ?'); params.push(payload.open_time); }
+        if (payload.close_time !== undefined) { fields.push('close_time = ?'); params.push(payload.close_time); }
+        if (payload.total_seats !== undefined) { fields.push('total_seats = ?'); params.push(payload.total_seats); }
+        if (payload.status !== undefined) { fields.push('status = ?'); params.push(payload.status); }
+        if (fields.length === 0) return;
+        const sql = `UPDATE study_rooms SET ${fields.join(', ')} WHERE id = ?`;
+        params.push(id);
+        await query(sql, params);
+    },
+
+    async remove(id) {
+        await query('DELETE FROM study_rooms WHERE id = ?', [id]);
     }
 };
 

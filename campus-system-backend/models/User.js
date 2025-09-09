@@ -12,6 +12,7 @@ class User {
         userName VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         phone VARCHAR(20),
+        role ENUM('admin','librarian','room_admin','device_admin','canteen','medical_psych','community_admin','club_admin','student','user') DEFAULT 'user',
         email VARCHAR(100) UNIQUE NOT NULL,
         displayName VARCHAR(50),
         status ENUM('active', 'inactive', 'banned') DEFAULT 'active',
@@ -42,7 +43,7 @@ class User {
   static async create(userData) {
     const { 
       userId, userName, password, phone, email, displayName, 
-      studentId, picture, source = 'register' 
+      studentId, picture, source = 'register', role = 'user' 
     } = userData;
     
     // 密码加密
@@ -50,18 +51,18 @@ class User {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     
     const sql = `
-      INSERT INTO users (userId, userName, password, phone, email, displayName, studentId, picture, source)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (userId, userName, password, phone, role, email, displayName, studentId, picture, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     try {
       const result = await query(sql, [
-        userId, userName, hashedPassword, phone, email, displayName, 
+        userId, userName, hashedPassword, phone, role, email, displayName, 
         studentId, picture, source
       ]);
       return { 
         id: result.insertId, 
-        userId, userName, phone, email, displayName, 
+        userId, userName, phone, role, email, displayName, 
         studentId, picture, source,
         creditScore: 5.00,
         completedOrders: 0
@@ -151,7 +152,7 @@ class User {
 
   // 更新用户信息
   static async update(id, updateData) {
-    const allowedFields = ['displayName', 'phone', 'picture', 'status', 'creditScore', 'completedOrders'];
+    const allowedFields = ['displayName', 'phone', 'picture', 'status', 'creditScore', 'completedOrders', 'role'];
     const updates = [];
     const values = [];
     
@@ -203,24 +204,58 @@ class User {
   }
 
   // 获取用户列表（分页）
-  static async getList(page = 1, limit = 10, search = '') {
+  static async getList(page = 1, limit = 10, filtersOrSearch = '') {
     const offset = (page - 1) * limit;
     let sql = `
-      SELECT id, createdTime, userId, userName, phone, email, displayName, 
+      SELECT id, createdTime, userId, userName, phone, role, email, displayName, 
              status, source, studentId, picture, creditScore, completedOrders, updated_at 
       FROM users
     `;
     let countSql = 'SELECT COUNT(*) as total FROM users';
-    let params = [];
-    let countParams = [];
+    const where = [];
+    const params = [];
+    const countParams = [];
     
-    if (search) {
-      const searchCondition = 'WHERE userName LIKE ? OR email LIKE ? OR displayName LIKE ? OR studentId LIKE ?';
-      const searchParam = `%${search}%`;
-      sql += ` ${searchCondition}`;
-      countSql += ` ${searchCondition}`;
-      params = [searchParam, searchParam, searchParam, searchParam];
-      countParams = [searchParam, searchParam, searchParam, searchParam];
+    // 支持字符串搜索或对象过滤
+    if (typeof filtersOrSearch === 'string' && filtersOrSearch) {
+      const searchParam = `%${filtersOrSearch}%`;
+      where.push('(userName LIKE ? OR email LIKE ? OR displayName LIKE ? OR studentId LIKE ?)');
+      params.push(searchParam, searchParam, searchParam, searchParam);
+      countParams.push(searchParam, searchParam, searchParam, searchParam);
+    } else if (filtersOrSearch && typeof filtersOrSearch === 'object') {
+      const { search = '', username, studentId, status, role } = filtersOrSearch;
+      if (search) {
+        const p = `%${search}%`;
+        where.push('(userName LIKE ? OR email LIKE ? OR displayName LIKE ? OR studentId LIKE ?)');
+        params.push(p, p, p, p);
+        countParams.push(p, p, p, p);
+      }
+      if (username) {
+        where.push('userName LIKE ?');
+        params.push(`%${username}%`);
+        countParams.push(`%${username}%`);
+      }
+      if (studentId) {
+        where.push('studentId LIKE ?');
+        params.push(`%${studentId}%`);
+        countParams.push(`%${studentId}%`);
+      }
+      if (status) {
+        where.push('status = ?');
+        params.push(status);
+        countParams.push(status);
+      }
+      if (role) {
+        where.push('role = ?');
+        params.push(role);
+        countParams.push(role);
+      }
+    }
+
+    if (where.length > 0) {
+      const clause = ' WHERE ' + where.join(' AND ');
+      sql += clause;
+      countSql += clause;
     }
     
     sql += ' ORDER BY createdTime DESC LIMIT ? OFFSET ?';

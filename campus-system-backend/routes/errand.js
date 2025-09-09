@@ -267,6 +267,215 @@ router.get('/ratings/given', authenticateToken, async (req, res) => {
     }
 });
 
+// 管理员相关路由
+// 获取所有订单列表（管理员）
+router.get('/admin/orders', authenticateToken, async (req, res) => {
+    try {
+        // 检查管理员权限
+        if (req.user.role !== 'admin' && req.user.role !== 'errand_admin') {
+            return res.status(403).json({ success: false, message: '无权限访问' });
+        }
+
+        const { 
+            page = 1, 
+            limit = 10, 
+            status, 
+            service_type, 
+            publisher_id, 
+            accepter_id,
+            start_date,
+            end_date
+        } = req.query;
+
+        const filters = {
+            status,
+            service_type,
+            publisher_id,
+            accepter_id,
+            start_date,
+            end_date,
+            limit: Number(limit),
+            offset: (Number(page) - 1) * Number(limit)
+        };
+
+        const { orders, total } = await ErrandOrder.listAllOrders(filters);
+        
+        res.json({ 
+            success: true, 
+            data: {
+                orders,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    pages: Math.ceil(total / Number(limit))
+                }
+            }
+        });
+    } catch (e) {
+        console.error('get all errand orders error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 更新订单状态（管理员）
+router.put('/admin/orders/:id/status', authenticateToken, async (req, res) => {
+    try {
+        // 检查管理员权限
+        if (req.user.role !== 'admin' && req.user.role !== 'errand_admin') {
+            return res.status(403).json({ success: false, message: '无权限访问' });
+        }
+
+        const orderId = Number(req.params.id);
+        const { status, remark } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ success: false, message: '状态不能为空' });
+        }
+
+        const validStatuses = ['待接单', '已接单', '进行中', '已完成', '已取消', '已退款'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: '无效的状态' });
+        }
+
+        const updated = await ErrandOrder.updateStatus(orderId, status);
+        if (!updated) {
+            return res.status(404).json({ success: false, message: '订单不存在' });
+        }
+
+        // 记录状态变更日志
+        await OrderStatusLog.create({
+            order_id: orderId,
+            status,
+            operator_id: req.user.id,
+            remark: remark || `管理员更新状态为：${status}`
+        });
+
+        res.json({ success: true, message: '状态更新成功' });
+    } catch (e) {
+        console.error('update order status error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 获取订单统计（管理员）
+router.get('/admin/stats', authenticateToken, async (req, res) => {
+    try {
+        // 检查管理员权限
+        if (req.user.role !== 'admin' && req.user.role !== 'errand_admin') {
+            return res.status(403).json({ success: false, message: '无权限访问' });
+        }
+
+        const { start_date, end_date } = req.query;
+        
+        const stats = await ErrandOrder.getAdminStats({
+            start_date,
+            end_date
+        });
+
+        res.json({ success: true, data: stats });
+    } catch (e) {
+        console.error('get errand stats error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 获取骑手列表（管理员）
+router.get('/admin/riders', authenticateToken, async (req, res) => {
+    try {
+        // 检查管理员权限
+        if (req.user.role !== 'admin' && req.user.role !== 'errand_admin') {
+            return res.status(403).json({ success: false, message: '无权限访问' });
+        }
+
+        const { page = 1, limit = 10, keyword } = req.query;
+        
+        // 使用模拟数据
+        const mockRiders = [
+            {
+                id: 1,
+                rider_name: '张三',
+                phone: '13800138001',
+                completed_orders: 15,
+                average_rating: 4.8,
+                status: '在线',
+                join_date: '2024-01-15',
+                total_earnings: 1250.50
+            },
+            {
+                id: 2,
+                rider_name: '李四',
+                phone: '13800138002',
+                completed_orders: 23,
+                average_rating: 4.6,
+                status: '忙碌',
+                join_date: '2024-01-10',
+                total_earnings: 1890.30
+            },
+            {
+                id: 3,
+                rider_name: '王五',
+                phone: '13800138003',
+                completed_orders: 8,
+                average_rating: 4.9,
+                status: '在线',
+                join_date: '2024-02-01',
+                total_earnings: 680.20
+            },
+            {
+                id: 4,
+                rider_name: '赵六',
+                phone: '13800138004',
+                completed_orders: 31,
+                average_rating: 4.7,
+                status: '离线',
+                join_date: '2023-12-20',
+                total_earnings: 2450.80
+            },
+            {
+                id: 5,
+                rider_name: '钱七',
+                phone: '13800138005',
+                completed_orders: 12,
+                average_rating: 4.5,
+                status: '在线',
+                join_date: '2024-01-25',
+                total_earnings: 920.60
+            }
+        ];
+
+        // 简单的关键词过滤
+        let filteredRiders = mockRiders;
+        if (keyword) {
+            filteredRiders = mockRiders.filter(rider => 
+                rider.rider_name.includes(keyword) || 
+                rider.phone.includes(keyword)
+            );
+        }
+
+        const total = filteredRiders.length;
+        const startIndex = (Number(page) - 1) * Number(limit);
+        const endIndex = startIndex + Number(limit);
+        const riders = filteredRiders.slice(startIndex, endIndex);
+        
+        res.json({ 
+            success: true, 
+            data: {
+                riders,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    pages: Math.ceil(total / Number(limit))
+                }
+            }
+        });
+    } catch (e) {
+        console.error('get rider list error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;
 
 

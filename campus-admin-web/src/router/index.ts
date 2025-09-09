@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -24,7 +25,7 @@ const routes: RouteRecordRaw[] = [
         path: '/users',
         name: 'Users',
         component: () => import('@/views/Users.vue'),
-        meta: { title: '用户管理', icon: 'User' }
+        meta: { title: '用户和角色管理', icon: 'User' }
       },
       {
         path: '/courses',
@@ -97,14 +98,64 @@ const routes: RouteRecordRaw[] = [
         name: 'Clubs',
         component: () => import('@/views/Clubs.vue'),
         meta: { title: '社团管理', icon: 'Trophy' }
+      },
+      {
+        path: '/activity-management',
+        name: 'ActivityManagement',
+        component: () => import('@/views/ActivityManagement.vue'),
+        meta: { title: '活动管理', icon: 'Calendar' }
       }
     ]
+  },
+  {
+    path: '/post/:id',
+    name: 'PostDetail',
+    component: () => import('@/views/PostDetail.vue'),
+    meta: { title: '帖子详情' }
+  },
+  {
+    path: '/errand/order/:id',
+    name: 'ErrandOrderDetail',
+    component: () => import('@/views/ErrandOrderDetail.vue'),
+    meta: { title: '订单详情' }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 路由守卫
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // 如果是登录页面，直接放行
+  if (to.name === 'Login') {
+    next()
+    return
+  }
+  
+  // 检查是否有token
+  if (!authStore.token) {
+    next('/login')
+    return
+  }
+  
+  // 如果有token但没有用户信息，尝试获取用户信息
+  if (!authStore.userInfo) {
+    try {
+      await authStore.getUserInfoAction()
+      next()
+    } catch (error) {
+      // 获取用户信息失败，清除token并跳转到登录页
+      authStore.logoutAction()
+      next('/login')
+    }
+    return
+  }
+  
+  next()
 })
 
 export default router

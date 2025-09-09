@@ -29,13 +29,13 @@ async function initActivityData() {
             {
                 title: '校园摄影大赛',
                 description: '用镜头记录校园美好瞬间，展现青春风采。参赛作品需为校园内拍摄，主题积极向上。',
-                image_url: '/static/images/activity/校园摄影大赛.png',
                 club_id: 1,
                 club_name: '摄影社',
                 start_time: '2025-09-05 09:00:00',
                 end_time: '2025-09-05 17:00:00',
                 location: '艺术楼展厅',
                 max_participants: 50,
+                image_url: '/static/images/activity/校园摄影大赛.png',
                 points_reward: 20,
                 min_credibility: 6.0,
                 status: 'published',
@@ -45,13 +45,13 @@ async function initActivityData() {
             {
                 title: '编程马拉松',
                 description: '24小时编程挑战赛，团队协作完成创新项目。提供技术指导和奖品。',
-                image_url: '/static/images/activity/编程马拉松.png',
                 club_id: 2,
                 club_name: '计算机协会',
                 start_time: '2025-09-06 08:00:00',
                 end_time: '2025-09-07 08:00:00',
                 location: '计算机学院实验室',
                 max_participants: 30,
+                image_url: '/static/images/activity/编程马拉松.png',
                 points_reward: 50,
                 min_credibility: 7.0,
                 status: 'published',
@@ -61,13 +61,13 @@ async function initActivityData() {
             {
                 title: '环保志愿活动',
                 description: '校园环保宣传和清洁活动，提高环保意识，共建绿色校园。',
-                image_url: '/static/images/activity/环保志愿活动.png',
                 club_id: 3,
                 club_name: '环保社',
                 start_time: '2025-09-08 14:00:00',
                 end_time: '2025-09-08 18:00:00',
                 location: '校园广场',
                 max_participants: 100,
+                image_url: '/static/images/activity/环保志愿活动.png',
                 points_reward: 15,
                 min_credibility: 5.0,
                 status: 'published',
@@ -77,13 +77,13 @@ async function initActivityData() {
             {
                 title: '英语角活动',
                 description: '每周英语口语交流活动，提高英语表达能力，结交国际朋友。',
-                image_url: '/static/images/activity/英语角.png',
                 club_id: 4,
                 club_name: '英语协会',
                 start_time: '2025-09-09 19:00:00',
                 end_time: '2025-09-09 21:00:00',
                 location: '外语学院教室',
                 max_participants: 40,
+                image_url: '/static/images/activity/英语角.png',
                 points_reward: 10,
                 min_credibility: 4.0,
                 status: 'published',
@@ -93,13 +93,13 @@ async function initActivityData() {
             {
                 title: '篮球友谊赛',
                 description: '学院间篮球友谊赛，展现运动风采，增进友谊。',
-                image_url: '/static/images/activity/篮球比赛.png',
                 club_id: 5,
                 club_name: '篮球社',
                 start_time: '2025-09-10 15:00:00',
                 end_time: '2025-09-10 18:00:00',
                 location: '体育馆篮球场',
                 max_participants: 20,
+                image_url: '/static/images/activity/篮球比赛.png',
                 points_reward: 25,
                 min_credibility: 6.5,
                 status: 'published',
@@ -109,13 +109,13 @@ async function initActivityData() {
             {
                 title: '读书分享会',
                 description: '分享最近阅读的好书，交流读书心得，营造书香校园氛围。',
-                image_url: '/static/images/activity/读书会.png',
                 club_id: 6,
                 club_name: '读书社',
                 start_time: '2025-09-12 19:30:00',
                 end_time: '2025-09-12 21:30:00',
                 location: '图书馆报告厅',
                 max_participants: 60,
+                image_url: '/static/images/activity/读书会.png',
                 points_reward: 12,
                 min_credibility: 5.5,
                 status: 'published',
@@ -140,7 +140,8 @@ async function initActivityData() {
         console.log('✅ 用户积分和诚信度初始化完成');
 
         // 模拟一些用户参与活动
-        const activities = await Activity.list({ limit: 6 });
+        const activitiesResult = await Activity.list({ limit: 6 });
+        const activities = activitiesResult.activities || [];
         const userIds = users.map(u => u.id);
 
         for (let i = 0; i < activities.length; i++) {
@@ -149,24 +150,22 @@ async function initActivityData() {
             
             for (const userId of participants) {
                 try {
-                    await ActivityParticipant.join(activity.id, userId);
-                    await Activity.updateParticipantCount(activity.id, 1);
+                    await ActivityParticipant.register(activity.id, userId);
                     
                     // 模拟参与结果
-                    const behaviors = ['attended', 'late', 'absent'];
+                    const behaviors = ['attended', 'absent'];
                     const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
                     
-                    if (behavior === 'attended') {
-                        await ActivityParticipant.markAttended(activity.id, userId, activity.points_reward);
-                        await UserPoints.addPoints(userId, activity.points_reward, `参与活动: ${activity.title}`);
-                    } else if (behavior === 'late') {
-                        await ActivityParticipant.markAttended(activity.id, userId, Math.floor(activity.points_reward * 0.8));
-                        await UserPoints.addPoints(userId, Math.floor(activity.points_reward * 0.8), `参与活动(迟到): ${activity.title}`);
-                    } else {
-                        await ActivityParticipant.markAbsent(activity.id, userId);
+                    // 获取参与者ID
+                    const participantResult = await query('SELECT id FROM activity_participants WHERE activity_id = ? AND user_id = ?', [activity.id, userId]);
+                    if (participantResult.length > 0) {
+                        const participantId = participantResult[0].id;
+                        if (behavior === 'attended') {
+                            await ActivityParticipant.updateStatus(activity.id, participantId, 'attended');
+                        } else {
+                            await ActivityParticipant.updateStatus(activity.id, participantId, 'absent');
+                        }
                     }
-                    
-                    await UserCredibility.updateCredibility(userId, behavior);
                 } catch (err) {
                     // 忽略重复参与错误
                 }

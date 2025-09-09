@@ -2,14 +2,17 @@
   <div class="devices-page">
     <div class="page-header">
       <h2>共享设备管理</h2>
-      <el-button type="primary" @click="handleAddDevice">
-        <el-icon><Plus /></el-icon>
-        添加设备
-      </el-button>
+      <div class="header-actions">
+        <el-button v-if="isManageMode" type="primary" @click="handleAddDevice">
+          <el-icon><Plus /></el-icon>
+          添加设备
+        </el-button>
+        <el-button type="success" plain @click="toggleMode">{{ isManageMode ? '返回可视化看板' : '管理详细数据' }}</el-button>
+      </div>
     </div>
 
     <!-- 设备列表 -->
-    <el-card class="devices-list">
+    <el-card v-if="isManageMode" class="devices-list">
       <template #header>
         <span>设备列表</span>
       </template>
@@ -38,9 +41,9 @@
     </el-card>
 
     <!-- 数据分析 -->
-    <el-row :gutter="20" class="charts-section">
+    <el-row v-if="!isManageMode" :gutter="20" class="charts-section">
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>设备使用率统计</span>
           </template>
@@ -49,7 +52,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>收益统计</span>
           </template>
@@ -58,7 +61,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>设备故障率</span>
           </template>
@@ -70,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -107,6 +110,9 @@ const deviceList = ref([
 ])
 
 // 图表引用
+// 页面模式：默认看板
+const isManageMode = ref(false)
+const toggleMode = () => { isManageMode.value = !isManageMode.value }
 const usageRateChart = ref<HTMLElement>()
 const revenueChart = ref<HTMLElement>()
 const faultRateChart = ref<HTMLElement>()
@@ -215,6 +221,13 @@ const initCharts = () => {
 onMounted(() => {
   initCharts()
 })
+
+// 切回看板时重建图表
+watch(isManageMode, (val) => {
+  if (!val) {
+    nextTick(() => initCharts())
+  }
+})
 </script>
 
 <style scoped>
@@ -245,4 +258,9 @@ onMounted(() => {
 .chart-container {
   height: 250px;
 }
+
+/* 玻璃拟态 */
+.glass-card :deep(.el-card__body) { backdrop-filter: saturate(180%) blur(8px); }
+.glass-card { background: rgba(255,255,255,0.6); border: none; box-shadow: 0 8px 30px rgba(31,38,135,0.08); }
+.glass-card :deep(.el-card__header) { background: transparent; border-bottom: 1px solid rgba(255,255,255,0.4); }
 </style>

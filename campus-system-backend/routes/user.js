@@ -70,18 +70,72 @@ router.post('/avatar', upload.single('file'), async (req, res) => {
   }
 });
 
-// 获取用户列表（管理员功能）
-router.get('/list', async (req, res) => {
+// 创建用户（管理员功能）
+router.post('/', async (req, res) => {
   try {
-    // 检查权限（只有管理员可以查看用户列表）
+    // 只有管理员可以创建用户
     if (req.user.role !== 'admin') {
       return error(res, '权限不足', 403);
     }
 
-    const { page = 1, limit = 10, search = '' } = req.query;
-    const result = await User.getList(page, limit, search);
+    const { userId, userName, email, password, phone, displayName, studentId, role } = req.body || {};
 
-    paginated(res, result.users, page, limit, result.total, '获取用户列表成功');
+    if (!userName || !email || !password) {
+      return error(res, '用户名、邮箱、密码为必填项', 400);
+    }
+
+    // 唯一性校验
+    const existedByName = await User.findByUsername(userName);
+    if (existedByName) {
+      return error(res, '用户名已存在', 400);
+    }
+    const existedByEmail = await User.findByEmail(email);
+    if (existedByEmail) {
+      return error(res, '邮箱已被注册', 400);
+    }
+
+    const finalUserId = userId || `USER${Date.now()}`;
+
+    const newUser = await User.create({
+      userId: finalUserId,
+      userName,
+      email,
+      password,
+      phone: phone || null,
+      displayName: displayName || userName,
+      studentId: studentId || null,
+      picture: null,
+      source: 'admin',
+      role: role || 'user'
+    });
+
+    return res.json(success('创建用户成功', newUser));
+  } catch (err) {
+    console.error('创建用户错误:', err);
+    return res.status(500).json(error('创建用户失败', 500));
+  }
+});
+
+// 获取用户列表（管理员功能）
+router.get('/list', authenticateToken, async (req, res) => {
+  try {
+    console.log('用户列表请求 - req.user:', req.user);
+    console.log('用户列表请求 - req.user.role:', req.user.role);
+    
+    // 检查权限（只有管理员可以查看用户列表）
+    if (req.user.role !== 'admin') {
+      console.log('权限检查失败 - 用户角色:', req.user.role);
+      return error(res, '权限不足', 403);
+    }
+
+    console.log('权限检查通过，开始查询用户列表');
+    const { page = 1, limit = 10, search = '', username, studentId, status, role } = req.query;
+    console.log('查询参数:', { page, limit, search, username, studentId, status, role });
+    
+    const result = await User.getList(page, limit, { search, username, studentId, status, role });
+    console.log('用户列表查询完成，结果数量:', result.users.length);
+
+    res.json(paginated(result.users, page, limit, result.total, '获取用户列表成功'));
   } catch (err) {
     console.error('获取用户列表错误:', err);
     error(res, '获取用户列表失败', 500);
@@ -98,7 +152,7 @@ router.get('/by-student-id/:studentId', authenticateToken, async (req, res) => {
       return error(res, '用户不存在', 404);
     }
 
-    success(res, user, '获取用户信息成功');
+    return res.json(success('获取用户信息成功', user));
   } catch (err) {
     console.error('根据学号获取用户信息错误:', err);
     error(res, '获取用户信息失败', 500);
@@ -146,9 +200,9 @@ router.put('/:id', async (req, res) => {
 
     const result = await User.update(userId, updateData);
     if (result) {
-      success(res, null, '用户信息更新成功');
+      return res.json(success('用户信息更新成功', null));
     } else {
-      error(res, '用户信息更新失败', 500);
+      return res.status(500).json(error('用户信息更新失败', 500));
     }
   } catch (err) {
     console.error('更新用户信息错误:', err);
@@ -174,7 +228,7 @@ router.delete('/:id', async (req, res) => {
     // 这里可以添加删除用户的逻辑
     // 为了安全，建议只是标记为删除状态，而不是物理删除
     
-    success(res, null, '用户删除成功');
+    return res.json(success('用户删除成功', null));
   } catch (err) {
     console.error('删除用户错误:', err);
     error(res, '删除用户失败', 500);
@@ -219,7 +273,7 @@ router.put('/:id/password', async (req, res) => {
     
     await User.update(userId, { password: hashedPassword });
     
-    success(res, null, '密码修改成功');
+    return res.json(success('密码修改成功', null));
   } catch (err) {
     console.error('修改密码错误:', err);
     error(res, '修改密码失败', 500);

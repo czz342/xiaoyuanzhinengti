@@ -55,14 +55,16 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { useAuthStore } from '@/store/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
 const loginForm = reactive({
   username: 'admin',
-  password: '123456'
+  password: 'admin123'
 })
 
 const loginRules: FormRules = {
@@ -83,19 +85,15 @@ const handleLogin = async () => {
       loading.value = true
       
       try {
-        // 模拟登录请求
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await authStore.loginAction({
+          username: loginForm.username,
+          password: loginForm.password
+        })
         
-        // 模拟登录成功
-        if (loginForm.username === 'admin' && loginForm.password === '123456') {
-          localStorage.setItem('token', 'mock-token')
-          ElMessage.success('登录成功')
-          router.push('/')
-        } else {
-          ElMessage.error('用户名或密码错误')
-        }
-      } catch (error) {
-        ElMessage.error('登录失败，请重试')
+        ElMessage.success('登录成功')
+        router.push('/')
+      } catch (error: any) {
+        ElMessage.error(error.message || '登录失败，请重试')
       } finally {
         loading.value = false
       }

@@ -2,14 +2,17 @@
   <div class="psychology-page">
     <div class="page-header">
       <h2>心理中心管理</h2>
-      <el-button type="primary" @click="handleAddCounselor">
-        <el-icon><Plus /></el-icon>
-        添加咨询师
-      </el-button>
+      <div class="header-actions">
+        <el-button v-if="isManageMode" type="primary" @click="handleAddCounselor">
+          <el-icon><Plus /></el-icon>
+          添加咨询师
+        </el-button>
+        <el-button type="success" plain @click="toggleMode">{{ isManageMode ? '返回可视化看板' : '管理详细数据' }}</el-button>
+      </div>
     </div>
 
     <!-- 咨询师列表 -->
-    <el-card class="counselors-list">
+    <el-card v-if="isManageMode" class="counselors-list">
       <template #header>
         <span>咨询师列表</span>
       </template>
@@ -42,9 +45,9 @@
     </el-card>
 
     <!-- 数据分析 -->
-    <el-row :gutter="20" class="charts-section">
+    <el-row v-if="!isManageMode" :gutter="20" class="charts-section">
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>咨询量趋势</span>
           </template>
@@ -53,7 +56,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>心理问题类型分布</span>
           </template>
@@ -62,7 +65,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>用户满意度</span>
           </template>
@@ -74,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -201,6 +204,19 @@ const initCharts = () => {
 onMounted(() => {
   initCharts()
 })
+
+// 看板/管理切换
+const isManageMode = ref(false)
+const toggleMode = () => {
+  isManageMode.value = !isManageMode.value
+}
+
+// 切回看板后重绘图表
+watch(isManageMode, (val) => {
+  if (!val) {
+    nextTick(() => initCharts())
+  }
+})
 </script>
 
 <style scoped>
@@ -230,5 +246,19 @@ onMounted(() => {
 
 .chart-container {
   height: 250px;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.3s ease;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
 </style>

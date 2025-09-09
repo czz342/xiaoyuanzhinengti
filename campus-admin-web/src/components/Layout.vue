@@ -1,7 +1,7 @@
 <template>
   <el-container class="layout-container">
     <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
+    <el-aside :width="isCollapse ? '80px' : '220px'" class="sidebar">
       <div class="logo">
         <div class="logo-icon" v-if="!isCollapse">
           <el-icon><School /></el-icon>
@@ -49,7 +49,7 @@
           <el-dropdown>
             <span class="user-info">
               <el-icon><User /></el-icon>
-              <span>管理员</span>
+              <span>{{ authStore.userInfo?.username || '管理员' }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
 import { 
   Expand, 
   Fold, 
@@ -94,6 +95,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
 const isCollapse = ref(false)
 
@@ -113,10 +115,14 @@ const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value
 }
 
-const logout = () => {
-  // 清除token等登录信息
-  localStorage.removeItem('token')
-  router.push('/login')
+const logout = async () => {
+  try {
+    await authStore.logoutAction()
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    router.push('/login')
+  }
 }
 </script>
 
@@ -126,8 +132,9 @@ const logout = () => {
 }
 
 .sidebar {
-  background-color: #304156;
+  background: linear-gradient(180deg, #1f2a37 0%, #111827 100%);
   transition: width 0.3s;
+  border-right: 1px solid rgba(255,255,255,0.06);
 }
 
 .logo {
@@ -135,10 +142,11 @@ const logout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #e5e7eb;
   font-size: 18px;
-  font-weight: bold;
-  border-bottom: 1px solid #434a50;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  letter-spacing: 0.5px;
 }
 
 .logo-icon {
@@ -148,7 +156,7 @@ const logout = () => {
   width: 32px;
   height: 32px;
   margin-right: 8px;
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.08) 100%);
   border-radius: 6px;
 }
 
@@ -159,30 +167,40 @@ const logout = () => {
 
 .sidebar-menu {
   border: none;
-  background-color: #304156;
+  background: transparent;
+  padding: 8px 6px 12px;
 }
 
 .sidebar-menu .el-menu-item {
   color: #bfcbd9;
+  margin: 8px 10px;
+  border-radius: 10px;
+  height: 48px;
+  line-height: 48px;
+  transition: all 0.2s ease;
 }
 
 .sidebar-menu .el-menu-item:hover {
-  background-color: #263445;
+  background: rgba(255,255,255,0.06);
   color: #fff;
 }
 
 .sidebar-menu .el-menu-item.is-active {
-  background-color: #409eff;
+  background: linear-gradient(135deg, #4f8cff 0%, #6cc1ff 100%);
   color: #fff;
+  box-shadow: 0 8px 20px rgba(79,140,255,0.25);
 }
 
 .header {
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  background: rgba(255,255,255,0.65);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
 }
 
 .header-left {
@@ -193,6 +211,7 @@ const logout = () => {
 .collapse-btn {
   margin-right: 20px;
   font-size: 18px;
+  color: #374151;
 }
 
 .header-right {
@@ -210,7 +229,7 @@ const logout = () => {
 }
 
 .user-info:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(17,24,39,0.04);
 }
 
 .user-info span {
@@ -218,7 +237,7 @@ const logout = () => {
 }
 
 .main-content {
-  background-color: #f5f5f5;
+  background: linear-gradient(180deg, #f7fafc 0%, #f3f4f6 100%);
   padding: 20px;
 }
 </style>

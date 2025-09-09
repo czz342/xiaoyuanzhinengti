@@ -2,14 +2,17 @@
   <div class="library-page">
     <div class="page-header">
       <h2>图书馆管理</h2>
-      <el-button type="primary" @click="handleAddBook">
-        <el-icon><Plus /></el-icon>
-        添加图书
-      </el-button>
+      <div class="header-actions">
+        <el-button v-if="isManageMode" type="primary" @click="handleAddBook">
+          <el-icon><Plus /></el-icon>
+          添加图书
+        </el-button>
+        <el-button type="success" plain @click="toggleMode">{{ isManageMode ? '返回可视化看板' : '管理详细数据' }}</el-button>
+      </div>
     </div>
 
     <!-- 图书统计概览 -->
-    <el-row :gutter="20" class="overview-cards">
+    <el-row v-if="!isManageMode" :gutter="20" class="overview-cards">
       <el-col :span="6">
         <el-card class="overview-card">
           <div class="card-content">
@@ -72,7 +75,7 @@
     </el-row>
 
     <!-- 图书列表 -->
-    <el-card class="books-list">
+    <el-card v-if="isManageMode" class="books-list">
       <template #header>
         <span>图书列表</span>
       </template>
@@ -101,9 +104,9 @@
     </el-card>
 
     <!-- 数据分析 -->
-    <el-row :gutter="20" class="charts-section">
+    <el-row v-if="!isManageMode" :gutter="20" class="charts-section">
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>借阅量趋势</span>
           </template>
@@ -112,7 +115,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>热门图书排行</span>
           </template>
@@ -121,7 +124,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>图书分类借阅分布</span>
           </template>
@@ -133,49 +136,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Reading, Document, Warning, Calendar } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { getBookStats, getBookList } from '@/api/library'
+import type { Book } from '@/types/api'
 
-// 概览数据
+// 概览数据（从后端拉取）
 const overviewData = reactive({
-  totalBooks: 12580,
-  borrowedBooks: 3240,
-  overdueBooks: 156,
-  reservedBooks: 89
+  totalBooks: 0,
+  borrowedBooks: 0,
+  overdueBooks: 0,
+  reservedBooks: 0
 })
 
-// 图书列表
-const bookList = ref([
-  {
-    id: 1,
-    title: 'JavaScript高级程序设计',
-    author: 'Nicholas C. Zakas',
-    category: '计算机',
-    totalCopies: 5,
-    availableCopies: 2,
-    status: 'active'
-  },
-  {
-    id: 2,
-    title: 'Vue.js设计与实现',
-    author: '霍春阳',
-    category: '计算机',
-    totalCopies: 3,
-    availableCopies: 1,
-    status: 'active'
-  },
-  {
-    id: 3,
-    title: '红楼梦',
-    author: '曹雪芹',
-    category: '文学',
-    totalCopies: 8,
-    availableCopies: 5,
-    status: 'active'
-  }
-])
+// 图书列表（从后端拉取）
+const bookList = ref<Book[]>([])
+const loading = ref(false)
+
+// 页面模式：默认看板
+const isManageMode = ref(false)
+const toggleMode = () => { isManageMode.value = !isManageMode.value }
 
 // 图表引用
 const borrowingTrendChart = ref<HTMLElement>()
@@ -267,6 +249,38 @@ const initCharts = () => {
 
 onMounted(() => {
   initCharts()
+  ;(async () => {
+    try {
+      // 概览
+      const statsRes = await getBookStats()
+      const s = (statsRes as any).data || {}
+      // 兼容结构 { books, borrowings, reservations }
+      overviewData.totalBooks = s.books?.totalBooks ?? 0
+      overviewData.borrowedBooks = s.borrowings?.activeBorrowings ?? 0
+      overviewData.overdueBooks = s.borrowings?.overdueCount ?? 0
+      overviewData.reservedBooks = s.reservations?.pendingReservations ?? 0
+    } catch (e) {
+      ElMessage.warning('图书概览加载失败，使用默认占位')
+    }
+
+    try {
+      loading.value = true
+      const listRes = await getBookList({ page: 1, limit: 50 })
+      const list = (listRes as any).data?.list ?? (listRes as any).data ?? []
+      bookList.value = list
+    } catch (e) {
+      ElMessage.error('加载图书列表失败')
+    } finally {
+      loading.value = false
+    }
+  })()
+})
+
+// 切回看板时重建图表
+watch(isManageMode, (val) => {
+  if (!val) {
+    nextTick(() => initCharts())
+  }
 })
 </script>
 
@@ -351,4 +365,9 @@ onMounted(() => {
 .chart-container {
   height: 250px;
 }
+
+/* 玻璃拟态 */
+.glass-card :deep(.el-card__body) { backdrop-filter: saturate(180%) blur(8px); }
+.glass-card { background: rgba(255,255,255,0.6); border: none; box-shadow: 0 8px 30px rgba(31,38,135,0.08); }
+.glass-card :deep(.el-card__header) { background: transparent; border-bottom: 1px solid rgba(255,255,255,0.4); }
 </style>

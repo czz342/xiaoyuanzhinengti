@@ -4,6 +4,7 @@ const Course = require('../models/Course');
 const CourseSchedule = require('../models/CourseSchedule');
 const CourseTimeTemplate = require('../models/CourseTimeTemplate');
 const User = require('../models/User');
+const { query } = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { success, error, paginated } = require('../utils/response');
 
@@ -44,20 +45,7 @@ router.get('/time-templates', async (req, res) => {
   }
 });
 
-// 获取单个课程详情
-router.get('/:id', async (req, res) => {
-  try {
-    const course = await Course.findById(parseInt(req.params.id));
-    if (!course) {
-      return res.status(404).json(error('课程不存在'));
-    }
-    
-    res.json(success('获取课程详情成功', course));
-  } catch (err) {
-    console.error('获取课程详情失败:', err);
-    res.status(500).json(error('获取课程详情失败', err.message));
-  }
-});
+// 注意：不要把 '/:id' 放在更具体路由之前，否则会拦截 '/schedules' 等
 
 // 创建新课程 (需要管理员权限)
 router.post('/', authenticateToken, async (req, res) => {
@@ -484,6 +472,286 @@ router.put('/time-templates/:timeSlot', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('更新时间模板失败:', err);
     res.status(500).json(error('更新时间模板失败', err.message));
+  }
+});
+
+// 获取所有用户的课程表（管理员视图）
+router.get('/schedules', authenticateToken, async (req, res) => {
+  try {
+    // 检查权限（只有管理员可以查看所有课程表）
+    if (req.user.role !== 'admin') {
+      return res.status(403).json(error('权限不足', 403));
+    }
+
+    const { page = 1, limit = 10, userId, semester, academicYear, dayOfWeek } = req.query;
+    
+    // 构建查询条件
+    let whereConditions = ['cs.status = ?'];
+    let params = ['active'];
+    
+    if (userId) {
+      whereConditions.push('cs.studentId = ?');
+      params.push(userId);
+    }
+    
+    if (semester) {
+      whereConditions.push('cs.semester = ?');
+      params.push(semester);
+    }
+    
+    if (academicYear) {
+      whereConditions.push('cs.academicYear = ?');
+      params.push(academicYear);
+    }
+    
+    if (dayOfWeek) {
+      whereConditions.push('cs.weekday = ?');
+      params.push(dayOfWeek);
+    }
+    
+    const whereClause = whereConditions.join(' AND ');
+    const offset = (page - 1) * limit;
+    
+    // 查询总数
+    const countSql = `
+      SELECT COUNT(*) as total 
+      FROM course_schedules cs
+      JOIN courses c ON cs.courseId = c.id
+      WHERE ${whereClause}
+    `;
+    
+    // 查询数据
+    const dataSql = `
+      SELECT cs.*, c.courseCode, c.courseName, c.credits, c.courseType, c.department
+      FROM course_schedules cs
+      JOIN courses c ON cs.courseId = c.id
+      WHERE ${whereClause}
+      ORDER BY cs.studentId, cs.weekday, cs.startTime
+      LIMIT ? OFFSET ?
+    `;
+    
+    const [countResult, schedules] = await Promise.all([
+      query(countSql, params),
+      query(dataSql, [...params, parseInt(limit), offset])
+    ]);
+    
+    const total = countResult[0].total;
+    
+    // 格式化数据
+    const formattedSchedules = schedules.map(row => ({
+      id: row.id,
+      userId: row.studentId,
+      courseId: row.courseId,
+      courseCode: row.courseCode,
+      courseName: row.courseName,
+      teacher: row.teacherName,
+      classroom: row.location,
+      dayOfWeek: row.weekday,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      semester: row.semester,
+      academicYear: row.academicYear,
+      createdTime: row.createdTime
+    }));
+    
+    res.json({
+      success: true,
+      message: '获取课程表成功',
+      data: {
+        list: formattedSchedules,
+        total: total,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+    
+  } catch (err) {
+    console.error('获取课程表失败:', err);
+    res.status(500).json(error('获取课程表失败', err.message));
+  }
+});
+
+// 获取用户的个人课程表
+router.get('/schedule/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { semester, academicYear } = req.query;
+    
+    // 检查权限（只能查看自己的课程表，或者管理员可以查看所有）
+    if (req.user.role !== 'admin' && req.user.userId !== userId) {
+      return res.status(403).json(error('权限不足', 403));
+    }
+    
+    const schedules = await CourseSchedule.getStudentSchedule(userId, semester);
+    
+    // 格式化数据
+    const formattedSchedules = schedules.map(row => ({
+      id: row.id,
+      userId: row.studentId,
+      courseId: row.courseId,
+      courseCode: row.course.courseCode,
+      courseName: row.course.courseName,
+      teacher: row.teacherName,
+      classroom: row.location,
+      dayOfWeek: row.weekday,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      semester: row.semester,
+      academicYear: row.academicYear,
+      createdTime: row.createdTime
+    }));
+    
+    res.json({
+      success: true,
+      message: '获取个人课程表成功',
+      data: formattedSchedules
+    });
+    
+  } catch (err) {
+    console.error('获取个人课程表失败:', err);
+    res.status(500).json(error('获取个人课程表失败', err.message));
+  }
+});
+
+// 添加到课程表
+router.post('/schedule', authenticateToken, async (req, res) => {
+  try {
+    // 检查权限（只有管理员可以添加课程表）
+    if (req.user.role !== 'admin') {
+      return res.status(403).json(error('权限不足', 403));
+    }
+    
+    const { userId, courseId, teacher, classroom, dayOfWeek, startTime, endTime, semester, academicYear } = req.body;
+    
+    // 验证必填字段
+    if (!userId || !courseId || !teacher || !classroom || !dayOfWeek || !startTime || !endTime || !semester || !academicYear) {
+      return res.status(400).json(error('所有字段都是必填的', 400));
+    }
+    
+    // 创建课程表项
+    const scheduleData = {
+      courseId: parseInt(courseId),
+      studentId: userId,
+      teacherName: teacher,
+      location: classroom,
+      weekday: parseInt(dayOfWeek),
+      startTime: startTime,
+      endTime: endTime,
+      startWeek: 1,
+      endWeek: 20,
+      semester: semester,
+      academicYear: academicYear,
+      status: 'active'
+    };
+    
+    const newSchedule = await CourseSchedule.create(scheduleData);
+    
+    // 获取课程信息
+    const course = await Course.findById(courseId);
+    
+    const formattedSchedule = {
+      id: newSchedule.id,
+      userId: newSchedule.studentId,
+      courseId: newSchedule.courseId,
+      courseCode: course.courseCode,
+      courseName: course.courseName,
+      teacher: newSchedule.teacherName,
+      classroom: newSchedule.location,
+      dayOfWeek: newSchedule.weekday,
+      startTime: newSchedule.startTime,
+      endTime: newSchedule.endTime,
+      semester: newSchedule.semester,
+      academicYear: newSchedule.academicYear,
+      createdTime: newSchedule.createdTime
+    };
+    
+    res.json({
+      success: true,
+      message: '添加到课程表成功',
+      data: formattedSchedule
+    });
+    
+  } catch (err) {
+    console.error('添加到课程表失败:', err);
+    res.status(500).json(error('添加到课程表失败', err.message));
+  }
+});
+
+// 更新课程表项
+router.put('/schedule/:id', authenticateToken, async (req, res) => {
+  try {
+    // 检查权限（只有管理员可以更新课程表）
+    if (req.user.role !== 'admin') {
+      return res.status(403).json(error('权限不足', 403));
+    }
+    
+    const scheduleId = parseInt(req.params.id);
+    const updateData = req.body;
+    
+    // 更新课程表项
+    const updatedSchedule = await CourseSchedule.update(scheduleId, updateData);
+    
+    if (!updatedSchedule) {
+      return res.status(404).json(error('课程表项不存在', 404));
+    }
+    
+    // 获取课程信息
+    const course = await Course.findById(updatedSchedule.courseId);
+    
+    const formattedSchedule = {
+      id: updatedSchedule.id,
+      userId: updatedSchedule.studentId,
+      courseId: updatedSchedule.courseId,
+      courseCode: course.courseCode,
+      courseName: course.courseName,
+      teacher: updatedSchedule.teacherName,
+      classroom: updatedSchedule.location,
+      dayOfWeek: updatedSchedule.weekday,
+      startTime: updatedSchedule.startTime,
+      endTime: updatedSchedule.endTime,
+      semester: updatedSchedule.semester,
+      academicYear: updatedSchedule.academicYear,
+      createdTime: updatedSchedule.createdTime
+    };
+    
+    res.json({
+      success: true,
+      message: '更新课程表成功',
+      data: formattedSchedule
+    });
+    
+  } catch (err) {
+    console.error('更新课程表失败:', err);
+    res.status(500).json(error('更新课程表失败', err.message));
+  }
+});
+
+// 从课程表删除课程
+router.delete('/schedule/:id', authenticateToken, async (req, res) => {
+  try {
+    // 检查权限（只有管理员可以删除课程表）
+    if (req.user.role !== 'admin') {
+      return res.status(403).json(error('权限不足', 403));
+    }
+    
+    const scheduleId = parseInt(req.params.id);
+    
+    // 删除课程表项
+    const deleted = await CourseSchedule.delete(scheduleId);
+    
+    if (!deleted) {
+      return res.status(404).json(error('课程表项不存在', 404));
+    }
+    
+    res.json({
+      success: true,
+      message: '删除课程表成功',
+      data: null
+    });
+    
+  } catch (err) {
+    console.error('删除课程表失败:', err);
+    res.status(500).json(error('删除课程表失败', err.message));
   }
 });
 

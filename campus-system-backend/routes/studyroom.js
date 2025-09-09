@@ -17,6 +17,45 @@ router.get('/list', async (req, res) => {
     }
 });
 
+// 创建自习室
+router.post('/', authenticateToken, async (req, res) => {
+    try {
+        const room = req.body || {};
+        if (!room.number || !room.name) {
+            return res.status(400).json(error('number 和 name 必填'));
+        }
+        await StudyRoom.insert(room);
+        return res.json(success('创建成功'));
+    } catch (err) {
+        console.error('POST /api/studyroom', err);
+        return res.status(500).json(error('创建失败'));
+    }
+});
+
+// 更新自习室
+router.put('/:id', authenticateToken, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        await StudyRoom.update(id, req.body || {});
+        return res.json(success('更新成功'));
+    } catch (err) {
+        console.error('PUT /api/studyroom/:id', err);
+        return res.status(500).json(error('更新失败'));
+    }
+});
+
+// 删除自习室
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        await StudyRoom.remove(id);
+        return res.json(success('删除成功'));
+    } catch (err) {
+        console.error('DELETE /api/studyroom/:id', err);
+        return res.status(500).json(error('删除失败'));
+    }
+});
+
 // 某房间座位
 router.get('/:roomId/seats', async (req, res) => {
     try {
@@ -26,6 +65,46 @@ router.get('/:roomId/seats', async (req, res) => {
     } catch (err) {
         console.error('GET /api/studyroom/:roomId/seats', err);
         return res.status(500).json(error('获取座位列表失败'));
+    }
+});
+
+// 批量/单个创建座位
+router.post('/:roomId/seats', authenticateToken, async (req, res) => {
+    try {
+        const roomId = parseInt(req.params.roomId, 10);
+        const payload = req.body;
+        const seats = Array.isArray(payload) ? payload : [payload];
+        for (const seat of seats) {
+            await StudySeat.insert({ ...seat, room_id: roomId });
+        }
+        return res.json(success('保存座位成功'));
+    } catch (err) {
+        console.error('POST /api/studyroom/:roomId/seats', err);
+        return res.status(500).json(error('保存座位失败'));
+    }
+});
+
+// 更新座位
+router.put('/seat/:seatId', authenticateToken, async (req, res) => {
+    try {
+        const id = parseInt(req.params.seatId, 10);
+        await StudySeat.update(id, req.body || {});
+        return res.json(success('更新座位成功'));
+    } catch (err) {
+        console.error('PUT /api/studyroom/seat/:seatId', err);
+        return res.status(500).json(error('更新座位失败'));
+    }
+});
+
+// 删除座位
+router.delete('/seat/:seatId', authenticateToken, async (req, res) => {
+    try {
+        const id = parseInt(req.params.seatId, 10);
+        await StudySeat.remove(id);
+        return res.json(success('删除座位成功'));
+    } catch (err) {
+        console.error('DELETE /api/studyroom/seat/:seatId', err);
+        return res.status(500).json(error('删除座位失败'));
     }
 });
 

@@ -32,6 +32,25 @@ const StudySeat = {
     async listByRoom(roomId) {
         const rows = await query('SELECT * FROM study_seats WHERE room_id = ? ORDER BY id ASC', [roomId]);
         return Array.isArray(rows) ? rows : [];
+    },
+
+    async update(id, payload) {
+        const fields = [];
+        const params = [];
+        if (payload.number !== undefined) { fields.push('number = ?'); params.push(payload.number); }
+        if (payload.label !== undefined) { fields.push('label = ?'); params.push(payload.label); }
+        if (payload.row_no !== undefined) { fields.push('row_no = ?'); params.push(payload.row_no); }
+        if (payload.col_no !== undefined) { fields.push('col_no = ?'); params.push(payload.col_no); }
+        if (payload.seat_type !== undefined) { fields.push('seat_type = ?'); params.push(payload.seat_type); }
+        if (payload.status !== undefined) { fields.push('status = ?'); params.push(payload.status); }
+        if (fields.length === 0) return;
+        const sql = `UPDATE study_seats SET ${fields.join(', ')} WHERE id = ?`;
+        params.push(id);
+        await query(sql, params);
+    },
+
+    async remove(id) {
+        await query('DELETE FROM study_seats WHERE id = ?', [id]);
     }
 };
 

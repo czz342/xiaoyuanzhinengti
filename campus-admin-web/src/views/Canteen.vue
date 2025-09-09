@@ -2,14 +2,17 @@
   <div class="canteen-page">
     <div class="page-header">
       <h2>食堂管理</h2>
-      <el-button type="primary" @click="handleAddCanteen">
-        <el-icon><Plus /></el-icon>
-        添加食堂
-      </el-button>
+      <div class="header-actions">
+        <el-button v-if="isManageMode" type="primary" @click="handleAddCanteen">
+          <el-icon><Plus /></el-icon>
+          添加食堂
+        </el-button>
+        <el-button type="success" plain @click="toggleMode">{{ isManageMode ? '返回可视化看板' : '管理详细数据' }}</el-button>
+      </div>
     </div>
 
     <!-- 食堂列表 -->
-    <el-card class="canteen-list">
+    <el-card v-if="isManageMode" class="canteen-list">
       <template #header>
         <span>食堂列表</span>
       </template>
@@ -36,9 +39,9 @@
     </el-card>
 
     <!-- 实时数据可视化 -->
-    <el-row :gutter="20" class="realtime-section">
+    <el-row v-if="!isManageMode" :gutter="20" class="realtime-section">
       <el-col :span="12">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <div class="card-header">
               <span>实时订单数</span>
@@ -60,7 +63,7 @@
       </el-col>
       
       <el-col :span="12">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <div class="card-header">
               <span>人流热力图</span>
@@ -83,9 +86,9 @@
     </el-row>
 
     <!-- 数据分析 -->
-    <el-row :gutter="20" class="charts-section">
+    <el-row v-if="!isManageMode" :gutter="20" class="charts-section">
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>菜品销量排行</span>
           </template>
@@ -94,7 +97,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>时段分析</span>
           </template>
@@ -103,7 +106,7 @@
       </el-col>
       
       <el-col :span="8">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>用户口味偏好</span>
           </template>
@@ -115,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -164,6 +167,9 @@ const trafficAreas = ref([
 ])
 
 // 图表引用
+// 页面模式：默认看板
+const isManageMode = ref(false)
+const toggleMode = () => { isManageMode.value = !isManageMode.value }
 const foodRankingChart = ref<HTMLElement>()
 const timeAnalysisChart = ref<HTMLElement>()
 const tastePreferenceChart = ref<HTMLElement>()
@@ -275,6 +281,13 @@ onMounted(() => {
     }
   }, 5000)
 })
+
+// 切回看板时重建图表
+watch(isManageMode, (val) => {
+  if (!val) {
+    nextTick(() => initCharts())
+  }
+})
 </script>
 
 <style scoped>
@@ -382,4 +395,9 @@ onMounted(() => {
 .chart-container {
   height: 250px;
 }
+
+/* 玻璃拟态 */
+.glass-card :deep(.el-card__body) { backdrop-filter: saturate(180%) blur(8px); }
+.glass-card { background: rgba(255,255,255,0.6); border: none; box-shadow: 0 8px 30px rgba(31,38,135,0.08); }
+.glass-card :deep(.el-card__header) { background: transparent; border-bottom: 1px solid rgba(255,255,255,0.4); }
 </style>

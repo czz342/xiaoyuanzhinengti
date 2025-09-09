@@ -126,7 +126,8 @@ router.post('/login', async (req, res) => {
         userId: user.userId,
         userName: user.userName,
         studentId: user.studentId,
-        phone: user.phone
+        phone: user.phone,
+        role: user.userName === 'admin' ? 'admin' : 'user' // 添加角色字段
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
