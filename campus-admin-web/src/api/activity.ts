@@ -121,6 +121,22 @@ export const updateParticipantStatus = (activityId: number, participantId: numbe
   })
 }
 
+// 标记参与者签到
+export const markAttendance = (participantId: number) => {
+  return request({
+    url: `/activity/participants/${participantId}/attendance`,
+    method: 'post'
+  })
+}
+
+// 移除参与者
+export const removeParticipant = (participantId: number) => {
+  return request({
+    url: `/activity/participants/${participantId}`,
+    method: 'delete'
+  })
+}
+
 // 获取活动统计数据
 export const getActivityStats = () => {
   return request({
@@ -141,6 +157,4 @@ export const getClubActivities = (clubId: number, params?: {
     params
   })
 }
-
-
 

@@ -225,4 +225,38 @@ router.get('/club/:clubId', async (req, res) => {
   }
 })
 
+// 标记参与者签到
+router.post('/participants/:participantId/attendance', authenticateToken, async (req, res) => {
+  try {
+    const { participantId } = req.params
+    const result = await ActivityParticipant.markAttended(participantId)
+    res.json({
+      success: true,
+      data: result
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+  }
+})
+
+// 移除参与者
+router.delete('/participants/:participantId', authenticateToken, async (req, res) => {
+  try {
+    const { participantId } = req.params
+    const result = await ActivityParticipant.cancel(participantId)
+    res.json({
+      success: true,
+      data: result
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+  }
+})
+
 module.exports = router

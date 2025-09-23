@@ -67,6 +67,7 @@ app.use('/api/errand', require('./routes/errand'));
 app.use('/api/activity', require('./routes/activity'));
 app.use('/api/clubs', require('./routes/clubs'));
 app.use('/api/community', require('./routes/community'));
+app.use('/api/library', require('./routes/library'));
 app.use('/api/smart-recommendation', require('./routes/smart-recommendation'));
 
 // 404处理

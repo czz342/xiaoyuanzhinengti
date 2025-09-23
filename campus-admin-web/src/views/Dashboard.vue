@@ -232,41 +232,64 @@ const getAlertIcon = (type: string) => {
 // 初始化图表
 const initCharts = () => {
   nextTick(() => {
-    // 趋势图
+    const palette = ['#4f8cff', '#43e97b', '#f6d365', '#a18cd1', '#fda085']
+    const axisStyle = {
+      axisLine: { lineStyle: { color: 'rgba(0,0,0,0.15)' } },
+      splitLine: { lineStyle: { color: 'rgba(0,0,0,0.08)' } }
+    }
+    const grid = { top: 30, left: 18, right: 12, bottom: 26, containLabel: true }
+
+    // 趋势图（平滑折线+渐变面积）
     if (trendChart.value) {
       const trendChartInstance = echarts.init(trendChart.value)
-      const trendOption = {
-        title: { text: '用户活跃度趋势' },
+      const trendOption: any = {
+        title: { text: '用户活跃度趋势', left: 'center', textStyle: { fontSize: 14 } },
         tooltip: { trigger: 'axis' },
-        xAxis: {
-          type: 'category',
-          data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-        },
-        yAxis: { type: 'value' },
+        grid,
+        xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], ...axisStyle },
+        yAxis: { type: 'value', ...axisStyle },
         series: [{
           data: [820, 932, 901, 934, 1290, 1330, 1320],
           type: 'line',
           smooth: true,
-          areaStyle: {}
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 3, color: palette[0] },
+          itemStyle: { color: '#fff', borderColor: palette[0], borderWidth: 2 },
+          areaStyle: {
+            color: {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(79,140,255,0.28)' },
+                { offset: 1, color: 'rgba(79,140,255,0.06)' }
+              ]
+            }
+          }
         }]
       }
       trendChartInstance.setOption(trendOption)
     }
 
-    // 模块对比图
+    // 模块对比图（圆环+白描边+高亮阴影）
     if (moduleChart.value) {
       const moduleChartInstance = echarts.init(moduleChart.value)
-      const moduleOption = {
-        title: { text: '各模块使用量' },
+      const moduleOption: any = {
+        title: { text: '各模块使用量', left: 'center', textStyle: { fontSize: 14 } },
         tooltip: { trigger: 'item' },
         series: [{
           type: 'pie',
+          radius: ['48%', '70%'],
+          center: ['50%', '54%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderColor: '#fff', borderWidth: 2 },
+          label: { color: '#666', formatter: '{b}: {d}%' },
+          emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.18)' } },
           data: [
-            { value: 335, name: '食堂点餐' },
-            { value: 310, name: '图书馆' },
-            { value: 234, name: '自习室' },
-            { value: 135, name: '快递驿站' },
-            { value: 1548, name: '其他' }
+            { value: 335, name: '食堂点餐', itemStyle: { color: palette[0] } },
+            { value: 310, name: '图书馆', itemStyle: { color: palette[1] } },
+            { value: 234, name: '自习室', itemStyle: { color: palette[2] } },
+            { value: 135, name: '快递驿站', itemStyle: { color: palette[3] } },
+            { value: 1548, name: '其他', itemStyle: { color: palette[4] } }
           ]
         }]
       }

@@ -293,7 +293,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://winners-execute-existence-lower.trycloudflare.com",
+      tunnelUrl: "https://survey-battle-dominican-arbor.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -749,7 +749,8 @@ var _default = {
     },
     handleAction: function handleAction(action) {
       console.log('处理Action:', action);
-      var runId = action.data ? action.data.runId : null;
+      // 修复：优先使用runId，如果没有则使用id字段
+      var runId = action.data ? action.data.runId || action.data.id : null;
       switch (action.type) {
         case 'identifySkill':
         case 'streamDone':
@@ -760,7 +761,7 @@ var _default = {
           {
             // 使用块级作用域
             if (!runId) {
-              console.warn('runStepChat消息中没有runId，无法处理:', action);
+              console.warn('runStepChat消息中没有runId或id，无法处理:', action);
               return;
             }
 
@@ -832,42 +833,25 @@ var _default = {
           {
             // 使用块级作用域
             if (!runId) {
-              console.warn('Chat消息中没有runId，无法处理:', action);
+              console.warn('Chat消息中没有runId或id，无法处理:', action);
               return;
-            }
-
-            // 定位到对应的思考过程
-            // 1. 先尝试通过runId寻找已关联的面板
-            var _thinkingProcess = this.chatMessages.find(function (msg) {
-              return msg.runId === runId;
-            });
-
-            // 2. 如果没找到，认领占位符面板 (处理AI直接回答的场景)
-            if (!_thinkingProcess) {
-              _thinkingProcess = this.chatMessages.find(function (msg) {
-                return msg.type === 'thinking_process' && !msg.runId;
-              });
-              if (_thinkingProcess) {
-                console.log("Chat\u6D88\u606F\u62B5\u8FBE\uFF0C\u4E3A\u601D\u8003\u9762\u677F\u5360\u4F4D\u7B26\u5173\u8054\u4E0ArunId: ".concat(runId));
-                this.$set(_thinkingProcess, 'runId', runId);
-              }
-            }
-            if (_thinkingProcess) {
-              // 当最终chat消息到达时，标记思考过程为完成
-              _thinkingProcess.status = 'completed';
-              _thinkingProcess.title = 'AI思考完成';
             }
             var messageData = action.data;
             var messageId = "final-message-".concat(runId); // 使用runId确保唯一性
 
+            console.log("\u5904\u7406Chat\u6D88\u606F - runId: ".concat(runId, ", message: \"").concat(messageData.message, "\", messageId: ").concat(messageId));
+
+            // 查找或创建最终消息
             var finalMessage = this.chatMessages.find(function (msg) {
               return msg.id === messageId;
             });
             if (finalMessage) {
-              // 追加内容
+              // 追加内容（流式消息）
+              console.log("\u8FFD\u52A0\u5185\u5BB9\u5230\u73B0\u6709\u6D88\u606F: \"".concat(messageData.message, "\""));
               finalMessage.content += messageData.message;
             } else {
               // 创建新消息
+              console.log("\u521B\u5EFA\u65B0\u6D88\u606F: \"".concat(messageData.message, "\""));
               finalMessage = {
                 id: messageId,
                 type: 'system',
@@ -878,6 +862,19 @@ var _default = {
               };
               this.chatMessages.push(finalMessage);
             }
+
+            // 定位到对应的思考过程并标记完成
+            var _thinkingProcess = this.chatMessages.find(function (msg) {
+              return msg.runId === runId;
+            });
+            if (_thinkingProcess) {
+              // 当最终chat消息到达时，标记思考过程为完成
+              _thinkingProcess.status = 'completed';
+              _thinkingProcess.title = 'AI思考完成';
+            }
+            console.log("\u5F53\u524D\u804A\u5929\u6D88\u606F\u603B\u6570: ".concat(this.chatMessages.length));
+            // 调用调试方法
+            this.debugChatMessages();
             this.scrollToBottom();
             this.$forceUpdate(); // 确保视图更新
           }
@@ -1174,6 +1171,21 @@ var _default = {
           });
         }
       });
+    },
+    // 调试方法：打印当前聊天消息状态
+    debugChatMessages: function debugChatMessages() {
+      console.log('=== 当前聊天消息状态 ===');
+      console.log("\u603B\u6D88\u606F\u6570: ".concat(this.chatMessages.length));
+      this.chatMessages.forEach(function (msg, index) {
+        console.log("\u6D88\u606F ".concat(index, ":"), {
+          id: msg.id,
+          type: msg.type,
+          content: msg.content ? msg.content.substring(0, 50) + '...' : '无内容',
+          runId: msg.runId,
+          timestamp: msg.timestamp
+        });
+      });
+      console.log('=== 调试信息结束 ===');
     }
   },
   onUnload: function onUnload() {

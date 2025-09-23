@@ -118,11 +118,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, View, ChatDotRound, Star } from '@element-plus/icons-vue'
-import { getPostDetail, getPostComments, createComment, deleteComment, toggleLike, type Post, type Comment } from '@/api/community'
+import { getPostDetail, getPostComments, createComment, deleteComment as apiDeleteComment, toggleLike as apiToggleLike, type Post, type Comment } from '@/api/community'
 
 const route = useRoute()
 const router = useRouter()
@@ -253,7 +253,7 @@ const toggleLike = async () => {
   if (!post.value) return
   
   try {
-    await toggleLike({
+    await apiToggleLike({
       target_type: 'post',
       target_id: post.value.id
     })
@@ -267,7 +267,7 @@ const toggleLike = async () => {
 // 点赞评论
 const toggleLikeComment = async (comment: Comment) => {
   try {
-    await toggleLike({
+    await apiToggleLike({
       target_type: 'comment',
       target_id: comment.id
     })
@@ -289,7 +289,7 @@ const deleteComment = async (comment: Comment) => {
     await ElMessageBox.confirm('确定要删除这条评论吗？', '确认删除', {
       type: 'warning'
     })
-    await deleteComment(comment.id)
+    await apiDeleteComment(comment.id)
     ElMessage.success('删除成功')
     await loadComments(1)
     commentPage.value = 1

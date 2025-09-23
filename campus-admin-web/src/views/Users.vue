@@ -262,24 +262,13 @@ watch(isManageMode, (val) => {
 })
 
 // 看板 KPI（先用简单统计，后续可接真实数据）
-const totalUsers = ref(0)
-const activeRate = ref(0.0)
-const roleTypes = ref(0)
-const recentAdded7d = ref(0)
+const totalUsers = ref(130)
+const activeRate = ref(0.909)
+const roleTypes = ref(9)
+const recentAdded7d = ref(34)
 
 const refreshKpis = () => {
-  const list = (userStore.userList || []) as User[]
-  totalUsers.value = userStore.total || list.length
-  const activeCount = list.filter(u => u.status === 'active').length
-  activeRate.value = totalUsers.value ? activeCount / totalUsers.value : 0
-  const roles = new Set(list.map(u => u.role || 'user'))
-  roleTypes.value = roles.size
-  // 近7日新增（根据 createdTime 粗略统计）
-  const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000
-  recentAdded7d.value = list.filter(u => {
-    const t = u.createdTime ? new Date(u.createdTime as any).getTime() : 0
-    return t >= sevenDaysAgo
-  }).length
+  // 如需改回动态统计，恢复此函数中的逻辑；当前按指定展示数值
 }
 
 // 搜索表单
@@ -463,7 +452,7 @@ const initCharts = () => {
     // 用户增长趋势图
     if (userGrowthChart.value) {
       const chart = echarts.init(userGrowthChart.value)
-      const option = {
+      const option: any = {
         grid: { left: 30, right: 20, top: 20, bottom: 20 },
         tooltip: { trigger: 'axis' },
         xAxis: {
@@ -501,7 +490,7 @@ const initCharts = () => {
     // 用户状态分布图
     if (userStatusChart.value) {
       const chart = echarts.init(userStatusChart.value)
-      const option = {
+      const option: any = {
         tooltip: { trigger: 'item' },
         series: [{
           type: 'pie',
@@ -522,7 +511,7 @@ const initCharts = () => {
     // 角色分布图
     if (roleDistChart.value) {
       const chart = echarts.init(roleDistChart.value)
-      const option = {
+      const option: any = {
         tooltip: { trigger: 'item' },
         legend: { show: false },
         series: [{
@@ -564,7 +553,7 @@ const initCharts = () => {
     if (roleStatusChart.value) {
       const chart = echarts.init(roleStatusChart.value)
       const roles = ['学生', '骑手', '食堂', '设备', '图书馆', '教室', '圈子', '社团', '管理员']
-      const option = {
+      const option: any = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         legend: { data: ['活跃', '禁用', '封禁'], bottom: 10 },
         grid: { left: '3%', right: '4%', bottom: 80, top: 20, containLabel: true },

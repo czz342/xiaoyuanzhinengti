@@ -104,7 +104,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://winners-execute-existence-lower.trycloudflare.com", 
+			tunnelUrl: "https://survey-battle-dominican-arbor.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -490,7 +490,8 @@ export default {
 		
 		handleAction(action) {
 			console.log('处理Action:', action);
-			const runId = action.data ? action.data.runId : null;
+			// 修复：优先使用runId，如果没有则使用id字段
+			const runId = action.data ? (action.data.runId || action.data.id) : null;
 
 			switch (action.type) {
 				case 'identifySkill':
@@ -502,7 +503,7 @@ export default {
 				case 'runStepChat':
 					{ // 使用块级作用域
 						if (!runId) {
-							console.warn('runStepChat消息中没有runId，无法处理:', action);
+							console.warn('runStepChat消息中没有runId或id，无法处理:', action);
 							return;
 						}
 
@@ -572,39 +573,25 @@ export default {
 				case 'chat':
 					{ // 使用块级作用域
 						if (!runId) {
-							console.warn('Chat消息中没有runId，无法处理:', action);
+							console.warn('Chat消息中没有runId或id，无法处理:', action);
 							return;
 						}
 						
-						// 定位到对应的思考过程
-						// 1. 先尝试通过runId寻找已关联的面板
-						let thinkingProcess = this.chatMessages.find(msg => msg.runId === runId);
-
-						// 2. 如果没找到，认领占位符面板 (处理AI直接回答的场景)
-						if (!thinkingProcess) {
-							thinkingProcess = this.chatMessages.find(msg => msg.type === 'thinking_process' && !msg.runId);
-							if (thinkingProcess) {
-								console.log(`Chat消息抵达，为思考面板占位符关联上runId: ${runId}`);
-								this.$set(thinkingProcess, 'runId', runId);
-							}
-						}
-
-						if (thinkingProcess) {
-							// 当最终chat消息到达时，标记思考过程为完成
-							thinkingProcess.status = 'completed';
-							thinkingProcess.title = 'AI思考完成';
-						}
-
 						const messageData = action.data;
 						const messageId = `final-message-${runId}`; // 使用runId确保唯一性
 						
+						console.log(`处理Chat消息 - runId: ${runId}, message: "${messageData.message}", messageId: ${messageId}`);
+						
+						// 查找或创建最终消息
 						let finalMessage = this.chatMessages.find(msg => msg.id === messageId);
 
 						if (finalMessage) {
-							// 追加内容
+							// 追加内容（流式消息）
+							console.log(`追加内容到现有消息: "${messageData.message}"`);
 							finalMessage.content += messageData.message;
 						} else {
 							// 创建新消息
+							console.log(`创建新消息: "${messageData.message}"`);
 							finalMessage = {
 								id: messageId,
 								type: 'system',
@@ -615,6 +602,17 @@ export default {
 							this.chatMessages.push(finalMessage);
 						}
 
+						// 定位到对应的思考过程并标记完成
+						let thinkingProcess = this.chatMessages.find(msg => msg.runId === runId);
+						if (thinkingProcess) {
+							// 当最终chat消息到达时，标记思考过程为完成
+							thinkingProcess.status = 'completed';
+							thinkingProcess.title = 'AI思考完成';
+						}
+
+						console.log(`当前聊天消息总数: ${this.chatMessages.length}`);
+						// 调用调试方法
+						this.debugChatMessages();
 						this.scrollToBottom();
 						this.$forceUpdate(); // 确保视图更新
 					}
@@ -926,6 +924,22 @@ export default {
 					});
 				}
 			});
+		},
+
+		// 调试方法：打印当前聊天消息状态
+		debugChatMessages() {
+			console.log('=== 当前聊天消息状态 ===');
+			console.log(`总消息数: ${this.chatMessages.length}`);
+			this.chatMessages.forEach((msg, index) => {
+				console.log(`消息 ${index}:`, {
+					id: msg.id,
+					type: msg.type,
+					content: msg.content ? msg.content.substring(0, 50) + '...' : '无内容',
+					runId: msg.runId,
+					timestamp: msg.timestamp
+				});
+			});
+			console.log('=== 调试信息结束 ===');
 		}
 	},
 	onUnload() {

@@ -9,7 +9,7 @@ class ActivityParticipant {
         activity_id INT NOT NULL,
         user_id INT NOT NULL,
         status ENUM('registered', 'attended', 'absent') DEFAULT 'registered' COMMENT '参与状态',
-        registration_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY unique_participation (activity_id, user_id),
@@ -62,7 +62,7 @@ class ActivityParticipant {
 
     // 创建报名记录
     const sql = `
-      INSERT INTO activity_participants (activity_id, user_id, status, registration_time)
+      INSERT INTO activity_participants (activity_id, user_id, status, joined_at)
       VALUES (?, ?, 'registered', NOW())
     `
 
@@ -81,8 +81,9 @@ class ActivityParticipant {
     let sql = `
       SELECT 
         ap.*,
-        u.username as user_name,
-        u.avatar as user_avatar
+        u.userName as user_name,
+        u.picture as user_avatar,
+        u.displayName as user_display_name
       FROM activity_participants ap
       LEFT JOIN users u ON ap.user_id = u.id
       WHERE ap.activity_id = ?
@@ -96,7 +97,7 @@ class ActivityParticipant {
 
     // 添加分页
     const offset = (page - 1) * limit
-    sql += ` ORDER BY ap.registration_time DESC LIMIT ? OFFSET ?`
+    sql += ` ORDER BY ap.joined_at DESC LIMIT ? OFFSET ?`
     values.push(limit, offset)
 
     try {
@@ -181,7 +182,7 @@ class ActivityParticipant {
 
     // 添加分页
     const offset = (page - 1) * limit
-    sql += ` ORDER BY ap.registration_time DESC LIMIT ? OFFSET ?`
+    sql += ` ORDER BY ap.joined_at DESC LIMIT ? OFFSET ?`
     values.push(limit, offset)
 
     try {
