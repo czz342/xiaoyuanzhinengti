@@ -41,7 +41,15 @@ const StudySeatBooking = {
     async listByStudent(studentId) {
         const sql = `
             SELECT 
-                b.*,
+                b.id,
+                b.room_id,
+                b.seat_id,
+                b.student_id,
+                DATE_FORMAT(b.booking_date, '%Y-%m-%d') as booking_date,
+                b.start_time_sec,
+                b.end_time_sec,
+                b.status,
+                b.created_at,
                 r.name as room_name,
                 s.label as seat_label
             FROM study_seat_bookings b

@@ -104,7 +104,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://survey-battle-dominican-arbor.trycloudflare.com", 
+			tunnelUrl: "https://developer-establish-peaceful-decorative.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,

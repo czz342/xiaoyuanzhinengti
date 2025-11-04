@@ -325,7 +325,7 @@
 						<view class="publisher-info">
 							<image :src="order.publisherAvatar" mode="aspectFit" class="publisher-avatar"></image>
 							<view class="publisher-details">
-								<text class="publisher-name">{{ order.publisherName }}</text>
+							<text class="publisher-name">{{ order.publisherName }}</text>
 								<view class="publisher-stats">
 									<view class="rating-info">
 										<text class="rating-label">评分</text>
@@ -383,7 +383,7 @@ export default {
 				priceRange: '全部价格'
 			},
 			currentViewingOrderId: null
-		}
+			}
 	},
 	onShow() {
 		// 如果用户刚从订单详情页面返回，强制刷新可接订单
@@ -449,8 +449,8 @@ export default {
 				});
 				if (res.statusCode === 200 && res.data && res.data.success) {
 					uni.showToast({ title: '发布成功', icon: 'success' });
-					this.resetForm();
-					this.activeTab = 'orders';
+				this.resetForm();
+				this.activeTab = 'orders';
 					await this.loadMyOrders();
 				} else {
 					throw new Error(res.data && res.data.message || '发布失败');
@@ -549,7 +549,7 @@ export default {
 					await this.loadMyOrders();
 				} else {
 					throw new Error(res.data.message || '取消失败');
-				}
+					}
 			} catch (err) {
 				uni.showToast({ title: err.message || '取消失败', icon: 'none' });
 			}
@@ -592,13 +592,13 @@ export default {
 				if (res.statusCode === 200 && res.data.success) {
 					uni.showToast({ title: '接单成功', icon: 'success' });
 					// 立即从可接订单列表中移除已接取的订单
-					this.availableOrders = this.availableOrders.filter(o => o.id !== orderId);
+							this.availableOrders = this.availableOrders.filter(o => o.id !== orderId);
 					// 然后刷新数据
 					await this.loadAvailableOrders();
 					await this.loadMyOrders();
 				} else {
 					throw new Error(res.data.message || '接单失败');
-				}
+					}
 			} catch (err) {
 				uni.showToast({ title: err.message || '接单失败', icon: 'none' });
 			} finally {
@@ -612,7 +612,7 @@ export default {
 			Promise.all([this.loadAvailableOrders(), this.loadMyOrders()]).finally(() => {
 				uni.hideLoading();
 				uni.showToast({ title: '刷新成功', icon: 'success' });
-			});
+				});
 		},
 		showServiceTypeFilter() {
 			uni.showActionSheet({

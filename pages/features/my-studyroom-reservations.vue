@@ -74,18 +74,29 @@
 			};
 		},
 		onLoad(options) {
-			const { reservationId } = options;
+			const { reservationId, date } = options;
+			console.log('[my-studyroom-reservations] onLoad options:', { reservationId, date });
 
 			this.fetchReservations().then(() => {
 				if (reservationId && this.reservations.length > 0) {
-					const reservation = this.reservations.find(r => r.id === reservationId);
+					// 将 reservationId 转换为数字进行比较，因为后端返回的 id 是数字类型
+					const targetId = parseInt(reservationId, 10);
+					console.log('[my-studyroom-reservations] 查找预约记录, targetId:', targetId, '所有预约ID:', this.reservations.map(r => ({ id: r.id, type: typeof r.id })));
+					
+					const reservation = this.reservations.find(r => {
+						// 同时支持字符串和数字类型比较
+						return r.id === targetId || r.id === reservationId || String(r.id) === String(reservationId);
+					});
+					
 					if (reservation) {
+						console.log('[my-studyroom-reservations] 找到预约记录:', reservation);
 						this.showQrCodeModal(reservation);
 					} else {
-						console.warn(`[my-studyroom-reservations] Reservation with id ${reservationId} not found`);
+						console.warn(`[my-studyroom-reservations] 未找到预约记录, reservationId: ${reservationId}, type: ${typeof reservationId}, 可用预约:`, this.reservations.map(r => r.id));
 						uni.showToast({
 							title: '未找到预约记录',
-							icon: 'none'
+							icon: 'none',
+							duration: 2000
 						});
 					}
 				}
@@ -127,16 +138,20 @@
 					});
 
 					if (response.statusCode === 200 && response.data.success) {
+						console.log('[my-studyroom-reservations] 后端返回的原始数据:', JSON.stringify(response.data.data.slice(0, 2), null, 2));
 						this.reservations = response.data.data.map(item => {
+							const formattedDate = this.formatDate(item.booking_date);
+							console.log('[my-studyroom-reservations] 日期转换 - 原始:', item.booking_date, '类型:', typeof item.booking_date, '转换后:', formattedDate);
 							return {
-								id: item.id,
+								id: item.id, // 确保 id 保持为数字类型（或字符串，取决于后端返回）
 								studyRoomName: item.room_name || '未知自习室',
 								seatLabel: item.seat_label || '未知座位',
-								date: this.formatDate(item.booking_date),
+								date: formattedDate,
 								time: this.formatTimeRange(item.start_time_sec, item.end_time_sec),
 								status: this.getBookingStatus(item.booking_date, item.end_time_sec, item.status)
 							};
 						});
+						console.log('[my-studyroom-reservations] 加载预约记录成功，数量:', this.reservations.length, '预约列表:', this.reservations.map(r => ({ id: r.id, date: r.date })));
 					} else {
 						throw new Error(response.data.message || '获取预约记录失败');
 					}
@@ -161,13 +176,64 @@
 
 			formatDate(dateStr) {
 				// 处理日期字符串，只显示日期部分
-				if (!dateStr) return '';
-				// 如果是ISO格式，只取日期部分
-				if (dateStr.includes('T')) {
-					return dateStr.split('T')[0];
+				if (!dateStr || dateStr.trim() === '') return '';
+				
+				// 如果是Date对象，转换为字符串
+				if (dateStr instanceof Date) {
+					const year = dateStr.getFullYear();
+					const month = String(dateStr.getMonth() + 1).padStart(2, '0');
+					const day = String(dateStr.getDate()).padStart(2, '0');
+					return `${year}-${month}-${day}`;
 				}
-				// 如果已经是日期格式，直接返回
-				return dateStr;
+				
+				const dateString = String(dateStr).trim();
+				
+				// 如果已经是YYYY-MM-DD格式，直接返回
+				if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+					return dateString;
+				}
+				
+				// 如果是ISO格式（带T），提取日期部分
+				if (dateString.includes('T')) {
+					return dateString.split('T')[0];
+				}
+				
+				// 处理 "Sat Nov 01 2025 00:00:00 GM" 这种格式
+				// 或者 "Sat Nov 01 2025" 这种格式
+				if (dateString.match(/\w+\s+\w+\s+\d+\s+\d{4}/)) {
+					try {
+						const date = new Date(dateString);
+						if (!isNaN(date.getTime())) {
+							const year = date.getFullYear();
+							const month = String(date.getMonth() + 1).padStart(2, '0');
+							const day = String(date.getDate()).padStart(2, '0');
+							return `${year}-${month}-${day}`;
+						}
+					} catch (e) {
+						console.warn('日期解析失败:', dateString, e);
+					}
+				}
+				
+				// 如果包含空格和时分秒，尝试提取YYYY-MM-DD格式
+				const dateMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
+				if (dateMatch) {
+					return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+				}
+				
+				// 最后尝试用Date对象解析
+				try {
+					const date = new Date(dateString);
+					if (!isNaN(date.getTime())) {
+						const year = date.getFullYear();
+						const month = String(date.getMonth() + 1).padStart(2, '0');
+						const day = String(date.getDate()).padStart(2, '0');
+						return `${year}-${month}-${day}`;
+					}
+				} catch (e) {
+					console.warn('日期解析失败:', dateString, e);
+				}
+				
+				return dateString; // 如果所有方法都失败，返回原值
 			},
 
 			getBookingStatus(dateStr, endTimeSeconds, status) {

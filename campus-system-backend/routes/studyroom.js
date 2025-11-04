@@ -183,7 +183,51 @@ router.put('/cancel/:id', authenticateToken, async (req, res) => {
 router.get('/my', authenticateToken, async (req, res) => {
     try {
         const list = await StudySeatBooking.listByStudent(req.user.studentId || req.user.userId || String(req.user.id || ''));
-        return res.json(success('ok', list));
+        // 确保日期字段是字符串格式（YYYY-MM-DD），避免时区转换问题
+        const formattedList = list.map(item => {
+            let bookingDate = item.booking_date;
+            
+            // 处理日期格式：可能是Date对象、ISO字符串或其他格式
+            if (bookingDate) {
+                if (bookingDate instanceof Date) {
+                    // 如果是Date对象，格式化为YYYY-MM-DD
+                    const year = bookingDate.getFullYear();
+                    const month = String(bookingDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(bookingDate.getDate()).padStart(2, '0');
+                    bookingDate = `${year}-${month}-${day}`;
+                } else {
+                    // 如果是字符串，尝试提取YYYY-MM-DD格式
+                    const dateStr = String(bookingDate);
+                    // 如果包含T（ISO格式），取日期部分
+                    if (dateStr.includes('T')) {
+                        bookingDate = dateStr.split('T')[0];
+                    } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        // 如果已经是YYYY-MM-DD格式，直接使用
+                        bookingDate = dateStr;
+                    } else if (dateStr.match(/\d{4}.*\d{2}.*\d{2}/)) {
+                        // 如果是其他格式（如 "Sat Nov 01 2025"），尝试解析
+                        try {
+                            const date = new Date(dateStr);
+                            if (!isNaN(date.getTime())) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                bookingDate = `${year}-${month}-${day}`;
+                            }
+                        } catch (e) {
+                            // 解析失败，保持原值
+                            console.warn('日期解析失败:', dateStr, e);
+                        }
+                    }
+                }
+            }
+            
+            return {
+                ...item,
+                booking_date: bookingDate || item.booking_date
+            };
+        });
+        return res.json(success('ok', formattedList));
     } catch (err) {
         console.error('GET /api/studyroom/my', err);
         return res.status(500).json(error('获取我的预约失败'));

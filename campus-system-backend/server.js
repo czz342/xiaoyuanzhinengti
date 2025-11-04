@@ -70,6 +70,9 @@ app.use('/api/community', require('./routes/community'));
 app.use('/api/library', require('./routes/library'));
 app.use('/api/smart-recommendation', require('./routes/smart-recommendation'));
 
+// AI助手工具接口（用于AI助手调用工具）
+app.use('/api/ai', require('./routes/ai-tools'));
+
 // 404处理
 app.use(notFound);
 

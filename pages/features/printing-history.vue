@@ -42,6 +42,7 @@
 				<view class="card-footer">
 					<button v-if="record.status === 'pending'" class="footer-btn outline" @tap="showPickupCode(record)">查看取件码</button>
 					<button class="footer-btn" @tap="printAgain(record)">再次打印</button>
+					<button class="footer-btn outline" @tap="mockScan(record)">扫码取件</button>
 				</view>
 			</view>
 			<view v-if="!isLoading && records.length === 0" class="empty-state">
@@ -183,6 +184,19 @@ export default {
 					url: '/pages/features/printing'
 				});
 			}, 1500);
+		},
+		mockScan(record) {
+			uni.navigateTo({
+				url: `/pages/demo/mock-scan?id=${record.id}&type=printing`,
+				events: {
+					mockScanSuccess: (payload) => {
+						const idx = this.records.findIndex(r => r.id === payload.id);
+						if (idx !== -1) {
+							this.$set(this.records, idx, { ...this.records[idx], status: 'completed', statusText: '已完成' });
+						}
+					}
+				}
+			});
 		}
 	}
 }

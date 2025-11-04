@@ -45,6 +45,7 @@
 				</view>
 				<view class="card-footer">
 					<button class="footer-btn" @tap="orderAgain(order)">再来一单</button>
+					<button class="footer-btn outline" @tap="mockScan(order)">扫码取件</button>
 				</view>
 			</view>
 			<view v-if="!isLoading && orders.length === 0" class="empty-state">
@@ -174,6 +175,20 @@ export default {
 		orderAgain(order) {
 			uni.navigateTo({
 				url: '/pages/features/laundry'
+			});
+		},
+		mockScan(order) {
+			uni.navigateTo({
+				url: `/pages/demo/mock-scan?id=${order.id}&type=laundry`,
+				events: {
+					mockScanSuccess: (payload) => {
+						// 更新本地状态为已完成
+						const idx = this.orders.findIndex(o => o.id === payload.id);
+						if (idx !== -1) {
+							this.$set(this.orders, idx, { ...this.orders[idx], status: 'completed', statusText: '已完成' });
+						}
+					}
+				}
 			});
 		}
 	}
