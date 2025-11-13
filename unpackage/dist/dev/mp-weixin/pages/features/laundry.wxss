@@ -231,6 +231,10 @@
 .detail-item uni-icons {
 	margin-right: 8rpx;
 }
+.detail-item .wait-time {
+	color: #FF9500;
+	font-weight: bold;
+}
 .machine-footer {
 	display: flex;
 	justify-content: space-between;

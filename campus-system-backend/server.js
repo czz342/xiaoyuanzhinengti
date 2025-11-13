@@ -73,6 +73,9 @@ app.use('/api/smart-recommendation', require('./routes/smart-recommendation'));
 // AI助手工具接口（用于AI助手调用工具）
 app.use('/api/ai', require('./routes/ai-tools'));
 
+// 用户偏好和对话历史接口
+app.use('/api/preferences', require('./routes/user-preference'));
+
 // 404处理
 app.use(notFound);
 

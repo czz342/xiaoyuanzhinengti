@@ -73,9 +73,11 @@
 			};
 		},
 		onLoad(options) {
+			console.log('页面加载，options:', options);
 			this.selectedDate = this.getFormattedDate(new Date());
 			if (options && options.number) {
 				this.bookingNumberFromLink = options.number;
+				console.log('从链接获取预约编号:', this.bookingNumberFromLink);
 			}
 			this.fetchReservations();
 		},
@@ -122,24 +124,61 @@
 
 					if (response.statusCode === 200 && response.data.success) {
 						this.reservations = response.data.data.map(item => {
+							// 格式化日期：如果后端返回的是ISO格式字符串，转换为YYYY-MM-DD格式
+							let formattedDate = item.reservationDate;
+							if (formattedDate) {
+								// 处理ISO格式日期字符串 (如: "2025-11-04T16:00:00.000Z")
+								if (typeof formattedDate === 'string' && formattedDate.includes('T')) {
+									formattedDate = formattedDate.split('T')[0];
+								}
+								// 如果是Date对象，转换为YYYY-MM-DD格式
+								else if (formattedDate instanceof Date) {
+									formattedDate = this.getFormattedDate(formattedDate);
+								}
+								// 如果已经是YYYY-MM-DD格式，直接使用
+								else if (typeof formattedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+									// 已经是正确格式，无需转换
+								}
+								// 其他情况，尝试解析
+								else {
+									try {
+										const dateObj = new Date(formattedDate);
+										if (!isNaN(dateObj.getTime())) {
+											formattedDate = this.getFormattedDate(dateObj);
+										}
+									} catch (e) {
+										console.warn('日期格式化失败:', formattedDate);
+									}
+								}
+							}
+							
 							return {
 								id: item.id,
+								reservationNumber: item.reservationNumber || item.reservation_number, // 保存预约编号
 								classroomName: item.classroomName,
-								date: item.reservationDate,
+								date: formattedDate,
 								time: this.formatTimeRange(item.startTime, item.endTime),
-								purpose: item.purpose,
+								purpose: item.purpose || '',
 								status: this.getBookingStatus(item.reservationDate, item.endTime, item.status)
 							};
 						});
 
-						// 处理来自深层链接的ID
+						// 处理来自深层链接的预约编号
 						if (this.bookingNumberFromLink) {
-							const targetReservation = this.reservations.find(r => r.id === this.bookingNumberFromLink);
+							console.log('查找预约编号:', this.bookingNumberFromLink);
+							console.log('当前预约列表:', this.reservations.map(r => ({ id: r.id, number: r.reservationNumber })));
+							const targetReservation = this.reservations.find(r => 
+								r.reservationNumber === this.bookingNumberFromLink || 
+								r.reservationNumber === String(this.bookingNumberFromLink)
+							);
 							if (targetReservation) {
+								console.log('找到目标预约:', targetReservation);
 								// 使用setTimeout确保DOM更新后再打开弹窗
 								setTimeout(() => {
 									this.showQrCodeModal(targetReservation);
-								}, 100);
+								}, 300); // 增加延迟时间，确保数据加载完成
+							} else {
+								console.warn('未找到匹配的预约编号:', this.bookingNumberFromLink);
 							}
 							this.bookingNumberFromLink = null; // 处理后重置
 						}

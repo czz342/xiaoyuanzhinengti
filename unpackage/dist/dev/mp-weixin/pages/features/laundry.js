@@ -191,6 +191,7 @@ var _regenerator = _interopRequireDefault(__webpack_require__(/*! @babel/runtime
 var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
 var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
 var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ 32));
+var _toConsumableArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/toConsumableArray */ 18));
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 //
@@ -444,6 +445,19 @@ var _default = {
     this.loadPageData();
   },
   methods: {
+    calculateEstimatedWaitTime: function calculateEstimatedWaitTime() {
+      // 从使用中的洗衣机中找出最短等待时间
+      var busyWithTime = this.busyMachines.filter(function (m) {
+        return m.remainingMinutes > 0;
+      });
+      if (busyWithTime.length > 0) {
+        this.estimatedWaitTime = Math.min.apply(Math, (0, _toConsumableArray2.default)(busyWithTime.map(function (m) {
+          return m.remainingMinutes;
+        })));
+      } else {
+        this.estimatedWaitTime = 0;
+      }
+    },
     loadPageData: function loadPageData() {
       var _this2 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
@@ -544,33 +558,36 @@ var _default = {
                     statusClass: statusClass,
                     image: '/static/images/washer-icon.png',
                     features: device.features || ['智能杀菌', '大容量'],
-                    rating: Number((_device$rating = device.rating) !== null && _device$rating !== void 0 ? _device$rating : 0).toFixed(1)
+                    rating: Number((_device$rating = device.rating) !== null && _device$rating !== void 0 ? _device$rating : 0).toFixed(1),
+                    remainingMinutes: device.remainingMinutes || 0
                   };
                 });
                 _this2.busyMachines = _this2.machines.filter(function (m) {
                   return m.status === '使用中';
                 });
+                // 计算最短等待时间
+                _this2.calculateEstimatedWaitTime();
                 _this2.refreshRecommendation();
-                _context.next = 27;
+                _context.next = 28;
                 break;
-              case 23:
-                _context.prev = 23;
+              case 24:
+                _context.prev = 24;
                 _context.t0 = _context["catch"](1);
                 console.error("加载洗衣页数据失败:", _context.t0);
                 uni.showToast({
                   title: '数据加载失败',
                   icon: 'error'
                 });
-              case 27:
-                _context.prev = 27;
+              case 28:
+                _context.prev = 28;
                 uni.hideLoading();
-                return _context.finish(27);
-              case 30:
+                return _context.finish(28);
+              case 31:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[1, 23, 27, 30]]);
+        }, _callee, null, [[1, 24, 28, 31]]);
       }))();
     },
     formatDate: function formatDate(date) {

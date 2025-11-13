@@ -37,6 +37,7 @@ router.get('/devices', async (req, res) => {
         if (location) filters.location = location;
 
         let devices = await SharedDevice.list(filters);
+        
         // 若存在usage_status列，则直接透传；否则用当前订单推导
         if (!('usage_status' in (devices[0] || {}))) {
             const busyIds = await LaundryOrder.getBusyDeviceIds();
@@ -45,6 +46,67 @@ router.get('/devices', async (req, res) => {
                 ...d,
                 usage_status: busySet.has(d.id) ? '使用中' : '空闲'
             }));
+        }
+        
+        // 如果是洗衣机，添加剩余时间信息并自动释放过期设备
+        if (deviceType === '洗衣机') {
+            const now = new Date();
+            const devicesWithWaitTime = await Promise.all(devices.map(async (device) => {
+                if (device.usage_status === '使用中' || device.status === '使用中') {
+                    // 获取该设备当前进行中的订单
+                    const activeOrders = await LaundryOrder.getActiveOrdersByDevice(device.id);
+                    if (activeOrders && activeOrders.length > 0) {
+                        // 取最早结束的订单
+                        const earliestOrder = activeOrders.reduce((earliest, order) => {
+                            const orderEndTime = new Date(order.end_time);
+                            const earliestEndTime = new Date(earliest.end_time);
+                            return orderEndTime < earliestEndTime ? order : earliest;
+                        });
+                        
+                        const endTime = new Date(earliestOrder.end_time);
+                        const remainingMinutes = Math.ceil((endTime - now) / (1000 * 60));
+                        
+                        // 如果剩余时间<=0，说明订单已过期，自动释放设备并更新订单状态
+                        if (remainingMinutes <= 0) {
+                            try {
+                                await SharedDevice.updateUsageStatus(device.id, '空闲');
+                                await LaundryOrder.updateStatus(earliestOrder.id, '已完成', {
+                                    completionTime: earliestOrder.end_time
+                                });
+                            } catch (e) {
+                                console.warn('自动释放过期设备失败:', e.message);
+                            }
+                            return {
+                                ...device,
+                                usage_status: '空闲',
+                                remainingMinutes: 0
+                            };
+                        }
+                        
+                        return {
+                            ...device,
+                            remainingMinutes: remainingMinutes
+                        };
+                    } else {
+                        // 没有活跃订单但设备显示使用中，释放设备
+                        try {
+                            await SharedDevice.updateUsageStatus(device.id, '空闲');
+                        } catch (e) {
+                            console.warn('释放无订单设备失败:', e.message);
+                        }
+                        return {
+                            ...device,
+                            usage_status: '空闲',
+                            remainingMinutes: 0
+                        };
+                    }
+                }
+                return {
+                    ...device,
+                    remainingMinutes: 0
+                };
+            }));
+            devices = devicesWithWaitTime;
         }
         
         res.json({

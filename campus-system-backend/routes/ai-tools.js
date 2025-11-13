@@ -3,6 +3,9 @@ const router = express.Router();
 const StudyRoom = require('../models/StudyRoom');
 const StudySeat = require('../models/StudySeat');
 const StudySeatBooking = require('../models/StudySeatBooking');
+const Classroom = require('../models/Classroom');
+const ClassroomReservation = require('../models/ClassroomReservation');
+const User = require('../models/User');
 const { success, error } = require('../utils/response');
 
 /**
@@ -230,6 +233,173 @@ router.post('/studyroom/book', async (req, res) => {
             start_time_display: formatTime(start_time_sec),
             end_time_display: formatTime(end_time_sec),
             status: 'reserved'
+        };
+        
+        console.log('返回成功响应:', JSON.stringify(responseData, null, 2));
+        // 返回成功响应（包含详细信息）
+        return res.status(200).json(success('预约成功', responseData));
+
+    } catch (err) {
+        console.error('AI工具接口错误:', err);
+        console.error('错误堆栈:', err.stack);
+        return res.status(200).json(error('预约失败：' + (err.message || String(err))));
+    }
+});
+
+/**
+ * 根据教室名称或编号查找教室
+ */
+async function findClassroomByNameOrCode(classroomName) {
+    const classrooms = await Classroom.getAll();
+    const classroom = classrooms.find(c => 
+        c.name === classroomName || 
+        c.code === classroomName ||
+        c.name.includes(classroomName) ||
+        classroomName.includes(c.name) ||
+        c.code.includes(classroomName) ||
+        classroomName.includes(c.code)
+    );
+    return classroom;
+}
+
+/**
+ * AI助手工具：创建教室预约
+ * POST /api/ai/classroom/book
+ * 
+ * 支持两种方式：
+ * 1. 通过名称：classroom_name 或 classroom_code（推荐，更易理解）
+ * 2. 通过ID：classroom_id（精确，需先查询）
+ */
+router.post('/classroom/book', async (req, res) => {
+    try {
+        console.log('收到教室预约请求:', JSON.stringify(req.body, null, 2));
+        const {
+            classroom_id,
+            classroom_name,
+            classroom_code,
+            student_id,
+            booking_date,
+            start_time_sec,
+            end_time_sec,
+            purpose = '',
+            notes = ''
+        } = req.body;
+
+        // 参数验证：必须提供student_id, booking_date, start_time_sec, end_time_sec
+        if (!student_id || !booking_date || start_time_sec === undefined || end_time_sec === undefined) {
+            console.log('参数验证失败，缺少必要参数');
+            return res.status(200).json(error('缺少必要参数：student_id, booking_date, start_time_sec, end_time_sec'));
+        }
+
+        // 验证时间范围
+        if (start_time_sec >= end_time_sec) {
+            return res.status(200).json(error('时间范围非法：开始时间必须早于结束时间'));
+        }
+
+        // 通过student_id查找userId
+        const user = await User.findByStudentId(student_id);
+        if (!user) {
+            return res.status(200).json(error(`未找到学号为 ${student_id} 的用户，请先注册或检查学号是否正确`));
+        }
+        const userId = user.id;
+        console.log(`找到用户：student_id=${student_id}, userId=${userId}`);
+
+        let finalClassroomId;
+        let classroom;
+
+        // 方式1：通过名称或编号查找
+        if (classroom_name || classroom_code) {
+            const searchKey = classroom_name || classroom_code;
+            console.log(`通过名称/编号查找：${searchKey}`);
+            const allClassrooms = await Classroom.getAll();
+            console.log(`数据库中所有教室（前5个）：`, allClassrooms.slice(0, 5).map(c => ({ id: c.id, name: c.name, code: c.code })));
+            
+            classroom = await findClassroomByNameOrCode(searchKey);
+            if (!classroom) {
+                const exampleClassrooms = allClassrooms.slice(0, 3).map(c => c.name || c.code).filter(Boolean).join('、');
+                console.log(`未找到教室：${searchKey}`);
+                return res.status(200).json(error(`未找到教室"${searchKey}"。示例教室：${exampleClassrooms || '无'}。提示：请使用数据库中实际存在的教室名称或编号`));
+            }
+            console.log(`找到教室：id=${classroom.id}, name=${classroom.name}, code=${classroom.code}`);
+            finalClassroomId = classroom.id;
+        }
+        // 方式2：通过ID直接使用
+        else if (classroom_id) {
+            finalClassroomId = parseInt(classroom_id, 10);
+
+            // 验证ID是否存在
+            classroom = await Classroom.findById(finalClassroomId);
+            if (!classroom) {
+                return res.status(200).json(error(`未找到教室ID：${classroom_id}`));
+            }
+            console.log(`找到教室：id=${classroom.id}, name=${classroom.name}, code=${classroom.code}`);
+        } else {
+            return res.status(200).json(error('必须提供 classroom_name、classroom_code 或 classroom_id'));
+        }
+
+        // 检查教室状态
+        if (classroom.status !== 'available') {
+            return res.status(200).json(error(`教室"${classroom.name}"当前不可用，状态：${classroom.status}`));
+        }
+
+        // 检查时间冲突
+        console.log('检查时间冲突:', {
+            classroom_id: finalClassroomId,
+            booking_date: booking_date,
+            start_time_sec: start_time_sec,
+            end_time_sec: end_time_sec
+        });
+        const hasConflict = await ClassroomReservation.checkTimeConflict(
+            finalClassroomId,
+            booking_date,
+            start_time_sec,
+            end_time_sec
+        );
+        console.log('时间冲突检查结果:', hasConflict);
+
+        if (hasConflict) {
+            console.log('时间冲突，返回错误');
+            return res.status(200).json(error('该时段已被预约，请选择其他时间'));
+        }
+
+        // 创建预约
+        const reservationNumber = ClassroomReservation.generateReservationNumber();
+        const reservationData = {
+            reservationNumber,
+            userId: userId,
+            classroomId: finalClassroomId,
+            reservationDate: booking_date,
+            startTime: start_time_sec,
+            endTime: end_time_sec,
+            purpose: purpose,
+            notes: notes,
+            status: 'confirmed'
+        };
+
+        console.log('准备插入预约记录:', reservationData);
+        const reservationId = await ClassroomReservation.create(reservationData);
+        console.log('预约记录插入成功，预约ID:', reservationId);
+
+        // 获取刚插入的预约记录
+        const reservation = await ClassroomReservation.findById(reservationId);
+
+        const responseData = {
+            reservation_id: reservation.id,
+            reservation_number: reservation.reservationNumber,
+            classroom_id: finalClassroomId,
+            classroom_name: classroom.name,
+            classroom_code: classroom.code,
+            building: classroom.building,
+            floor: classroom.floor,
+            student_id: student_id,
+            booking_date: booking_date,
+            start_time_sec: start_time_sec,
+            end_time_sec: end_time_sec,
+            start_time_display: formatTime(start_time_sec),
+            end_time_display: formatTime(end_time_sec),
+            purpose: purpose,
+            notes: notes,
+            status: reservation.status
         };
         
         console.log('返回成功响应:', JSON.stringify(responseData, null, 2));

@@ -1,0 +1,303 @@
+{
+	"components": {
+		"schemas": {
+			"ClassroomBookingRequest": {
+				"oneOf": [
+					{
+						"required": [
+							"classroom_name",
+							"student_id",
+							"booking_date",
+							"start_time_sec",
+							"end_time_sec"
+						]
+					},
+					{
+						"required": [
+							"classroom_code",
+							"student_id",
+							"booking_date",
+							"start_time_sec",
+							"end_time_sec"
+						]
+					},
+					{
+						"required": [
+							"classroom_id",
+							"student_id",
+							"booking_date",
+							"start_time_sec",
+							"end_time_sec"
+						]
+					}
+				],
+				"type": "object",
+				"properties": {
+					"classroom_id": {
+						"description": "教室ID（使用此方式时必须单独提供classroom_id）",
+						"type": "integer",
+						"example": 1
+					},
+					"end_time_sec": {
+						"description": "结束时间（从当天0点开始的秒数），例如 12:00 = 43200秒",
+						"maximum": 86399,
+						"type": "integer",
+						"minimum": 0,
+						"example": 43200
+					},
+					"classroom_name": {
+						"description": "教室名称（使用此方式时必须提供classroom_name）",
+						"type": "string",
+						"example": "理科楼 L303"
+					},
+					"classroom_code": {
+						"description": "教室编号（使用此方式时必须提供classroom_code）",
+						"type": "string",
+						"example": "C101"
+					},
+					"booking_date": {
+						"format": "date",
+						"description": "预约日期，格式 YYYY-MM-DD",
+						"type": "string",
+						"example": "2025-01-20"
+					},
+					"student_id": {
+						"description": "学生学号",
+						"type": "string",
+						"example": "2024001"
+					},
+					"start_time_sec": {
+						"description": "开始时间（从当天0点开始的秒数），例如 11:00 = 39600秒",
+						"maximum": 86399,
+						"type": "integer",
+						"minimum": 0,
+						"example": 39600
+					},
+					"purpose": {
+						"description": "预约用途（可选）",
+						"type": "string",
+						"example": "社团活动"
+					},
+					"notes": {
+						"description": "备注信息（可选）",
+						"type": "string",
+						"example": "需要投影仪"
+					}
+				}
+			},
+			"ClassroomBookingResponse": {
+				"type": "object",
+				"properties": {
+					"data": {
+						"type": "object",
+						"properties": {
+							"reservation_id": {
+								"description": "预约记录ID",
+								"type": "integer",
+								"example": 123
+							},
+							"reservation_number": {
+								"description": "预约编号",
+								"type": "string",
+								"example": "CR12345678"
+							},
+							"classroom_id": {
+								"description": "教室ID",
+								"type": "integer",
+								"example": 1
+							},
+							"classroom_name": {
+								"description": "教室名称",
+								"type": "string",
+								"example": "理科楼 L303"
+							},
+							"classroom_code": {
+								"description": "教室编号",
+								"type": "string",
+								"example": "C101"
+							},
+							"building": {
+								"description": "教学楼",
+								"type": "string",
+								"example": "理科楼"
+							},
+							"floor": {
+								"description": "楼层",
+								"type": "string",
+								"example": "3楼"
+							},
+							"booking_date": {
+								"format": "date",
+								"description": "预约日期",
+								"type": "string",
+								"example": "2025-01-20"
+							},
+							"end_time_display": {
+								"description": "结束时间（可读格式）",
+								"type": "string",
+								"example": "12:00"
+							},
+							"student_id": {
+								"description": "学生学号",
+								"type": "string",
+								"example": "645730151"
+							},
+							"start_time_sec": {
+								"description": "开始时间（秒）",
+								"type": "integer",
+								"example": 39600
+							},
+							"start_time_display": {
+								"description": "开始时间（可读格式）",
+								"type": "string",
+								"example": "11:00"
+							},
+							"end_time_sec": {
+								"description": "结束时间（秒）",
+								"type": "integer",
+								"example": 43200
+							},
+							"purpose": {
+								"description": "预约用途",
+								"type": "string",
+								"example": "社团活动"
+							},
+							"notes": {
+								"description": "备注信息",
+								"type": "string",
+								"example": "需要投影仪"
+							},
+							"status": {
+								"description": "预约状态",
+								"type": "string",
+								"example": "confirmed"
+							}
+						}
+					},
+					"success": {
+						"description": "操作是否成功",
+						"type": "boolean",
+						"example": true
+					},
+					"message": {
+						"description": "响应消息",
+						"type": "string",
+						"example": "预约成功"
+					}
+				}
+			},
+			"ErrorResponse": {
+				"type": "object",
+				"properties": {
+					"success": {
+						"type": "boolean",
+						"example": false
+					},
+					"message": {
+						"description": "错误消息",
+						"type": "string",
+						"example": "参数不完整"
+					}
+				}
+			}
+		}
+	},
+	"servers": [
+		{
+			"description": "本地开发服务器",
+			"url": "http://localhost:3000"
+		}
+	],
+	"openapi": "3.0.0",
+	"paths": {
+		"/api/ai/classroom/book": {
+			"post": {
+				"summary": "创建教室预约",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ClassroomBookingRequest"
+							},
+							"examples": {
+								"byName": {
+									"summary": "通过名称预约",
+									"value": {
+										"end_time_sec": 43200,
+										"classroom_name": "理科楼 L303",
+										"booking_date": "2025-01-20",
+										"student_id": "645730151",
+										"start_time_sec": 39600,
+										"purpose": "社团活动",
+										"notes": "需要投影仪"
+									}
+								},
+								"byCode": {
+									"summary": "通过编号预约",
+									"value": {
+										"classroom_code": "C101",
+										"end_time_sec": 43200,
+										"booking_date": "2025-01-20",
+										"student_id": "645730151",
+										"start_time_sec": 39600
+									}
+								},
+								"byId": {
+									"summary": "通过ID预约",
+									"value": {
+										"classroom_id": 1,
+										"end_time_sec": 43200,
+										"booking_date": "2025-01-20",
+										"student_id": "645730151",
+										"start_time_sec": 39600
+									}
+								}
+							}
+						}
+					}
+				},
+				"description": "通过教室名称、编号或ID创建预约。支持三种方式：1. 通过名称：classroom_name（推荐，更易理解）2. 通过编号：classroom_code 3. 通过ID：classroom_id（精确，需先查询）",
+				"operationId": "createClassroomBooking",
+				"responses": {
+					"200": {
+						"description": "预约成功",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ClassroomBookingResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "参数错误或缺少必要参数",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "时间冲突，该时段已被预约",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"info": {
+		"description": "用于AI助手调用的教室预约接口，支持通过教室名称、编号或ID进行预约",
+		"title": "教室预约API",
+		"version": "1.0.0"
+	}
+}
+

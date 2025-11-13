@@ -89,8 +89,8 @@
 								<text>{{machine.location}}</text>
 							</view>
 							<view class="detail-item" v-if="machine.status === '使用中'">
-								<uni-icons type="timer" size="14" color="#666"></uni-icons>
-								<text>使用中</text>
+								<uni-icons type="timer" size="14" color="#FF9500"></uni-icons>
+								<text class="wait-time">还需 {{machine.remainingMinutes || 0}} 分钟</text>
 							</view>
 							<view class="detail-item">
 								<uni-icons type="medal" size="14" color="#666"></uni-icons>
@@ -240,6 +240,15 @@ export default {
 		this.loadPageData();
 	},
 	methods: {
+		calculateEstimatedWaitTime() {
+			// 从使用中的洗衣机中找出最短等待时间
+			const busyWithTime = this.busyMachines.filter(m => m.remainingMinutes > 0);
+			if (busyWithTime.length > 0) {
+				this.estimatedWaitTime = Math.min(...busyWithTime.map(m => m.remainingMinutes));
+			} else {
+				this.estimatedWaitTime = 0;
+			}
+		},
 		async loadPageData() {
 			uni.showLoading({ title: '加载中...' });
 			try {
@@ -328,11 +337,14 @@ export default {
 						statusClass: statusClass,
 						image: '/static/images/washer-icon.png',
 						features: device.features || ['智能杀菌', '大容量'],
-						rating: Number(device.rating ?? 0).toFixed(1)
+						rating: Number(device.rating ?? 0).toFixed(1),
+						remainingMinutes: device.remainingMinutes || 0
 					};
 				});
 
 				this.busyMachines = this.machines.filter(m => m.status === '使用中');
+				// 计算最短等待时间
+				this.calculateEstimatedWaitTime();
 				this.refreshRecommendation();
 				
 			} catch (error) {
@@ -775,6 +787,11 @@ export default {
 
 .detail-item uni-icons {
 	margin-right: 8rpx;
+}
+
+.detail-item .wait-time {
+	color: #FF9500;
+	font-weight: bold;
 }
 
 .machine-footer {
