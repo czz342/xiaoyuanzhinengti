@@ -50,6 +50,14 @@
           ></Icon>
           <text class="msg-action-btn-text">{{ t('replyText') }}</text>
         </div>
+        <div
+          v-if="msg.type === 'text'"
+          class="msg-action-btn"
+          @tap="handleConvertToErrand"
+        >
+          <text class="msg-action-btn-emoji">🏃</text>
+          <text class="msg-action-btn-text">转为跑腿</text>
+        </div>
       </div>
       <!-- 未知消息体 -->
       <div class="msg-action-groups-unknown" v-else>
@@ -242,6 +250,14 @@
             type="icon-huifu"
           ></Icon>
           <text class="msg-action-btn-text">{{ t('replyText') }}</text>
+        </div>
+        <div
+          v-if="msg.type === 'text'"
+          class="msg-action-btn"
+          @tap="handleConvertToErrand"
+        >
+          <text class="msg-action-btn-emoji">🏃</text>
+          <text class="msg-action-btn-text">转为跑腿</text>
         </div>
       </div>
       <!-- 未知消息体 -->
@@ -570,6 +586,14 @@ const addFriend = () => {
   })
 }
 
+// 转化为跑腿订单：打开AI辅助面板
+const handleConvertToErrand = () => {
+  if (props.msg.type === 'text' && props.msg.body) {
+    closeTooltip()
+    uni.$emit(events.OPEN_AI_ASSIST, { text: props.msg.body })
+  }
+}
+
 const uninstallFriendsWatch = autorun(() => {
   // @ts-ignore
   const _isFriend = uni.$UIKitStore.uiStore.friendsWithoutBlacklist.some(
@@ -694,5 +718,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.msg-action-btn-emoji {
+  font-size: 18px;
+  margin-right: 4px;
+  line-height: 1;
 }
 </style>

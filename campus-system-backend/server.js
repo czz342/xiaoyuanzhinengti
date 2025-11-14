@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const path = require('path');
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -72,6 +72,12 @@ app.use('/api/smart-recommendation', require('./routes/smart-recommendation'));
 
 // AI助手工具接口（用于AI助手调用工具）
 app.use('/api/ai', require('./routes/ai-tools'));
+
+// NLP服务接口（用于IM文本解析等）
+app.use('/api/nlp', require('./routes/ai'));
+
+// 通用AI助手接口（用于多场景校园需求分析）
+app.use('/api/ai-universal', require('./routes/ai-universal'));
 
 // 用户偏好和对话历史接口
 app.use('/api/preferences', require('./routes/user-preference'));

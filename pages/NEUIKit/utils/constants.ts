@@ -54,6 +54,12 @@ export const events = {
   CLOSE_PANEL: 'closePanel',
   // 语音消息url改变
   AUDIO_URL_CHANGE: 'audioUrlChange',
+  // AI助手相关事件 
+  OPEN_AI_ASSIST: 'OPEN_AI_ASSIST',
+  CLOSE_AI_ASSIST: 'CLOSE_AI_ASSIST',
+  // 通用AI助手事件
+  OPEN_AI_ASSISTANT: 'OPEN_AI_ASSISTANT',
+  CLOSE_AI_ASSISTANT: 'CLOSE_AI_ASSISTANT',
 }
 
 export const HISTORY_LIMIT = 15

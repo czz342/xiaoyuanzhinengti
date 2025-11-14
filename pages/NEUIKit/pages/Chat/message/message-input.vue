@@ -170,6 +170,13 @@
           </div>
           <div class="icon-text">{{ t('videoCallText') }}</div>
         </div>
+        <!-- AI智能分析 -->
+        <div class="send-more-panel-item-wrapper">
+          <div class="send-more-panel-item ai-assistant-btn" @tap="handleAIAssistant">
+            <text class="ai-icon">✨</text>
+          </div>
+          <div class="icon-text">AI分析</div>
+        </div>
       </div>
     </div>
     <!-- @消息相关 popup -->
@@ -649,6 +656,48 @@ const handleSetting = () => {
   }
 }
 
+// AI智能分析
+const handleAIAssistant = () => {
+  console.log('🚀 AI智能分析按钮被点击')
+  console.log('📅 当前时间:', new Date().toLocaleTimeString())
+  
+  // 关闭发送更多面板
+  sendMoreVisible.value = false
+  
+  // 获取当前聊天的消息历史
+  try {
+    // @ts-ignore
+    const msgStore = uni.$UIKitStore.msgStore
+    console.log('📦 msgStore:', msgStore ? '已获取' : '获取失败')
+    
+    const sessionId = props.scene === 'p2p' ? `p2p-${props.to}` : `team-${props.to}`
+    console.log('🎯 会话ID:', sessionId)
+    
+    // 获取最近的消息
+    const messages = msgStore.getMsg(sessionId) || []
+    console.log('💬 总消息数量:', messages.length)
+    
+    const recentMessages = messages.slice(-20) // 取最近20条消息进行分析
+    console.log('📋 准备分析的消息数量:', recentMessages.length)
+    console.log('📝 消息示例:', recentMessages.slice(0, 3).map((m: any) => ({ type: m.type, body: m.body?.substring(0, 30) })))
+    
+    // 测试事件常量
+    console.log('🏷️ 事件常量:', events.OPEN_AI_ASSISTANT)
+    
+    // 发出事件，打开通用AI助手
+    console.log('📡 发送事件:', events.OPEN_AI_ASSISTANT)
+    uni.$emit(events.OPEN_AI_ASSISTANT, recentMessages)
+    console.log('✅ 事件已发送')
+    
+  } catch (error) {
+    console.error('💥 获取聊天消息失败:', error)
+    uni.showToast({
+      title: '获取聊天记录失败',
+      icon: 'none'
+    })
+  }
+}
+
 let uninstallTeamWatch = () => {}
 
 onMounted(() => {
@@ -1009,6 +1058,32 @@ onUnmounted(() => {
   font-size: 16px;
   padding: 0 12px;
   border-radius: 6px;
+}
+
+/* AI智能分析按钮样式 */
+.ai-assistant-btn {
+  background-color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  /* 确保继承基础按钮样式 */
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 12px !important;
+}
+
+.ai-assistant-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.ai-icon {
+  font-size: 30px;
+  color: #667eea;
+  line-height: 1;
 }
 
 .input-text {

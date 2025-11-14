@@ -385,6 +385,46 @@ export default {
 			currentViewingOrderId: null
 			}
 	},
+	onLoad(options) {
+		console.log('📱 跑腿页面加载，参数:', options);
+		
+		// 处理来自AI助手的跳转
+		if (options.from === 'ai_assistant') {
+			try {
+				const aiData = uni.getStorageSync('errand_ai_data');
+				console.log('🤖 从AI助手获取数据:', aiData);
+				
+				if (aiData && typeof aiData === 'object') {
+					uni.removeStorageSync('errand_ai_data');
+					this.fillFormWithAIData(aiData);
+					
+					uni.showToast({
+						title: 'AI数据已加载',
+						icon: 'success'
+					});
+					return;
+				}
+			} catch(e) {
+				console.error('❌ 读取AI数据失败:', e);
+			}
+		}
+		
+		// 处理来自IM聊天的跳转（旧的AI面板）
+		if (options.from === 'im' && options.text) {
+			// 优先使用聊天页AI面板预解析结果，避免重复调用
+			try {
+				const pre = uni.getStorageSync('errand_preparsed');
+				if (pre && typeof pre === 'object') {
+					uni.removeStorageSync('errand_preparsed');
+					const decodedText = decodeURIComponent(options.text);
+					this.fillFormWithParsedData(pre, decodedText);
+					return;
+				}
+			} catch(e) {}
+			const decodedText = decodeURIComponent(options.text);
+			this.parseTextAndFillForm(decodedText);
+		}
+	},
 	onShow() {
 		// 如果用户刚从订单详情页面返回，强制刷新可接订单
 		if (this.currentViewingOrderId) {
@@ -395,6 +435,90 @@ export default {
 		this.loadAvailableOrders();
 	},
 	methods: {
+		// 将AI解析结果填充到表单（供聊天页AI面板跳转后使用）
+		fillFormWithParsedData(parsedData, originalText) {
+			try {
+				if (!parsedData || typeof parsedData !== 'object') return;
+				// 优先使用AI生成的title，如果没有则截取description或原文
+				if (parsedData.title) {
+					this.publishForm.title = parsedData.title;
+				} else if (parsedData.description) {
+					this.publishForm.title = parsedData.description.substring(0, 20);
+				} else if (originalText) {
+					this.publishForm.title = originalText.substring(0, 20);
+				}
+				// 填充完整描述
+				if (parsedData.description) {
+					this.publishForm.description = parsedData.description;
+				} else if (originalText) {
+					this.publishForm.description = originalText;
+				}
+				if (parsedData.pickup_location) {
+					this.publishForm.pickupLocation = parsedData.pickup_location;
+				}
+				if (parsedData.delivery_location) {
+					this.publishForm.deliveryLocation = parsedData.delivery_location;
+				}
+				if (parsedData.service_type) {
+					const map = { 'takeout': '外卖代拿', 'express': '快递代取', 'other': '小事代办' };
+					this.selectedServiceType = map[parsedData.service_type] || '小事代办';
+				}
+				uni.showToast({ title: 'AI解析结果已载入', icon: 'success' });
+			} catch(e) {}
+		},
+		
+		// 处理新版AI助手的数据填充
+		fillFormWithAIData(aiData) {
+			try {
+				console.log('🔄 填充AI助手数据:', aiData);
+				
+				if (!aiData || typeof aiData !== 'object') return;
+				
+				// 填充标题
+				if (aiData.title) {
+					this.publishForm.title = aiData.title;
+				}
+				
+				// 填充描述
+				if (aiData.description) {
+					this.publishForm.description = aiData.description;
+				}
+				
+				// 填充地点信息
+				if (aiData.pickup_location) {
+					this.publishForm.pickupLocation = aiData.pickup_location;
+				}
+				if (aiData.delivery_location) {
+					this.publishForm.deliveryLocation = aiData.delivery_location;
+				}
+				
+				// 设置服务类型
+				if (aiData.service_type) {
+					const serviceTypeMap = {
+						'快递代取': '快递代取',
+						'外卖代拿': '外卖代拿', 
+						'小事代办': '小事代办',
+						'express': '快递代取',
+						'takeout': '外卖代拿',
+						'other': '小事代办'
+					};
+					this.selectedServiceType = serviceTypeMap[aiData.service_type] || '小事代办';
+				}
+				
+				console.log('✅ AI数据填充完成');
+				console.log('📝 表单状态:', {
+					title: this.publishForm.title,
+					description: this.publishForm.description,
+					pickupLocation: this.publishForm.pickupLocation,
+					deliveryLocation: this.publishForm.deliveryLocation,
+					serviceType: this.selectedServiceType
+				});
+				
+			} catch(e) {
+				console.error('❌ AI数据填充失败:', e);
+			}
+		},
+		
 		goBack() {
 			uni.navigateBack();
 		},
@@ -780,6 +904,63 @@ export default {
 			uni.navigateTo({
 				url: `/pages/features/order-detail?orderId=${orderId}`
 			});
+		},
+		async parseTextAndFillForm(text) {
+			uni.showLoading({
+				title: 'AI解析中...'
+			});
+			try {
+				const token = uni.getStorageSync('token');
+				if (!token) throw new Error('请先登录');
+
+				const res = await uni.request({
+					url: 'http://localhost:3000/api/nlp/parse-errand-from-text',
+					method: 'POST',
+					header: { 'Authorization': `Bearer ${token}` },
+					data: { text }
+				});
+
+				if (res.statusCode === 200 && res.data.success) {
+					const parsedData = res.data.data;
+					if (parsedData.error) {
+						uni.showToast({ title: 'AI未能识别意图', icon: 'none' });
+                        // 即使AI未识别，也把原文填入描述
+                        this.publishForm.description = text;
+						return;
+					}
+
+					// 智能填充表单
+					if (parsedData.description) {
+						this.publishForm.description = parsedData.description;
+                        // 尝试从描述中提取标题
+                        this.publishForm.title = parsedData.description.substring(0, 20);
+					}
+					if (parsedData.pickup_location) {
+						this.publishForm.pickupLocation = parsedData.pickup_location;
+					}
+					if (parsedData.delivery_location) {
+						this.publishForm.deliveryLocation = parsedData.delivery_location;
+					}
+					if (parsedData.service_type) {
+						const serviceMap = {
+							'takeout': '外卖代拿',
+							'express': '快递代取',
+							'other': '小事代办'
+						};
+						this.selectedServiceType = serviceMap[parsedData.service_type] || '小事代办';
+					}
+
+					uni.showToast({ title: 'AI填充完成', icon: 'success' });
+				} else {
+					throw new Error(res.data.message || 'AI解析失败');
+				}
+			} catch (err) {
+				uni.showToast({ title: err.message || 'AI服务异常', icon: 'none' });
+                // 即使AI异常，也把原文填入描述
+                this.publishForm.description = text;
+			} finally {
+				uni.hideLoading();
+			}
 		}
 	},
 	computed: {

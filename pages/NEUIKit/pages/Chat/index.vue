@@ -24,6 +24,8 @@
         :reply-msgs-map="replyMsgsMap"
       />
     </div>
+    <AIErrandPanel />
+    <UniversalAIAssistant />
     <div style="height: 'auto'">
       <MessageInput :reply-msgs-map="replyMsgsMap" :scene="scene" :to="to" />
     </div>
@@ -46,6 +48,8 @@ import NavBar from './message/nav-bar.vue'
 import Icon from '../../components/Icon.vue'
 import MessageList from './message/message-list.vue'
 import MessageInput from './message/message-input.vue'
+import AIErrandPanel from './components/AIErrandPanel.vue'
+import UniversalAIAssistant from './components/UniversalAIAssistant.vue'
 import type { IMMessage } from 'nim-web-sdk-ng/dist/NIM_MINIAPP_SDK/MsgServiceInterface'
 import { HISTORY_LIMIT, MSG_ID_FLAG } from '../../utils/constants'
 import { t } from '../../utils/i18n'

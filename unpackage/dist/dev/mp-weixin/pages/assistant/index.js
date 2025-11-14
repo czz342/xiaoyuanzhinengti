@@ -1008,7 +1008,7 @@ var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://rrp-ronald-haven-derby.trycloudflare.com",
+      tunnelUrl: "https://models-dev-machine-trees.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
       userAvatar: '/static/images/avatar.png',
@@ -1091,6 +1091,10 @@ var _default = {
       conversationList: [],
       // 历史对话列表
 
+      // 🤖 新增：来自聊天分析的待处理需求
+      pendingChatAnalysis: null,
+      // 存储待发送的聊天分析需求
+
       selectedAssistant: null,
       activeSkill: {
         id: null,
@@ -1123,29 +1127,49 @@ var _default = {
                 _this.currentConversationId = _this.generateConversationId();
                 console.log('✨ 创建新对话:', _this.currentConversationId);
               }
-              _context.prev = 3;
-              _context.next = 6;
+
+              // 🤖 检查是否来自聊天AI分析
+              if (options && options.from === 'chat_analysis') {
+                console.log('🔍 检测到来自聊天AI分析:', {
+                  type: options.type,
+                  summary: options.summary
+                });
+                // 保存需求信息，待初始化完成后自动发送
+                _this.pendingChatAnalysis = {
+                  type: options.type,
+                  summary: decodeURIComponent(options.summary || '')
+                };
+              }
+              _context.prev = 4;
+              _context.next = 7;
               return _this.initializeAssistant();
-            case 6:
+            case 7:
               // 初始化成功后，连接WebSocket
               _this.connectWebSocket();
               console.log('页面初始化与WebSocket连接流程启动');
-              _context.next = 14;
+
+              // 🤖 如果有待发送的聊天分析需求，等待一秒后自动发送
+              if (_this.pendingChatAnalysis) {
+                setTimeout(function () {
+                  _this.sendChatAnalysisRequest();
+                }, 1000);
+              }
+              _context.next = 16;
               break;
-            case 10:
-              _context.prev = 10;
-              _context.t0 = _context["catch"](3);
+            case 12:
+              _context.prev = 12;
+              _context.t0 = _context["catch"](4);
               console.error('页面初始化失败:', _context.t0);
               uni.showToast({
                 title: '初始化失败，请重试',
                 icon: 'none'
               });
-            case 14:
+            case 16:
             case "end":
               return _context.stop();
           }
         }
-      }, _callee, null, [[3, 10]]);
+      }, _callee, null, [[4, 12]]);
     }))();
   },
   methods: {
@@ -1525,14 +1549,50 @@ var _default = {
       });
       this.scrollToBottom();
     },
+    // 🤖 发送聊天分析需求
+    sendChatAnalysisRequest: function sendChatAnalysisRequest() {
+      var _this4 = this;
+      console.log('🚀 准备发送聊天分析需求:', this.pendingChatAnalysis);
+      if (!this.pendingChatAnalysis || !this.pendingChatAnalysis.summary) {
+        console.error('❌ 无有效的聊天分析需求');
+        return;
+      }
+      try {
+        // 构建消息内容
+        var needTypeMap = {
+          'classroom': '教室预约',
+          'library': '图书借阅',
+          'studyroom': '自习室预约'
+        };
+        var needTypeName = needTypeMap[this.pendingChatAnalysis.type] || this.pendingChatAnalysis.type;
+        var messageContent = "\u4F60\u597D\uFF01\u6211\u4ECE\u804A\u5929\u8BB0\u5F55\u4E2D\u5206\u6790\u5230\u4E00\u4E2A".concat(needTypeName, "\u9700\u6C42\uFF0C\u8BE6\u60C5\u5982\u4E0B\uFF1A\n\n").concat(this.pendingChatAnalysis.summary, "\n\n\u8BF7\u5E2E\u6211\u5904\u7406\u8FD9\u4E2A\u9700\u6C42\u3002");
+
+        // 设置输入框内容
+        this.inputMessage = messageContent;
+
+        // 自动发送消息
+        setTimeout(function () {
+          _this4.sendMessage();
+          // 清理待处理的需求
+          _this4.pendingChatAnalysis = null;
+        }, 500);
+        console.log('✅ 已自动发送聊天分析需求');
+      } catch (e) {
+        console.error('❌ 发送聊天分析需求失败:', e);
+        uni.showToast({
+          title: '发送需求失败',
+          icon: 'none'
+        });
+      }
+    },
     // 滚动到底部
     scrollToBottom: function scrollToBottom() {
-      var _this4 = this;
+      var _this5 = this;
       this.$nextTick(function () {
-        var lastMessageIndex = _this4.chatMessages.length - 1;
+        var lastMessageIndex = _this5.chatMessages.length - 1;
         if (lastMessageIndex < 0) return;
         // 这里使用一个较大的值来确保滚动到底部
-        _this4.scrollTop = _this4.scrollTop + 9999;
+        _this5.scrollTop = _this5.scrollTop + 9999;
       });
     },
     // 语音输入
@@ -1576,7 +1636,7 @@ var _default = {
     // 以下是处理从Webhook接收到的消息的逻辑
     // 注意：这部分逻辑现在需要一个服务器来接收Webhook并将其推送到小程序
     handleWebhookData: function handleWebhookData(payload) {
-      var _this5 = this;
+      var _this6 = this;
       console.log("处理Webhook数据:", payload);
       if (!payload || !payload.message) {
         console.warn("收到的Webhook数据格式不正确", payload);
@@ -1588,7 +1648,7 @@ var _default = {
       this.currentTaskId = taskId;
       if (message.actionList && Array.isArray(message.actionList)) {
         message.actionList.forEach(function (action) {
-          return _this5.handleAction(action);
+          return _this6.handleAction(action);
         });
       }
     },
@@ -1872,7 +1932,7 @@ var _default = {
     },
     // --- WebSocket相关方法 ---
     connectWebSocket: function connectWebSocket() {
-      var _this6 = this;
+      var _this7 = this;
       // 🎯 重要：先关闭旧连接，避免累积
       if (this.websocketTask) {
         console.log('⚠️ 检测到旧的WebSocket连接，先关闭');
@@ -1902,16 +1962,16 @@ var _default = {
       });
       this.websocketTask.onOpen(function () {
         console.log('✅ WebSocket 连接已打开');
-        _this6.websocketConnected = true;
+        _this7.websocketConnected = true;
         // 清除可能存在的重连定时器
-        if (_this6.reconnectInterval) {
-          clearInterval(_this6.reconnectInterval);
-          _this6.reconnectInterval = null;
+        if (_this7.reconnectInterval) {
+          clearInterval(_this7.reconnectInterval);
+          _this7.reconnectInterval = null;
         }
         // this.addSystemMessage("智能助手连接成功！");
 
         // 新增：开启心跳
-        _this6.startHeartbeat();
+        _this7.startHeartbeat();
       });
       this.websocketTask.onMessage(function (res) {
         console.log('收到WebSocket消息:', res.data);
@@ -1925,44 +1985,44 @@ var _default = {
         try {
           var payload = JSON.parse(res.data);
           // 调用我们已经写好的Webhook处理逻辑
-          _this6.handleWebhookData(payload);
+          _this7.handleWebhookData(payload);
         } catch (e) {
           console.error('解析WebSocket消息失败:', e);
         }
       });
       this.websocketTask.onError(function (err) {
         console.error('WebSocket 连接发生错误:', err);
-        _this6.websocketConnected = false;
+        _this7.websocketConnected = false;
         // ⚠️ 不显示错误提示，避免在页面切换时产生不必要的用户困扰
       });
 
       this.websocketTask.onClose(function (res) {
         console.log('🔌 WebSocket 连接已关闭', res);
-        _this6.websocketConnected = false;
+        _this7.websocketConnected = false;
 
         // 停止心跳
-        _this6.stopHeartbeat();
+        _this7.stopHeartbeat();
 
         // ⚠️ 取消自动重连机制
         // 原因：用户离开页面后不需要重连，重新进入会自动初始化
         // 避免在后台不断尝试重连导致连接累积
 
         // 清理连接状态
-        _this6.websocketTask = null;
+        _this7.websocketTask = null;
       });
     },
     // --- 新增：心跳相关方法 ---
     startHeartbeat: function startHeartbeat() {
-      var _this7 = this;
+      var _this8 = this;
       // 先清除旧的，以防万一
       this.stopHeartbeat();
       console.log('❤️ 启动WebSocket心跳...');
       this.heartbeatInterval = setInterval(function () {
-        if (_this7.websocketConnected) {
+        if (_this8.websocketConnected) {
           var pingMessage = JSON.stringify({
             type: 'ping'
           });
-          _this7.websocketTask.send({
+          _this8.websocketTask.send({
             data: pingMessage,
             success: function success() {
               console.log('❤️ 心跳发送: ping');
@@ -2198,7 +2258,7 @@ var _default = {
     // 🎯 新增：加载并显示偏好分析（嵌入到对话中）
     loadAndShowPreferences: function loadAndShowPreferences(studentId) {
       var _arguments = arguments,
-        _this8 = this;
+        _this9 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6() {
         var moduleType, userMessageId, getDetailText, _preferenceMessage, userMessageIndex, updateAnalysisStep, response, grouped, totalCount, preferences, insight, msg, _msg, _msg2;
         return _regenerator.default.wrap(function _callee6$(_context6) {
@@ -2270,18 +2330,18 @@ var _default = {
                 }; // 插入占位符到对话列表
 
                 if (userMessageId) {
-                  userMessageIndex = _this8.chatMessages.findIndex(function (msg) {
+                  userMessageIndex = _this9.chatMessages.findIndex(function (msg) {
                     return msg.type === 'user' && msg.id === userMessageId;
                   });
                   if (userMessageIndex >= 0) {
-                    _this8.chatMessages.splice(userMessageIndex + 1, 0, _preferenceMessage);
+                    _this9.chatMessages.splice(userMessageIndex + 1, 0, _preferenceMessage);
                   } else {
-                    _this8.chatMessages.push(_preferenceMessage);
+                    _this9.chatMessages.push(_preferenceMessage);
                   }
                 } else {
-                  _this8.chatMessages.push(_preferenceMessage);
+                  _this9.chatMessages.push(_preferenceMessage);
                 }
-                _this8.scrollToBottom();
+                _this9.scrollToBottom();
 
                 // 🎯 模拟AI分析过程，逐步更新状态（加快速度用于演示）
                 updateAnalysisStep = /*#__PURE__*/function () {
@@ -2300,7 +2360,7 @@ var _default = {
                               return setTimeout(resolve, delay);
                             });
                           case 3:
-                            msg = _this8.chatMessages.find(function (m) {
+                            msg = _this9.chatMessages.find(function (m) {
                               return m.id === _preferenceMessage.id;
                             });
                             if (msg) {
@@ -2309,8 +2369,8 @@ var _default = {
                               });
                               if (step) {
                                 step.status = status;
-                                _this8.$forceUpdate();
-                                _this8.scrollToBottom();
+                                _this9.$forceUpdate();
+                                _this9.scrollToBottom();
                               }
                             }
                           case 5:
@@ -2379,12 +2439,12 @@ var _default = {
                   environment: grouped.environment || [],
                   facility: grouped.facility || []
                 }; // 🎯 生成AI洞察（智能总结）
-                insight = _this8.generatePreferenceInsight(preferences, moduleType, totalCount); // 第四步：生成洞察
+                insight = _this9.generatePreferenceInsight(preferences, moduleType, totalCount); // 第四步：生成洞察
                 _context6.next = 36;
                 return updateAnalysisStep(4, 'complete', 100);
               case 36:
                 // 🎯 更新为最终完成状态
-                msg = _this8.chatMessages.find(function (m) {
+                msg = _this9.chatMessages.find(function (m) {
                   return m.id === _preferenceMessage.id;
                 });
                 if (msg) {
@@ -2393,15 +2453,15 @@ var _default = {
                   msg.hasData = totalCount > 0;
                   msg.insight = insight;
                   msg.totalCount = totalCount;
-                  _this8.$forceUpdate();
-                  _this8.scrollToBottom();
+                  _this9.$forceUpdate();
+                  _this9.scrollToBottom();
                 }
                 _context6.next = 43;
                 break;
               case 40:
                 console.warn('📊 获取偏好数据失败:', response);
                 // 更新为失败状态
-                _msg = _this8.chatMessages.find(function (m) {
+                _msg = _this9.chatMessages.find(function (m) {
                   return m.id === _preferenceMessage.id;
                 });
                 if (_msg) {
@@ -2409,7 +2469,7 @@ var _default = {
                   _msg.analysisSteps.forEach(function (step) {
                     if (step.status === 'loading') step.status = 'error';
                   });
-                  _this8.$forceUpdate();
+                  _this9.$forceUpdate();
                 }
               case 43:
                 _context6.next = 50;
@@ -2418,7 +2478,7 @@ var _default = {
                 _context6.prev = 45;
                 _context6.t0 = _context6["catch"](2);
                 console.error('❌ 加载偏好数据失败:', _context6.t0);
-                _msg2 = _this8.chatMessages.find(function (m) {
+                _msg2 = _this9.chatMessages.find(function (m) {
                   return m.id === preferenceMessage.id;
                 });
                 if (_msg2) {
@@ -2429,7 +2489,7 @@ var _default = {
                     }
                   });
                   _msg2.insight = '分析过程中遇到错误，请稍后重试';
-                  _this8.$forceUpdate();
+                  _this9.$forceUpdate();
                 }
               case 50:
               case "end":
@@ -2634,7 +2694,7 @@ var _default = {
     },
     // 加载指定对话
     loadConversation: function loadConversation(conversationId) {
-      var _this9 = this;
+      var _this10 = this;
       if (!conversationId) {
         console.warn('无效的对话ID');
         return;
@@ -2655,7 +2715,7 @@ var _default = {
           this.conversationCreatedAt = conversationData.createdAt;
           console.log("\uD83D\uDCE5 \u52A0\u8F7D\u5BF9\u8BDD: ".concat(this.conversationTitle, " (").concat(this.chatMessages.length, "\u6761\u6D88\u606F)"));
           this.$nextTick(function () {
-            _this9.scrollToBottom();
+            _this10.scrollToBottom();
           });
         } else {
           console.log('📝 新对话，从欢迎消息开始');
@@ -2741,7 +2801,7 @@ var _default = {
     },
     // 删除对话
     deleteConversation: function deleteConversation(conversationId, index) {
-      var _this10 = this;
+      var _this11 = this;
       uni.showModal({
         title: '确认删除',
         content: '确定要删除这条对话记录吗？',
@@ -2765,11 +2825,11 @@ var _default = {
               uni.setStorageSync(indexKey, conversationIndex);
 
               // 从列表中移除
-              _this10.conversationList.splice(index, 1);
+              _this11.conversationList.splice(index, 1);
 
               // 如果删除的是当前对话，创建新对话
-              if (conversationId === _this10.currentConversationId) {
-                _this10.createNewConversation();
+              if (conversationId === _this11.currentConversationId) {
+                _this11.createNewConversation();
               }
               uni.showToast({
                 title: '已删除',

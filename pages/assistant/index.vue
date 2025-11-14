@@ -499,7 +499,7 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://rrp-ronald-haven-derby.trycloudflare.com", 
+			tunnelUrl: "https://models-dev-machine-trees.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
@@ -591,6 +591,9 @@ export default {
 		showHistoryPopup: false, // 是否显示历史对话弹窗
 		conversationList: [], // 历史对话列表
 		
+		// 🤖 新增：来自聊天分析的待处理需求
+		pendingChatAnalysis: null, // 存储待发送的聊天分析需求
+		
 			selectedAssistant: null,
 			activeSkill: {
 				id: null,
@@ -618,11 +621,31 @@ export default {
 			console.log('✨ 创建新对话:', this.currentConversationId);
 		}
 		
+		// 🤖 检查是否来自聊天AI分析
+		if (options && options.from === 'chat_analysis') {
+			console.log('🔍 检测到来自聊天AI分析:', {
+				type: options.type,
+				summary: options.summary
+			});
+			// 保存需求信息，待初始化完成后自动发送
+			this.pendingChatAnalysis = {
+				type: options.type,
+				summary: decodeURIComponent(options.summary || '')
+			};
+		}
+		
 		try {
 			await this.initializeAssistant();
 			// 初始化成功后，连接WebSocket
 			this.connectWebSocket();
 			console.log('页面初始化与WebSocket连接流程启动');
+			
+			// 🤖 如果有待发送的聊天分析需求，等待一秒后自动发送
+			if (this.pendingChatAnalysis) {
+				setTimeout(() => {
+					this.sendChatAnalysisRequest();
+				}, 1000);
+			}
 		} catch (error) {
 			console.error('页面初始化失败:', error);
 			uni.showToast({
@@ -934,6 +957,47 @@ export default {
 				timestamp: Date.now()
 			});
 			this.scrollToBottom();
+		},
+
+		// 🤖 发送聊天分析需求
+		sendChatAnalysisRequest() {
+			console.log('🚀 准备发送聊天分析需求:', this.pendingChatAnalysis);
+			
+			if (!this.pendingChatAnalysis || !this.pendingChatAnalysis.summary) {
+				console.error('❌ 无有效的聊天分析需求');
+				return;
+			}
+			
+			try {
+				// 构建消息内容
+				const needTypeMap = {
+					'classroom': '教室预约',
+					'library': '图书借阅', 
+					'studyroom': '自习室预约'
+				};
+				
+				const needTypeName = needTypeMap[this.pendingChatAnalysis.type] || this.pendingChatAnalysis.type;
+				const messageContent = `你好！我从聊天记录中分析到一个${needTypeName}需求，详情如下：\n\n${this.pendingChatAnalysis.summary}\n\n请帮我处理这个需求。`;
+				
+				// 设置输入框内容
+				this.inputMessage = messageContent;
+				
+				// 自动发送消息
+				setTimeout(() => {
+					this.sendMessage();
+					// 清理待处理的需求
+					this.pendingChatAnalysis = null;
+				}, 500);
+				
+				console.log('✅ 已自动发送聊天分析需求');
+				
+			} catch (e) {
+				console.error('❌ 发送聊天分析需求失败:', e);
+				uni.showToast({
+					title: '发送需求失败',
+					icon: 'none'
+				});
+			}
 		},
 
 		// 滚动到底部

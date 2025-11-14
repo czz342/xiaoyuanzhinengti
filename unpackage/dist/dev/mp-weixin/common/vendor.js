@@ -67,7 +67,7 @@ module.exports = _nonIterableRest, module.exports.__esModule = true, module.expo
 
 /***/ }),
 
-/***/ 1000:
+/***/ 1014:
 /*!*******************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/pages/NEUIKit/utils/parseText.ts ***!
   \*******************************************************************************************/
@@ -215,7 +215,7 @@ function parseText(text, ext) {
 
 /***/ }),
 
-/***/ 1029:
+/***/ 1043:
 /*!**************************************************************************************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/pages/NEUIKit/components/uni-components/uni-transition/components/uni-transition/createAnimation.js ***!
   \**************************************************************************************************************************************************************/
@@ -72927,141 +72927,6 @@ exports.t = t;
 
 /***/ }),
 
-/***/ 866:
-/*!**********************************************************************************************************************************!*\
-  !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-transition/components/uni-transition/createAnimation.js ***!
-  \**********************************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(uni) {
-
-var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.createAnimation = createAnimation;
-var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
-var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
-var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-// const defaultOption = {
-// 	duration: 300,
-// 	timingFunction: 'linear',
-// 	delay: 0,
-// 	transformOrigin: '50% 50% 0'
-// }
-var MPAnimation = /*#__PURE__*/function () {
-  function MPAnimation(options, _this) {
-    (0, _classCallCheck2.default)(this, MPAnimation);
-    this.options = options;
-    // 在iOS10+QQ小程序平台下，传给原生的对象一定是个普通对象而不是Proxy对象，否则会报parameter should be Object instead of ProxyObject的错误
-    this.animation = uni.createAnimation(_objectSpread({}, options));
-    this.currentStepAnimates = {};
-    this.next = 0;
-    this.$ = _this;
-  }
-  (0, _createClass2.default)(MPAnimation, [{
-    key: "_nvuePushAnimates",
-    value: function _nvuePushAnimates(type, args) {
-      var aniObj = this.currentStepAnimates[this.next];
-      var styles = {};
-      if (!aniObj) {
-        styles = {
-          styles: {},
-          config: {}
-        };
-      } else {
-        styles = aniObj;
-      }
-      if (animateTypes1.includes(type)) {
-        if (!styles.styles.transform) {
-          styles.styles.transform = '';
-        }
-        var unit = '';
-        if (type === 'rotate') {
-          unit = 'deg';
-        }
-        styles.styles.transform += "".concat(type, "(").concat(args + unit, ") ");
-      } else {
-        styles.styles[type] = "".concat(args);
-      }
-      this.currentStepAnimates[this.next] = styles;
-    }
-  }, {
-    key: "_animateRun",
-    value: function _animateRun() {
-      var styles = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var ref = this.$.$refs['ani'].ref;
-      if (!ref) return;
-      return new Promise(function (resolve, reject) {
-        nvueAnimation.transition(ref, _objectSpread({
-          styles: styles
-        }, config), function (res) {
-          resolve();
-        });
-      });
-    }
-  }, {
-    key: "_nvueNextAnimate",
-    value: function _nvueNextAnimate(animates) {
-      var _this2 = this;
-      var step = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-      var fn = arguments.length > 2 ? arguments[2] : undefined;
-      var obj = animates[step];
-      if (obj) {
-        var styles = obj.styles,
-          config = obj.config;
-        this._animateRun(styles, config).then(function () {
-          step += 1;
-          _this2._nvueNextAnimate(animates, step, fn);
-        });
-      } else {
-        this.currentStepAnimates = {};
-        typeof fn === 'function' && fn();
-        this.isEnd = true;
-      }
-    }
-  }, {
-    key: "step",
-    value: function step() {
-      var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      this.animation.step(config);
-      return this;
-    }
-  }, {
-    key: "run",
-    value: function run(fn) {
-      this.$.animationData = this.animation.export();
-      this.$.timer = setTimeout(function () {
-        typeof fn === 'function' && fn();
-      }, this.$.durationTime);
-    }
-  }]);
-  return MPAnimation;
-}();
-var animateTypes1 = ['matrix', 'matrix3d', 'rotate', 'rotate3d', 'rotateX', 'rotateY', 'rotateZ', 'scale', 'scale3d', 'scaleX', 'scaleY', 'scaleZ', 'skew', 'skewX', 'skewY', 'translate', 'translate3d', 'translateX', 'translateY', 'translateZ'];
-var animateTypes2 = ['opacity', 'backgroundColor'];
-var animateTypes3 = ['width', 'height', 'left', 'right', 'top', 'bottom'];
-animateTypes1.concat(animateTypes2, animateTypes3).forEach(function (type) {
-  MPAnimation.prototype[type] = function () {
-    var _this$animation;
-    (_this$animation = this.animation)[type].apply(_this$animation, arguments);
-    return this;
-  };
-});
-function createAnimation(option, _this) {
-  if (!_this) return;
-  clearTimeout(_this.timer);
-  return new MPAnimation(option, _this);
-}
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 2)["default"]))
-
-/***/ }),
-
 /***/ 87:
 /*!*************************************************************************************!*\
   !*** D:/netease-codewave-competition/campus-life-system/pages/NEUIKit/locale/en.ts ***!
@@ -73342,333 +73207,6 @@ var _default = {
   Poop: '[Poop]'
 };
 exports.default = _default;
-
-/***/ }),
-
-/***/ 872:
-/*!******************************************************************************************!*\
-  !*** D:/netease-codewave-competition/campus-life-system/node_modules/dayjs/dayjs.min.js ***!
-  \******************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;var _typeof = __webpack_require__(/*! @babel/runtime/helpers/typeof */ 13);
-!function (t, e) {
-  "object" == ( false ? undefined : _typeof(exports)) && "undefined" != typeof module ? module.exports = e() :  true ? !(__WEBPACK_AMD_DEFINE_FACTORY__ = (e),
-				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) :
-				__WEBPACK_AMD_DEFINE_FACTORY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)) : undefined;
-}(this, function () {
-  "use strict";
-
-  var t = 1e3,
-    e = 6e4,
-    n = 36e5,
-    r = "millisecond",
-    i = "second",
-    s = "minute",
-    u = "hour",
-    a = "day",
-    o = "week",
-    f = "month",
-    h = "quarter",
-    c = "year",
-    d = "date",
-    l = "Invalid Date",
-    $ = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/,
-    y = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g,
-    M = {
-      name: "en",
-      weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
-      months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_"),
-      ordinal: function ordinal(t) {
-        var e = ["th", "st", "nd", "rd"],
-          n = t % 100;
-        return "[" + t + (e[(n - 20) % 10] || e[n] || e[0]) + "]";
-      }
-    },
-    m = function m(t, e, n) {
-      var r = String(t);
-      return !r || r.length >= e ? t : "" + Array(e + 1 - r.length).join(n) + t;
-    },
-    v = {
-      s: m,
-      z: function z(t) {
-        var e = -t.utcOffset(),
-          n = Math.abs(e),
-          r = Math.floor(n / 60),
-          i = n % 60;
-        return (e <= 0 ? "+" : "-") + m(r, 2, "0") + ":" + m(i, 2, "0");
-      },
-      m: function t(e, n) {
-        if (e.date() < n.date()) return -t(n, e);
-        var r = 12 * (n.year() - e.year()) + (n.month() - e.month()),
-          i = e.clone().add(r, f),
-          s = n - i < 0,
-          u = e.clone().add(r + (s ? -1 : 1), f);
-        return +(-(r + (n - i) / (s ? i - u : u - i)) || 0);
-      },
-      a: function a(t) {
-        return t < 0 ? Math.ceil(t) || 0 : Math.floor(t);
-      },
-      p: function p(t) {
-        return {
-          M: f,
-          y: c,
-          w: o,
-          d: a,
-          D: d,
-          h: u,
-          m: s,
-          s: i,
-          ms: r,
-          Q: h
-        }[t] || String(t || "").toLowerCase().replace(/s$/, "");
-      },
-      u: function u(t) {
-        return void 0 === t;
-      }
-    },
-    g = "en",
-    D = {};
-  D[g] = M;
-  var p = function p(t) {
-      return t instanceof _;
-    },
-    S = function t(e, n, r) {
-      var i;
-      if (!e) return g;
-      if ("string" == typeof e) {
-        var s = e.toLowerCase();
-        D[s] && (i = s), n && (D[s] = n, i = s);
-        var u = e.split("-");
-        if (!i && u.length > 1) return t(u[0]);
-      } else {
-        var a = e.name;
-        D[a] = e, i = a;
-      }
-      return !r && i && (g = i), i || !r && g;
-    },
-    w = function w(t, e) {
-      if (p(t)) return t.clone();
-      var n = "object" == _typeof(e) ? e : {};
-      return n.date = t, n.args = arguments, new _(n);
-    },
-    O = v;
-  O.l = S, O.i = p, O.w = function (t, e) {
-    return w(t, {
-      locale: e.$L,
-      utc: e.$u,
-      x: e.$x,
-      $offset: e.$offset
-    });
-  };
-  var _ = function () {
-      function M(t) {
-        this.$L = S(t.locale, null, !0), this.parse(t);
-      }
-      var m = M.prototype;
-      return m.parse = function (t) {
-        this.$d = function (t) {
-          var e = t.date,
-            n = t.utc;
-          if (null === e) return new Date(NaN);
-          if (O.u(e)) return new Date();
-          if (e instanceof Date) return new Date(e);
-          if ("string" == typeof e && !/Z$/i.test(e)) {
-            var r = e.match($);
-            if (r) {
-              var i = r[2] - 1 || 0,
-                s = (r[7] || "0").substring(0, 3);
-              return n ? new Date(Date.UTC(r[1], i, r[3] || 1, r[4] || 0, r[5] || 0, r[6] || 0, s)) : new Date(r[1], i, r[3] || 1, r[4] || 0, r[5] || 0, r[6] || 0, s);
-            }
-          }
-          return new Date(e);
-        }(t), this.$x = t.x || {}, this.init();
-      }, m.init = function () {
-        var t = this.$d;
-        this.$y = t.getFullYear(), this.$M = t.getMonth(), this.$D = t.getDate(), this.$W = t.getDay(), this.$H = t.getHours(), this.$m = t.getMinutes(), this.$s = t.getSeconds(), this.$ms = t.getMilliseconds();
-      }, m.$utils = function () {
-        return O;
-      }, m.isValid = function () {
-        return !(this.$d.toString() === l);
-      }, m.isSame = function (t, e) {
-        var n = w(t);
-        return this.startOf(e) <= n && n <= this.endOf(e);
-      }, m.isAfter = function (t, e) {
-        return w(t) < this.startOf(e);
-      }, m.isBefore = function (t, e) {
-        return this.endOf(e) < w(t);
-      }, m.$g = function (t, e, n) {
-        return O.u(t) ? this[e] : this.set(n, t);
-      }, m.unix = function () {
-        return Math.floor(this.valueOf() / 1e3);
-      }, m.valueOf = function () {
-        return this.$d.getTime();
-      }, m.startOf = function (t, e) {
-        var n = this,
-          r = !!O.u(e) || e,
-          h = O.p(t),
-          l = function l(t, e) {
-            var i = O.w(n.$u ? Date.UTC(n.$y, e, t) : new Date(n.$y, e, t), n);
-            return r ? i : i.endOf(a);
-          },
-          $ = function $(t, e) {
-            return O.w(n.toDate()[t].apply(n.toDate("s"), (r ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(e)), n);
-          },
-          y = this.$W,
-          M = this.$M,
-          m = this.$D,
-          v = "set" + (this.$u ? "UTC" : "");
-        switch (h) {
-          case c:
-            return r ? l(1, 0) : l(31, 11);
-          case f:
-            return r ? l(1, M) : l(0, M + 1);
-          case o:
-            var g = this.$locale().weekStart || 0,
-              D = (y < g ? y + 7 : y) - g;
-            return l(r ? m - D : m + (6 - D), M);
-          case a:
-          case d:
-            return $(v + "Hours", 0);
-          case u:
-            return $(v + "Minutes", 1);
-          case s:
-            return $(v + "Seconds", 2);
-          case i:
-            return $(v + "Milliseconds", 3);
-          default:
-            return this.clone();
-        }
-      }, m.endOf = function (t) {
-        return this.startOf(t, !1);
-      }, m.$set = function (t, e) {
-        var n,
-          o = O.p(t),
-          h = "set" + (this.$u ? "UTC" : ""),
-          l = (n = {}, n[a] = h + "Date", n[d] = h + "Date", n[f] = h + "Month", n[c] = h + "FullYear", n[u] = h + "Hours", n[s] = h + "Minutes", n[i] = h + "Seconds", n[r] = h + "Milliseconds", n)[o],
-          $ = o === a ? this.$D + (e - this.$W) : e;
-        if (o === f || o === c) {
-          var y = this.clone().set(d, 1);
-          y.$d[l]($), y.init(), this.$d = y.set(d, Math.min(this.$D, y.daysInMonth())).$d;
-        } else l && this.$d[l]($);
-        return this.init(), this;
-      }, m.set = function (t, e) {
-        return this.clone().$set(t, e);
-      }, m.get = function (t) {
-        return this[O.p(t)]();
-      }, m.add = function (r, h) {
-        var d,
-          l = this;
-        r = Number(r);
-        var $ = O.p(h),
-          y = function y(t) {
-            var e = w(l);
-            return O.w(e.date(e.date() + Math.round(t * r)), l);
-          };
-        if ($ === f) return this.set(f, this.$M + r);
-        if ($ === c) return this.set(c, this.$y + r);
-        if ($ === a) return y(1);
-        if ($ === o) return y(7);
-        var M = (d = {}, d[s] = e, d[u] = n, d[i] = t, d)[$] || 1,
-          m = this.$d.getTime() + r * M;
-        return O.w(m, this);
-      }, m.subtract = function (t, e) {
-        return this.add(-1 * t, e);
-      }, m.format = function (t) {
-        var e = this,
-          n = this.$locale();
-        if (!this.isValid()) return n.invalidDate || l;
-        var r = t || "YYYY-MM-DDTHH:mm:ssZ",
-          i = O.z(this),
-          s = this.$H,
-          u = this.$m,
-          a = this.$M,
-          o = n.weekdays,
-          f = n.months,
-          h = function h(t, n, i, s) {
-            return t && (t[n] || t(e, r)) || i[n].slice(0, s);
-          },
-          c = function c(t) {
-            return O.s(s % 12 || 12, t, "0");
-          },
-          d = n.meridiem || function (t, e, n) {
-            var r = t < 12 ? "AM" : "PM";
-            return n ? r.toLowerCase() : r;
-          },
-          $ = {
-            YY: String(this.$y).slice(-2),
-            YYYY: this.$y,
-            M: a + 1,
-            MM: O.s(a + 1, 2, "0"),
-            MMM: h(n.monthsShort, a, f, 3),
-            MMMM: h(f, a),
-            D: this.$D,
-            DD: O.s(this.$D, 2, "0"),
-            d: String(this.$W),
-            dd: h(n.weekdaysMin, this.$W, o, 2),
-            ddd: h(n.weekdaysShort, this.$W, o, 3),
-            dddd: o[this.$W],
-            H: String(s),
-            HH: O.s(s, 2, "0"),
-            h: c(1),
-            hh: c(2),
-            a: d(s, u, !0),
-            A: d(s, u, !1),
-            m: String(u),
-            mm: O.s(u, 2, "0"),
-            s: String(this.$s),
-            ss: O.s(this.$s, 2, "0"),
-            SSS: O.s(this.$ms, 3, "0"),
-            Z: i
-          };
-        return r.replace(y, function (t, e) {
-          return e || $[t] || i.replace(":", "");
-        });
-      }, m.utcOffset = function () {
-        return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
-      }, m.diff = function (r, d, l) {
-        var $,
-          y = O.p(d),
-          M = w(r),
-          m = (M.utcOffset() - this.utcOffset()) * e,
-          v = this - M,
-          g = O.m(this, M);
-        return g = ($ = {}, $[c] = g / 12, $[f] = g, $[h] = g / 3, $[o] = (v - m) / 6048e5, $[a] = (v - m) / 864e5, $[u] = v / n, $[s] = v / e, $[i] = v / t, $)[y] || v, l ? g : O.a(g);
-      }, m.daysInMonth = function () {
-        return this.endOf(f).$D;
-      }, m.$locale = function () {
-        return D[this.$L];
-      }, m.locale = function (t, e) {
-        if (!t) return this.$L;
-        var n = this.clone(),
-          r = S(t, e, !0);
-        return r && (n.$L = r), n;
-      }, m.clone = function () {
-        return O.w(this.$d, this);
-      }, m.toDate = function () {
-        return new Date(this.valueOf());
-      }, m.toJSON = function () {
-        return this.isValid() ? this.toISOString() : null;
-      }, m.toISOString = function () {
-        return this.$d.toISOString();
-      }, m.toString = function () {
-        return this.$d.toUTCString();
-      }, M;
-    }(),
-    T = _.prototype;
-  return w.prototype = T, [["$ms", r], ["$s", i], ["$m", s], ["$H", u], ["$W", a], ["$M", f], ["$y", c], ["$D", d]].forEach(function (t) {
-    T[t[1]] = function (e) {
-      return this.$g(e, t[0], t[1]);
-    };
-  }), w.extend = function (t, e) {
-    return t.$i || (t(e, _, w), t.$i = !0), w;
-  }, w.locale = S, w.isDayjs = p, w.unix = function (t) {
-    return w(1e3 * t);
-  }, w.en = D[g], w.Ls = D, w.p = {}, w;
-});
 
 /***/ }),
 
@@ -74017,37 +73555,465 @@ exports.default = _default;
 
 /***/ }),
 
-/***/ 887:
-/*!****************************************************************************************!*\
-  !*** D:/netease-codewave-competition/campus-life-system/pages/NEUIKit/utils/matrix.ts ***!
-  \****************************************************************************************/
+/***/ 880:
+/*!**********************************************************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/uni_modules/uni-transition/components/uni-transition/createAnimation.js ***!
+  \**********************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/* WEBPACK VAR INJECTION */(function(uni) {
 
-
+var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.culculateMatrix = void 0;
-var culculateMatrix = function culculateMatrix(arr, colNum) {
-  if (colNum < 1) {
-    throw Error('colNum cound not be smaller than 1');
+exports.createAnimation = createAnimation;
+var _defineProperty2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/defineProperty */ 11));
+var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
+var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+// const defaultOption = {
+// 	duration: 300,
+// 	timingFunction: 'linear',
+// 	delay: 0,
+// 	transformOrigin: '50% 50% 0'
+// }
+var MPAnimation = /*#__PURE__*/function () {
+  function MPAnimation(options, _this) {
+    (0, _classCallCheck2.default)(this, MPAnimation);
+    this.options = options;
+    // 在iOS10+QQ小程序平台下，传给原生的对象一定是个普通对象而不是Proxy对象，否则会报parameter should be Object instead of ProxyObject的错误
+    this.animation = uni.createAnimation(_objectSpread({}, options));
+    this.currentStepAnimates = {};
+    this.next = 0;
+    this.$ = _this;
   }
-  var len = arr.length;
-  var rowNum = Math.ceil(len / colNum);
-  var curIndex = 0;
-  var curRow = 0;
-  var res = [];
-  while (curIndex <= len && curRow < rowNum) {
-    res[curRow] = arr.slice(curIndex, curIndex + colNum);
-    curIndex += colNum;
-    curRow++;
-  }
-  return res;
-};
-exports.culculateMatrix = culculateMatrix;
+  (0, _createClass2.default)(MPAnimation, [{
+    key: "_nvuePushAnimates",
+    value: function _nvuePushAnimates(type, args) {
+      var aniObj = this.currentStepAnimates[this.next];
+      var styles = {};
+      if (!aniObj) {
+        styles = {
+          styles: {},
+          config: {}
+        };
+      } else {
+        styles = aniObj;
+      }
+      if (animateTypes1.includes(type)) {
+        if (!styles.styles.transform) {
+          styles.styles.transform = '';
+        }
+        var unit = '';
+        if (type === 'rotate') {
+          unit = 'deg';
+        }
+        styles.styles.transform += "".concat(type, "(").concat(args + unit, ") ");
+      } else {
+        styles.styles[type] = "".concat(args);
+      }
+      this.currentStepAnimates[this.next] = styles;
+    }
+  }, {
+    key: "_animateRun",
+    value: function _animateRun() {
+      var styles = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var ref = this.$.$refs['ani'].ref;
+      if (!ref) return;
+      return new Promise(function (resolve, reject) {
+        nvueAnimation.transition(ref, _objectSpread({
+          styles: styles
+        }, config), function (res) {
+          resolve();
+        });
+      });
+    }
+  }, {
+    key: "_nvueNextAnimate",
+    value: function _nvueNextAnimate(animates) {
+      var _this2 = this;
+      var step = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var fn = arguments.length > 2 ? arguments[2] : undefined;
+      var obj = animates[step];
+      if (obj) {
+        var styles = obj.styles,
+          config = obj.config;
+        this._animateRun(styles, config).then(function () {
+          step += 1;
+          _this2._nvueNextAnimate(animates, step, fn);
+        });
+      } else {
+        this.currentStepAnimates = {};
+        typeof fn === 'function' && fn();
+        this.isEnd = true;
+      }
+    }
+  }, {
+    key: "step",
+    value: function step() {
+      var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      this.animation.step(config);
+      return this;
+    }
+  }, {
+    key: "run",
+    value: function run(fn) {
+      this.$.animationData = this.animation.export();
+      this.$.timer = setTimeout(function () {
+        typeof fn === 'function' && fn();
+      }, this.$.durationTime);
+    }
+  }]);
+  return MPAnimation;
+}();
+var animateTypes1 = ['matrix', 'matrix3d', 'rotate', 'rotate3d', 'rotateX', 'rotateY', 'rotateZ', 'scale', 'scale3d', 'scaleX', 'scaleY', 'scaleZ', 'skew', 'skewX', 'skewY', 'translate', 'translate3d', 'translateX', 'translateY', 'translateZ'];
+var animateTypes2 = ['opacity', 'backgroundColor'];
+var animateTypes3 = ['width', 'height', 'left', 'right', 'top', 'bottom'];
+animateTypes1.concat(animateTypes2, animateTypes3).forEach(function (type) {
+  MPAnimation.prototype[type] = function () {
+    var _this$animation;
+    (_this$animation = this.animation)[type].apply(_this$animation, arguments);
+    return this;
+  };
+});
+function createAnimation(option, _this) {
+  if (!_this) return;
+  clearTimeout(_this.timer);
+  return new MPAnimation(option, _this);
+}
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 2)["default"]))
+
+/***/ }),
+
+/***/ 886:
+/*!******************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/node_modules/dayjs/dayjs.min.js ***!
+  \******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;var _typeof = __webpack_require__(/*! @babel/runtime/helpers/typeof */ 13);
+!function (t, e) {
+  "object" == ( false ? undefined : _typeof(exports)) && "undefined" != typeof module ? module.exports = e() :  true ? !(__WEBPACK_AMD_DEFINE_FACTORY__ = (e),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) :
+				__WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)) : undefined;
+}(this, function () {
+  "use strict";
+
+  var t = 1e3,
+    e = 6e4,
+    n = 36e5,
+    r = "millisecond",
+    i = "second",
+    s = "minute",
+    u = "hour",
+    a = "day",
+    o = "week",
+    f = "month",
+    h = "quarter",
+    c = "year",
+    d = "date",
+    l = "Invalid Date",
+    $ = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/,
+    y = /\[([^\]]+)]|Y{1,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g,
+    M = {
+      name: "en",
+      weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
+      months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_"),
+      ordinal: function ordinal(t) {
+        var e = ["th", "st", "nd", "rd"],
+          n = t % 100;
+        return "[" + t + (e[(n - 20) % 10] || e[n] || e[0]) + "]";
+      }
+    },
+    m = function m(t, e, n) {
+      var r = String(t);
+      return !r || r.length >= e ? t : "" + Array(e + 1 - r.length).join(n) + t;
+    },
+    v = {
+      s: m,
+      z: function z(t) {
+        var e = -t.utcOffset(),
+          n = Math.abs(e),
+          r = Math.floor(n / 60),
+          i = n % 60;
+        return (e <= 0 ? "+" : "-") + m(r, 2, "0") + ":" + m(i, 2, "0");
+      },
+      m: function t(e, n) {
+        if (e.date() < n.date()) return -t(n, e);
+        var r = 12 * (n.year() - e.year()) + (n.month() - e.month()),
+          i = e.clone().add(r, f),
+          s = n - i < 0,
+          u = e.clone().add(r + (s ? -1 : 1), f);
+        return +(-(r + (n - i) / (s ? i - u : u - i)) || 0);
+      },
+      a: function a(t) {
+        return t < 0 ? Math.ceil(t) || 0 : Math.floor(t);
+      },
+      p: function p(t) {
+        return {
+          M: f,
+          y: c,
+          w: o,
+          d: a,
+          D: d,
+          h: u,
+          m: s,
+          s: i,
+          ms: r,
+          Q: h
+        }[t] || String(t || "").toLowerCase().replace(/s$/, "");
+      },
+      u: function u(t) {
+        return void 0 === t;
+      }
+    },
+    g = "en",
+    D = {};
+  D[g] = M;
+  var p = function p(t) {
+      return t instanceof _;
+    },
+    S = function t(e, n, r) {
+      var i;
+      if (!e) return g;
+      if ("string" == typeof e) {
+        var s = e.toLowerCase();
+        D[s] && (i = s), n && (D[s] = n, i = s);
+        var u = e.split("-");
+        if (!i && u.length > 1) return t(u[0]);
+      } else {
+        var a = e.name;
+        D[a] = e, i = a;
+      }
+      return !r && i && (g = i), i || !r && g;
+    },
+    w = function w(t, e) {
+      if (p(t)) return t.clone();
+      var n = "object" == _typeof(e) ? e : {};
+      return n.date = t, n.args = arguments, new _(n);
+    },
+    O = v;
+  O.l = S, O.i = p, O.w = function (t, e) {
+    return w(t, {
+      locale: e.$L,
+      utc: e.$u,
+      x: e.$x,
+      $offset: e.$offset
+    });
+  };
+  var _ = function () {
+      function M(t) {
+        this.$L = S(t.locale, null, !0), this.parse(t);
+      }
+      var m = M.prototype;
+      return m.parse = function (t) {
+        this.$d = function (t) {
+          var e = t.date,
+            n = t.utc;
+          if (null === e) return new Date(NaN);
+          if (O.u(e)) return new Date();
+          if (e instanceof Date) return new Date(e);
+          if ("string" == typeof e && !/Z$/i.test(e)) {
+            var r = e.match($);
+            if (r) {
+              var i = r[2] - 1 || 0,
+                s = (r[7] || "0").substring(0, 3);
+              return n ? new Date(Date.UTC(r[1], i, r[3] || 1, r[4] || 0, r[5] || 0, r[6] || 0, s)) : new Date(r[1], i, r[3] || 1, r[4] || 0, r[5] || 0, r[6] || 0, s);
+            }
+          }
+          return new Date(e);
+        }(t), this.$x = t.x || {}, this.init();
+      }, m.init = function () {
+        var t = this.$d;
+        this.$y = t.getFullYear(), this.$M = t.getMonth(), this.$D = t.getDate(), this.$W = t.getDay(), this.$H = t.getHours(), this.$m = t.getMinutes(), this.$s = t.getSeconds(), this.$ms = t.getMilliseconds();
+      }, m.$utils = function () {
+        return O;
+      }, m.isValid = function () {
+        return !(this.$d.toString() === l);
+      }, m.isSame = function (t, e) {
+        var n = w(t);
+        return this.startOf(e) <= n && n <= this.endOf(e);
+      }, m.isAfter = function (t, e) {
+        return w(t) < this.startOf(e);
+      }, m.isBefore = function (t, e) {
+        return this.endOf(e) < w(t);
+      }, m.$g = function (t, e, n) {
+        return O.u(t) ? this[e] : this.set(n, t);
+      }, m.unix = function () {
+        return Math.floor(this.valueOf() / 1e3);
+      }, m.valueOf = function () {
+        return this.$d.getTime();
+      }, m.startOf = function (t, e) {
+        var n = this,
+          r = !!O.u(e) || e,
+          h = O.p(t),
+          l = function l(t, e) {
+            var i = O.w(n.$u ? Date.UTC(n.$y, e, t) : new Date(n.$y, e, t), n);
+            return r ? i : i.endOf(a);
+          },
+          $ = function $(t, e) {
+            return O.w(n.toDate()[t].apply(n.toDate("s"), (r ? [0, 0, 0, 0] : [23, 59, 59, 999]).slice(e)), n);
+          },
+          y = this.$W,
+          M = this.$M,
+          m = this.$D,
+          v = "set" + (this.$u ? "UTC" : "");
+        switch (h) {
+          case c:
+            return r ? l(1, 0) : l(31, 11);
+          case f:
+            return r ? l(1, M) : l(0, M + 1);
+          case o:
+            var g = this.$locale().weekStart || 0,
+              D = (y < g ? y + 7 : y) - g;
+            return l(r ? m - D : m + (6 - D), M);
+          case a:
+          case d:
+            return $(v + "Hours", 0);
+          case u:
+            return $(v + "Minutes", 1);
+          case s:
+            return $(v + "Seconds", 2);
+          case i:
+            return $(v + "Milliseconds", 3);
+          default:
+            return this.clone();
+        }
+      }, m.endOf = function (t) {
+        return this.startOf(t, !1);
+      }, m.$set = function (t, e) {
+        var n,
+          o = O.p(t),
+          h = "set" + (this.$u ? "UTC" : ""),
+          l = (n = {}, n[a] = h + "Date", n[d] = h + "Date", n[f] = h + "Month", n[c] = h + "FullYear", n[u] = h + "Hours", n[s] = h + "Minutes", n[i] = h + "Seconds", n[r] = h + "Milliseconds", n)[o],
+          $ = o === a ? this.$D + (e - this.$W) : e;
+        if (o === f || o === c) {
+          var y = this.clone().set(d, 1);
+          y.$d[l]($), y.init(), this.$d = y.set(d, Math.min(this.$D, y.daysInMonth())).$d;
+        } else l && this.$d[l]($);
+        return this.init(), this;
+      }, m.set = function (t, e) {
+        return this.clone().$set(t, e);
+      }, m.get = function (t) {
+        return this[O.p(t)]();
+      }, m.add = function (r, h) {
+        var d,
+          l = this;
+        r = Number(r);
+        var $ = O.p(h),
+          y = function y(t) {
+            var e = w(l);
+            return O.w(e.date(e.date() + Math.round(t * r)), l);
+          };
+        if ($ === f) return this.set(f, this.$M + r);
+        if ($ === c) return this.set(c, this.$y + r);
+        if ($ === a) return y(1);
+        if ($ === o) return y(7);
+        var M = (d = {}, d[s] = e, d[u] = n, d[i] = t, d)[$] || 1,
+          m = this.$d.getTime() + r * M;
+        return O.w(m, this);
+      }, m.subtract = function (t, e) {
+        return this.add(-1 * t, e);
+      }, m.format = function (t) {
+        var e = this,
+          n = this.$locale();
+        if (!this.isValid()) return n.invalidDate || l;
+        var r = t || "YYYY-MM-DDTHH:mm:ssZ",
+          i = O.z(this),
+          s = this.$H,
+          u = this.$m,
+          a = this.$M,
+          o = n.weekdays,
+          f = n.months,
+          h = function h(t, n, i, s) {
+            return t && (t[n] || t(e, r)) || i[n].slice(0, s);
+          },
+          c = function c(t) {
+            return O.s(s % 12 || 12, t, "0");
+          },
+          d = n.meridiem || function (t, e, n) {
+            var r = t < 12 ? "AM" : "PM";
+            return n ? r.toLowerCase() : r;
+          },
+          $ = {
+            YY: String(this.$y).slice(-2),
+            YYYY: this.$y,
+            M: a + 1,
+            MM: O.s(a + 1, 2, "0"),
+            MMM: h(n.monthsShort, a, f, 3),
+            MMMM: h(f, a),
+            D: this.$D,
+            DD: O.s(this.$D, 2, "0"),
+            d: String(this.$W),
+            dd: h(n.weekdaysMin, this.$W, o, 2),
+            ddd: h(n.weekdaysShort, this.$W, o, 3),
+            dddd: o[this.$W],
+            H: String(s),
+            HH: O.s(s, 2, "0"),
+            h: c(1),
+            hh: c(2),
+            a: d(s, u, !0),
+            A: d(s, u, !1),
+            m: String(u),
+            mm: O.s(u, 2, "0"),
+            s: String(this.$s),
+            ss: O.s(this.$s, 2, "0"),
+            SSS: O.s(this.$ms, 3, "0"),
+            Z: i
+          };
+        return r.replace(y, function (t, e) {
+          return e || $[t] || i.replace(":", "");
+        });
+      }, m.utcOffset = function () {
+        return 15 * -Math.round(this.$d.getTimezoneOffset() / 15);
+      }, m.diff = function (r, d, l) {
+        var $,
+          y = O.p(d),
+          M = w(r),
+          m = (M.utcOffset() - this.utcOffset()) * e,
+          v = this - M,
+          g = O.m(this, M);
+        return g = ($ = {}, $[c] = g / 12, $[f] = g, $[h] = g / 3, $[o] = (v - m) / 6048e5, $[a] = (v - m) / 864e5, $[u] = v / n, $[s] = v / e, $[i] = v / t, $)[y] || v, l ? g : O.a(g);
+      }, m.daysInMonth = function () {
+        return this.endOf(f).$D;
+      }, m.$locale = function () {
+        return D[this.$L];
+      }, m.locale = function (t, e) {
+        if (!t) return this.$L;
+        var n = this.clone(),
+          r = S(t, e, !0);
+        return r && (n.$L = r), n;
+      }, m.clone = function () {
+        return O.w(this.$d, this);
+      }, m.toDate = function () {
+        return new Date(this.valueOf());
+      }, m.toJSON = function () {
+        return this.isValid() ? this.toISOString() : null;
+      }, m.toISOString = function () {
+        return this.$d.toISOString();
+      }, m.toString = function () {
+        return this.$d.toUTCString();
+      }, M;
+    }(),
+    T = _.prototype;
+  return w.prototype = T, [["$ms", r], ["$s", i], ["$m", s], ["$H", u], ["$W", a], ["$M", f], ["$y", c], ["$D", d]].forEach(function (t) {
+    T[t[1]] = function (e) {
+      return this.$g(e, t[0], t[1]);
+    };
+  }), w.extend = function (t, e) {
+    return t.$i || (t(e, _, w), t.$i = !0), w;
+  }, w.locale = S, w.isDayjs = p, w.unix = function (t) {
+    return w(1e3 * t);
+  }, w.en = D[g], w.Ls = D, w.p = {}, w;
+});
 
 /***/ }),
 
@@ -74282,7 +74248,13 @@ var events = {
   // 关闭表情、语音面板
   CLOSE_PANEL: 'closePanel',
   // 语音消息url改变
-  AUDIO_URL_CHANGE: 'audioUrlChange'
+  AUDIO_URL_CHANGE: 'audioUrlChange',
+  // AI助手相关事件 
+  OPEN_AI_ASSIST: 'OPEN_AI_ASSIST',
+  CLOSE_AI_ASSIST: 'CLOSE_AI_ASSIST',
+  // 通用AI助手事件
+  OPEN_AI_ASSISTANT: 'OPEN_AI_ASSISTANT',
+  CLOSE_AI_ASSISTANT: 'CLOSE_AI_ASSISTANT'
 };
 exports.events = events;
 var HISTORY_LIMIT = 15;
@@ -74315,6 +74287,40 @@ var g2StatusMap = {
   5: (0, _i18n.t)('callBusyText')
 };
 exports.g2StatusMap = g2StatusMap;
+
+/***/ }),
+
+/***/ 901:
+/*!****************************************************************************************!*\
+  !*** D:/netease-codewave-competition/campus-life-system/pages/NEUIKit/utils/matrix.ts ***!
+  \****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.culculateMatrix = void 0;
+var culculateMatrix = function culculateMatrix(arr, colNum) {
+  if (colNum < 1) {
+    throw Error('colNum cound not be smaller than 1');
+  }
+  var len = arr.length;
+  var rowNum = Math.ceil(len / colNum);
+  var curIndex = 0;
+  var curRow = 0;
+  var res = [];
+  while (curIndex <= len && curRow < rowNum) {
+    res[curRow] = arr.slice(curIndex, curIndex + colNum);
+    curIndex += colNum;
+    curRow++;
+  }
+  return res;
+};
+exports.culculateMatrix = culculateMatrix;
 
 /***/ }),
 
