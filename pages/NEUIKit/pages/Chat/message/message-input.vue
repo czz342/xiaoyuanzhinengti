@@ -673,11 +673,33 @@ const handleAIAssistant = () => {
     const sessionId = props.scene === 'p2p' ? `p2p-${props.to}` : `team-${props.to}`
     console.log('🎯 会话ID:', sessionId)
     
-    // 获取最近的消息
-    const messages = msgStore.getMsg(sessionId) || []
-    console.log('💬 总消息数量:', messages.length)
+    // 读取清空时间戳，过滤已清空的消息
+    const CLEAR_STORAGE_KEY = '__chat_clear_time__'
+    const clearTimeStamps = uni.getStorageSync(CLEAR_STORAGE_KEY) || {}
+    const clearTimestamp = clearTimeStamps[sessionId] || 0
+    console.log('🕐 清空时间戳:', clearTimestamp, clearTimestamp ? new Date(clearTimestamp).toLocaleString() : '无')
     
-    const recentMessages = messages.slice(-20) // 取最近20条消息进行分析
+    // 获取最近的消息
+    const allMessages = msgStore.getMsg(sessionId) || []
+    console.log('💬 总消息数量:', allMessages.length)
+    
+    // 过滤掉已清空的消息（时间早于清空时间戳的消息）
+    const validMessages = allMessages.filter((msg: any) => {
+      const msgTime = msg.time || 0
+      return msgTime > clearTimestamp
+    })
+    console.log('✅ 过滤后的有效消息数量:', validMessages.length)
+    console.log('🗑️ 已过滤的消息数量:', allMessages.length - validMessages.length)
+    
+    if (validMessages.length === 0) {
+      uni.showToast({
+        title: '暂无聊天记录可分析',
+        icon: 'none'
+      })
+      return
+    }
+    
+    const recentMessages = validMessages.slice(-20) // 取最近20条消息进行分析
     console.log('📋 准备分析的消息数量:', recentMessages.length)
     console.log('📝 消息示例:', recentMessages.slice(0, 3).map((m: any) => ({ type: m.type, body: m.body?.substring(0, 30) })))
     

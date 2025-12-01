@@ -82,6 +82,12 @@ app.use('/api/ai-universal', require('./routes/ai-universal'));
 // 用户偏好和对话历史接口
 app.use('/api/preferences', require('./routes/user-preference'));
 
+// 就餐偏好分析和智能推荐接口
+app.use('/api/dining-analysis', require('./routes/dining-analysis'));
+
+// 食堂窗口管理接口
+app.use('/api/canteen-windows', require('./routes/canteen-windows'));
+
 // 404处理
 app.use(notFound);
 

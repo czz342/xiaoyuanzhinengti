@@ -200,7 +200,7 @@
 				</view>
 				
 				<!-- 食堂人流量热力图卡片 -->
-				<view class="recommendation-card" v-if="chartData.categories && chartData.categories.length > 0" id="canteenTrafficCard">
+				<view class="recommendation-card clickable-card" v-if="chartData.categories && chartData.categories.length > 0" id="canteenTrafficCard" @tap="goToDiningRecommendation">
 					<view class="card-header canteen-header">
 						<image src="/static/images/food.png" mode="aspectFit" class="card-icon"></image>
 						<text class="card-title">食堂人流量</text>
@@ -222,6 +222,7 @@
 							<view class="legend-item"><view class="legend-color" style="background-color: #ff9500;"></view><text>繁忙</text></view>
 							<view class="legend-item"><view class="legend-color" style="background-color: #ff3b30;"></view><text>拥挤</text></view>
 						</view>
+						<view class="tap-hint">点击查看智能推荐 →</view>
 					</view>
 				</view>
 				
@@ -327,7 +328,7 @@ export default {
 					disableGrid: true,
 					data: [{ 
 						min: 0,
-						max: 600
+						max: 120 // 调整为120以匹配演示数据范围，让柱状图更美观
 					}]
 				},
 				extra: {
@@ -373,6 +374,13 @@ export default {
 		goToAssistant() {
 			uni.navigateTo({
 				url: '/pages/assistant/index'
+			});
+		},
+		
+		// 跳转到智能就餐推荐页面
+		goToDiningRecommendation() {
+			uni.navigateTo({
+				url: '/pages/features/dining-recommendation'
 			});
 		},
 		
@@ -977,6 +985,25 @@ export default {
 	height: 20rpx;
 	border-radius: 4rpx;
 	margin-right: 10rpx;
+}
+
+/* 可点击卡片样式 */
+.clickable-card {
+	cursor: pointer;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.clickable-card:active {
+	transform: scale(0.98);
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+}
+
+.tap-hint {
+	text-align: center;
+	font-size: 26rpx;
+	color: #667eea;
+	margin-top: 20rpx;
+	font-weight: 500;
 }
 
 /* 智能助手悬浮按钮 */

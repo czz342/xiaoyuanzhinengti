@@ -11,6 +11,12 @@
         </div>
       </template>
     </NavBar>
+    <div class="chat-toolbar">
+      <view class="toolbar-btn" @tap="handleClearChatHistory">
+        <Icon type="icon-qingchu" :size="18"></Icon>
+        <text>{{ t('clearChatHistoryText') }}</text>
+      </view>
+    </div>
     <div class="msg-alert">
       <NetworkAlert />
     </div>
@@ -64,6 +70,21 @@ const { scene, to }: { scene: TMsgScene; to: string } =
   parseSessionId(sessionId)
 
 const isH5 = getUniPlatform() === 'web'
+
+const CLEAR_STORAGE_KEY = '__chat_clear_time__'
+const clearTimestamp = ref(0)
+
+const loadClearTimestamp = () => {
+  try {
+    const stored = uni.getStorageSync(CLEAR_STORAGE_KEY) || {}
+    clearTimestamp.value = stored?.[sessionId] || 0
+  } catch (error) {
+    console.warn('加载清空时间失败', error)
+    clearTimestamp.value = 0
+  }
+}
+
+loadClearTimestamp()
 
 // 处理uni-popup 引起的滚动穿透
 const moveThrough = ref(false)
@@ -158,6 +179,54 @@ const getHistory = async (endTime: number, lastMsgId?: string) => {
 const handleLoadMore = async (lastMsg: IMMessage) => {
   const res = await getHistory(lastMsg.time, lastMsg.idServer)
   return res
+}
+
+const handleClearChatHistory = () => {
+  uni.showModal({
+    title: t('clearChatHistoryText'),
+    content: t('clearChatHistoryConfirmText'),
+    showCancel: true,
+    confirmText: t('clearText'),
+    confirmColor: '#ff4444',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        uni.showLoading({ title: t('clearingText') })
+        // @ts-ignore
+        const sessionMsgs = uni.$UIKitStore.msgStore.getMsg(sessionId) || []
+        if (!sessionMsgs.length) {
+          uni.hideLoading()
+          uni.showToast({
+            title: t('noMessagesToClearText'),
+            icon: 'none',
+          })
+          return
+        }
+
+        // @ts-ignore
+        await uni.$UIKitStore.msgStore.deleteMsgActive(sessionMsgs)
+        // 记录最新清空时间，过滤旧消息
+        const stored = uni.getStorageSync(CLEAR_STORAGE_KEY) || {}
+        stored[sessionId] = Date.now()
+        uni.setStorageSync(CLEAR_STORAGE_KEY, stored)
+        clearTimestamp.value = stored[sessionId]
+        msgs.value = []
+        noMore.value = false
+        uni.hideLoading()
+        uni.showToast({
+          title: t('clearChatHistorySuccessText'),
+          icon: 'success',
+        })
+      } catch (error) {
+        console.error('清空聊天记录失败:', error)
+        uni.hideLoading()
+        uni.showToast({
+          title: t('clearChatHistoryFailText'),
+          icon: 'none',
+        })
+      }
+    },
+  })
 }
 
 onShow(function () {
@@ -256,7 +325,15 @@ const uninstallHistoryWatch = autorun(() => {
 // 动态更新消息
 const uninstallMsgsWatch = autorun(() => {
   // @ts-ignore
-  msgs.value = deepClone(uni.$UIKitStore.msgStore.getMsg(sessionId))
+  let sessionMsgs = deepClone(uni.$UIKitStore.msgStore.getMsg(sessionId))
+
+  if (clearTimestamp.value) {
+    sessionMsgs = sessionMsgs.filter(
+      (msg: IMMessage) => msg.time >= clearTimestamp.value
+    )
+  }
+
+  msgs.value = sessionMsgs
 
   // 遍历所有消息，找出被回复消息，储存在map中
   if (msgs.value.length !== 0) {
@@ -353,6 +430,23 @@ page {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+}
+
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 12px 0 12px;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #ff4d4f;
+  background: #ffeaea;
+  border-radius: 20px;
+  padding: 4px 10px;
 }
 
 .msg-page-wrapper-h5 {

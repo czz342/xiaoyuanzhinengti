@@ -245,6 +245,12 @@
 			}
 		},
 		{
+			"path": "pages/features/dining-recommendation",
+			"style": {
+				"navigationBarTitleText": "智能就餐推荐"
+			}
+		},
+		{
 			"path": "pages/features/errand-service",
 			"style": {
 				"navigationBarTitleText": "跑腿代办",

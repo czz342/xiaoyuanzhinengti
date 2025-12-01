@@ -101,7 +101,7 @@ var components
 try {
   components = {
     qiunDataCharts: function () {
-      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 631))
+      return Promise.all(/*! import() | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then(__webpack_require__.bind(null, /*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 639))
     },
   }
 } catch (e) {
@@ -186,7 +186,7 @@ var _asyncToGenerator2 = _interopRequireDefault(__webpack_require__(/*! @babel/r
 var _methods;
 var qiunDataCharts = function qiunDataCharts() {
   Promise.all(/*! require.ensure | uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts */[__webpack_require__.e("common/vendor"), __webpack_require__.e("uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts")]).then((function () {
-    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 631));
+    return resolve(__webpack_require__(/*! @/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue */ 639));
   }).bind(null, __webpack_require__)).catch(__webpack_require__.oe);
 };
 var _default = {
@@ -255,9 +255,10 @@ var _default = {
           disableGrid: true,
           data: [{
             min: 0,
-            max: 600
+            max: 120 // 调整为120以匹配演示数据范围，让柱状图更美观
           }]
         },
+
         extra: {
           column: {
             type: "group",
@@ -300,6 +301,12 @@ var _default = {
     goToAssistant: function goToAssistant() {
       uni.navigateTo({
         url: '/pages/assistant/index'
+      });
+    },
+    // 跳转到智能就餐推荐页面
+    goToDiningRecommendation: function goToDiningRecommendation() {
+      uni.navigateTo({
+        url: '/pages/features/dining-recommendation'
       });
     },
     // 筛选选项

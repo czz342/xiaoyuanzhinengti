@@ -39,6 +39,7 @@
     "pages/features/club-activities",
     "pages/features/activity-detail",
     "pages/features/canteen-traffic",
+    "pages/features/dining-recommendation",
     "pages/features/errand-service",
     "pages/features/order-detail",
     "pages/NEUIKit/pages/Conversation/index",

@@ -391,6 +391,9 @@ router.get('/:studentId/:moduleType', async (req, res) => {
         
         const preferences = await UserPreference.getByStudentAndModule(studentId, moduleType);
         
+        // 🎯 获取真实的历史对话数量
+        const conversationCount = await ConversationHistory.countByModule(studentId, moduleType);
+        
         // 按类型分组
         const grouped = {};
         preferences.forEach(pref => {
@@ -410,7 +413,7 @@ router.get('/:studentId/:moduleType', async (req, res) => {
             data: {
                 preferences,
                 grouped,
-                total_count: preferences.length
+                total_count: conversationCount  // 使用对话历史数量，而不是偏好条目数量
             }
         });
         

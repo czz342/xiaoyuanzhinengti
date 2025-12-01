@@ -102,6 +102,44 @@ router.post('/analyze-campus-needs', authenticateToken, async (req, res) => {
       console.log('📋 AI返回格式不符合预期，使用空数组');
     }
     
+    const normalizeText = (text = '') => text.replace(/\s+/g, '').toLowerCase();
+    const containsKeyword = (text, keywords) => {
+      if (!text) return false;
+      const normalized = normalizeText(text);
+      return keywords.some(keyword => normalized.includes(keyword));
+    };
+
+    const classroomKeywords = [
+      '教室', '会议室', '讨论室', '研讨室', '报告厅', '多媒体教室',
+      '实验室', '机房', '讨论教室', '讲堂'
+    ];
+    const classroomActionKeywords = ['预约', '预订', '预定', '借用', '安排', '申请', '使用'];
+
+    const studyroomKeywords = [
+      '自习室', '自习区', '自习位', '学习座位', '静音区', '图书馆座位',
+      '靠窗位置', '靠窗座位', '角落座位', '静音座位'
+    ];
+
+    const determineNeedType = (need) => {
+      const textBucket = [need.title, need.description, JSON.stringify(need.extractedData || {})].join(' ');
+      const normalized = normalizeText(textBucket);
+
+      const hasClassroomKeyword = classroomKeywords.some((keyword) => normalized.includes(keyword));
+      const hasStudyroomKeyword = studyroomKeywords.some((keyword) => normalized.includes(keyword));
+      const hasAction = classroomActionKeywords.some((keyword) => normalized.includes(keyword));
+
+      if (hasClassroomKeyword && hasAction) {
+        return 'classroom';
+      }
+      if (hasClassroomKeyword && !hasStudyroomKeyword) {
+        return 'classroom';
+      }
+      if (hasStudyroomKeyword && !hasClassroomKeyword) {
+        return 'studyroom';
+      }
+      return need.type;
+    };
+
     // 验证和过滤结果
     const validNeeds = needsArray.filter(need => {
       const isValid = need.type && need.title && need.confidence >= 60;
@@ -114,13 +152,21 @@ router.post('/analyze-campus-needs', authenticateToken, async (req, res) => {
       return isValid;
     });
 
-    console.log('🎯 有效需求数量:', validNeeds.length);
-    console.log('✅ 有效需求列表:', validNeeds);
-    
+    const refinedNeeds = validNeeds.map((need) => {
+      const refinedType = determineNeedType(need);
+      if (refinedType !== need.type) {
+        console.log(`🔄 需求类型修正: ${need.type} -> ${refinedType}`, need.title);
+      }
+      return { ...need, type: refinedType };
+    });
+
+    console.log('🎯 有效需求数量:', refinedNeeds.length);
+    console.log('✅ 有效需求列表:', refinedNeeds);
+
     const result = { 
       success: true, 
       data: { 
-        needs: validNeeds,
+        needs: refinedNeeds,
         analyzed_text: conversation.substring(0, 200) + (conversation.length > 200 ? '...' : '')
       }
     };

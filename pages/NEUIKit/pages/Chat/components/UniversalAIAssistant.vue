@@ -319,6 +319,7 @@ const generateNeedSummary = (need) => {
       'duration': '时长',
       'purpose': '目的',
       'participants': '参与人数',
+      'equipment': '所需设备',
       'equipment_needed': '所需设备',
       'requirements': '特殊要求',
       'environment': '环境要求',

@@ -11,6 +11,13 @@
 			</view>
 		</view>
 		
+		<!-- 推荐来源提示 -->
+		<view v-if="recommendationParams" class="recommendation-tip">
+			<view class="tip-icon">🎯</view>
+			<text class="tip-text">已为您选择 {{ recommendationParams.canteen }} {{ recommendationParams.window }}</text>
+			<view class="tip-badge">{{ recommendationParams.windowType }}</view>
+		</view>
+		
 		<view class="canteen-selector">
 			<scroll-view scroll-x="true" class="canteen-scroll">
 				<view 
@@ -22,6 +29,29 @@
 				>
 					<text>{{canteen.name}}</text>
 					<view class="status-indicator" :class="canteen.status"></view>
+				</view>
+			</scroll-view>
+		</view>
+		
+		<!-- 窗口选择器 -->
+		<view v-if="windows.length > 0" class="window-selector">
+			<scroll-view scroll-x="true" class="window-scroll">
+				<view 
+					v-for="(window, index) in windows" 
+					:key="index" 
+					class="window-item" 
+					:class="{ active: selectedWindow === index, recommended: isRecommendedWindow(window) }"
+					@tap="selectWindow(index)"
+				>
+					<view class="window-header">
+						<text class="window-number">{{ window.window_number }}</text>
+						<view v-if="isRecommendedWindow(window)" class="recommended-badge">推荐</view>
+					</view>
+					<text class="window-type">{{ window.window_type }}</text>
+					<text class="food-count">{{ window.food_count || 0 }}道菜品</text>
+					<view class="window-tags">
+						<view v-for="tag in window.tags" :key="tag" class="window-tag">{{ tag }}</view>
+					</view>
 				</view>
 			</scroll-view>
 		</view>
@@ -226,13 +256,16 @@ export default {
 	data() {
 		return {
 			selectedCanteen: 0,
+			selectedWindow: 0,
 			selectedFilter: 0,
 			cart: [],
 			canteens: [],
+			windows: [],
 			filters: ['全部', '特价', '热销', '套餐', '素食'],
 			foodItems: [],
 			selectedFoodItem: null, // 用于菜品详情弹窗
 			selectedDiningType: '', // 选择的用餐类型
+			recommendationParams: null, // 来自推荐页面的参数
 			deliveryForm: {
 				address: '',
 				phone: '',
@@ -256,7 +289,20 @@ export default {
 			return this.cart.reduce((total, item) => total + (item.quantity * item.price), 0);
 		}
 	},
-	onLoad() {
+	onLoad(options) {
+		// 接收来自推荐页面的参数
+		if (options.from === 'recommendation') {
+			console.log('接收到的原始options:', options);
+			
+			this.recommendationParams = {
+				canteen: decodeURIComponent(options.canteen || ''),
+				window: decodeURIComponent(options.window || ''),
+				windowType: decodeURIComponent(options.windowType || '')
+			};
+			
+			console.log('解码后的推荐参数:', this.recommendationParams);
+		}
+		
 		this.fetchCanteens();
 	},
 	methods: {
@@ -285,8 +331,15 @@ export default {
 						status: canteen.current_status || 'open'
 					}));
 
-					// 如果食堂列表不为空，则默认加载第一个食堂的菜单
-					if (this.canteens.length > 0) {
+					// 如果有推荐参数，自动选择对应食堂
+					if (this.recommendationParams && this.canteens.length > 0) {
+						const canteenIndex = this.canteens.findIndex(c => c.name === this.recommendationParams.canteen);
+						if (canteenIndex >= 0) {
+							this.selectCanteen(canteenIndex);
+						} else {
+							this.selectCanteen(0);
+						}
+					} else if (this.canteens.length > 0) {
 						this.selectCanteen(0);
 					}
 				} else {
@@ -323,10 +376,113 @@ export default {
 		},
 		selectCanteen(index) {
 			this.selectedCanteen = index;
+			this.selectedWindow = 0; // 重置窗口选择
 			const canteen = this.canteens[index];
 			if (canteen && canteen.number) {
-				this.fetchDishes(canteen.number);
+				this.fetchWindows(canteen.number);
 			}
+		},
+		
+		// 获取指定食堂的窗口列表
+		async fetchWindows(canteenId) {
+			try {
+				const token = uni.getStorageSync('token');
+				console.log('获取窗口列表，食堂ID:', canteenId);
+				
+				const response = await uni.request({
+					url: `http://localhost:3000/api/canteen-windows/canteens/${canteenId}/windows`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.windows = response.data.data;
+					console.log('获取到窗口:', this.windows);
+					
+					// 如果有推荐参数，自动选择对应窗口
+					if (this.recommendationParams && this.windows.length > 0) {
+						const windowIndex = this.windows.findIndex(w => 
+							w.window_number === this.recommendationParams.window || 
+							w.window_type === this.recommendationParams.windowType
+						);
+						if (windowIndex >= 0) {
+							this.selectWindow(windowIndex);
+						} else {
+							this.selectWindow(0);
+						}
+					} else if (this.windows.length > 0) {
+						this.selectWindow(0);
+					}
+				} else {
+					console.log('获取窗口失败:', response.data);
+					this.windows = [];
+					// 如果没有窗口，直接获取食堂菜品
+					this.fetchDishes(canteenId);
+				}
+			} catch (error) {
+				console.error('获取窗口失败:', error);
+				this.windows = [];
+				// 出错时使用原来的方法
+				this.fetchDishes(canteenId);
+			}
+		},
+		
+		// 选择窗口
+		selectWindow(index) {
+			this.selectedWindow = index;
+			if (this.windows.length > 0) {
+				const window = this.windows[index];
+				if (window && window.id) {
+					this.fetchWindowFoods(window.id);
+				}
+			}
+		},
+		
+		// 获取窗口的菜品
+		async fetchWindowFoods(windowId) {
+			try {
+				const token = uni.getStorageSync('token');
+				console.log('获取窗口菜品，窗口ID:', windowId);
+				
+				const response = await uni.request({
+					url: `http://localhost:3000/api/canteen-windows/windows/${windowId}/foods`,
+					method: 'GET',
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				
+				console.log('窗口菜品API响应:', response);
+				
+				if (response.statusCode === 200 && response.data.success) {
+					this.foodItems = response.data.data.map(item => ({
+						...item,
+						number: item.number,
+						name: item.name,
+						image: item.image || 'http://localhost:3000/static/images/FoodList/default.png',
+						price: parseFloat(item.price),
+						tags: item.tags || [],
+						monthlySales: item.monthly_sales || Math.floor(Math.random() * 500) + 50
+					}));
+					
+					console.log('处理后的窗口菜品数据:', this.foodItems);
+				} else {
+					console.log('窗口菜品API返回错误:', response.data);
+					this.foodItems = [];
+				}
+			} catch (error) {
+				console.error(`获取窗口[${windowId}]的菜品失败:`, error);
+				this.foodItems = [];
+			}
+		},
+		
+		// 判断是否为推荐窗口
+		isRecommendedWindow(window) {
+			if (!this.recommendationParams) return false;
+			return window.window_number === this.recommendationParams.window || 
+			       window.window_type === this.recommendationParams.windowType;
 		},
 		async fetchDishes(canteenId) {
 			try {
@@ -628,6 +784,39 @@ export default {
 	margin-left: 8rpx;
 }
 
+/* 推荐来源提示 */
+.recommendation-tip {
+	display: flex;
+	align-items: center;
+	background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+	margin: 20rpx;
+	padding: 20rpx;
+	border-radius: 12rpx;
+	border-left: 4rpx solid #28a745;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.tip-icon {
+	font-size: 32rpx;
+	margin-right: 15rpx;
+}
+
+.tip-text {
+	flex: 1;
+	color: #495057;
+	font-size: 28rpx;
+	font-weight: 500;
+}
+
+.tip-badge {
+	background-color: #28a745;
+	color: #ffffff;
+	padding: 6rpx 16rpx;
+	border-radius: 16rpx;
+	font-size: 24rpx;
+	font-weight: 500;
+}
+
 .canteen-selector {
 	background-color: #ffffff;
 	padding: 20rpx 0;
@@ -639,19 +828,111 @@ export default {
 	padding: 0 20rpx;
 }
 
+/* 窗口选择器 */
+.window-selector {
+	background-color: #ffffff;
+	padding: 20rpx 0;
+	margin-bottom: 20rpx;
+}
+
+.window-scroll {
+	white-space: nowrap;
+	padding: 0 20rpx;
+}
+
+.window-item {
+	display: inline-block;
+	width: 200rpx;
+	margin-right: 16rpx;
+	background-color: #ffffff;
+	border-radius: 12rpx;
+	padding: 20rpx;
+	border: 2rpx solid #e9ecef;
+	transition: all 0.3s ease;
+	vertical-align: top;
+	box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
+.window-item.active {
+	border-color: #28a745;
+	background-color: #f8fff9;
+	box-shadow: 0 4rpx 12rpx rgba(40, 167, 69, 0.15);
+}
+
+.window-item.recommended {
+	background: #fff8e1;
+	border-color: #ffc107;
+	box-shadow: 0 4rpx 12rpx rgba(255, 193, 7, 0.2);
+}
+
+.window-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10rpx;
+}
+
+.window-number {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.recommended-badge {
+	background-color: #ffc107;
+	color: #212529;
+	font-size: 20rpx;
+	padding: 4rpx 8rpx;
+	border-radius: 8rpx;
+	font-weight: 600;
+}
+
+.window-type {
+	display: block;
+	font-size: 26rpx;
+	color: #666;
+	margin-bottom: 8rpx;
+}
+
+.food-count {
+	display: block;
+	font-size: 22rpx;
+	color: #999;
+	margin-bottom: 10rpx;
+}
+
+.window-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8rpx;
+}
+
+.window-tag {
+	background-color: #e9ecef;
+	color: #6c757d;
+	font-size: 20rpx;
+	padding: 4rpx 8rpx;
+	border-radius: 8rpx;
+}
+
 .canteen-item {
 	display: inline-block;
-	padding: 15rpx 30rpx;
-	margin-right: 20rpx;
-	background-color: #f5f5f5;
-	border-radius: 50rpx;
+	padding: 16rpx 32rpx;
+	margin-right: 16rpx;
+	background-color: #f8f9fa;
+	border-radius: 24rpx;
 	font-size: 28rpx;
 	position: relative;
+	border: 2rpx solid transparent;
+	transition: all 0.3s ease;
+	color: #6c757d;
 }
 
 .canteen-item.active {
-	background-color: #e6f2ff;
-	color: #007AFF;
+	background-color: #ffffff;
+	color: #28a745;
+	border-color: #28a745;
+	box-shadow: 0 2rpx 8rpx rgba(40, 167, 69, 0.2);
 }
 
 .status-indicator {
@@ -698,32 +979,48 @@ export default {
 }
 
 .filter-button {
-	padding: 10rpx 20rpx;
+	padding: 12rpx 24rpx;
 	font-size: 24rpx;
-	margin-left: 15rpx;
-	border-radius: 30rpx;
-	background-color: #f5f5f5;
+	margin-left: 12rpx;
+	border-radius: 20rpx;
+	background-color: #f8f9fa;
+	color: #6c757d;
+	border: 2rpx solid transparent;
+	transition: all 0.3s ease;
 }
 
 .filter-button.active {
-	background-color: #007AFF;
+	background-color: #28a745;
 	color: #ffffff;
+	border-color: #28a745;
+	box-shadow: 0 2rpx 8rpx rgba(40, 167, 69, 0.3);
 }
 
 .food-grid {
 	display: flex;
 	flex-wrap: wrap;
 	margin: 0 -15rpx;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .food-item {
 	width: calc(50% - 30rpx);
 	margin: 15rpx;
-	background-color: #f9f9f9;
-	border-radius: 15rpx;
+	background-color: #ffffff;
+	border-radius: 12rpx;
 	overflow: hidden;
 	position: relative;
-	box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+	border: 1rpx solid #f1f3f4;
+	transition: all 0.3s ease;
+	flex-shrink: 0;
+	box-sizing: border-box;
+}
+
+.food-item:active {
+	transform: translateY(-2rpx);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
 }
 
 .food-image {
@@ -942,7 +1239,7 @@ export default {
 }
 
 .item-controls {
-	/* 数量选择器样式会由uni-number-box组件自带 */
+	flex-shrink: 0;
 }
 
 /* 菜品详情弹窗样式 */

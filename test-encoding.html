@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>测试中文编码</title>
+</head>
+<body>
+    <h1>测试中文URL编码解码</h1>
+    
+    <script>
+        // 模拟推荐数据
+        const testData = {
+            canteen: '二食堂',
+            window: '1号窗口', 
+            windowType: '川菜'
+        };
+        
+        console.log('原始数据:', testData);
+        
+        // 模拟跳转时的编码
+        const encoded = {
+            canteen: encodeURIComponent(testData.canteen),
+            window: encodeURIComponent(testData.window),
+            windowType: encodeURIComponent(testData.windowType)
+        };
+        
+        console.log('编码后:', encoded);
+        
+        // 模拟接收时的解码
+        const decoded = {
+            canteen: decodeURIComponent(encoded.canteen),
+            window: decodeURIComponent(encoded.window),
+            windowType: decodeURIComponent(encoded.windowType)
+        };
+        
+        console.log('解码后:', decoded);
+        
+        // 显示结果
+        document.body.innerHTML += `
+            <h2>测试结果:</h2>
+            <p><strong>原始:</strong> ${testData.canteen} ${testData.window} (${testData.windowType})</p>
+            <p><strong>编码:</strong> ${encoded.canteen} ${encoded.window} (${encoded.windowType})</p>
+            <p><strong>解码:</strong> ${decoded.canteen} ${decoded.window} (${decoded.windowType})</p>
+            <p><strong>是否相等:</strong> ${JSON.stringify(testData) === JSON.stringify(decoded) ? '✅ 成功' : '❌ 失败'}</p>
+        `;
+    </script>
+</body>
+</html>

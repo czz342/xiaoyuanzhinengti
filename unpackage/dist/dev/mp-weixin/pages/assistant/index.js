@@ -1004,13 +1004,41 @@ var _kingdeeAgent = _interopRequireDefault(__webpack_require__(/*! @/services/ki
 //
 //
 //
+//
+//
+//
+//
+//
+//
 var _default = {
   data: function data() {
     return {
       // !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-      tunnelUrl: "https://models-dev-machine-trees.trycloudflare.com",
+      tunnelUrl: "https://supporters-judgment-programmer-conviction.trycloudflare.com",
       inputMessage: '',
       scrollTop: 0,
+      isUserScrolling: false,
+      // 用户是否正在手动滚动
+      showBackToBottom: false,
+      // 是否显示回到底部按钮
+      _lastScrollTop: 0,
+      // 上次滚动位置（非响应式）
+      _lockedScrollTop: 0,
+      // 用户手动滚动时锁定的位置（非响应式）
+      _scrollTimeout: null,
+      // 滚动超时定时器（非响应式）
+      _scrollHandlingEnabled: true,
+      // 滚动处理是否启用（非响应式）
+      _scrollLockInterval: null,
+      // 滚动锁定监控定时器（非响应式）
+      _firstScrollLogged: false,
+      // 首次滚动日志标志（非响应式）
+      _isActivelyScrolling: false,
+      // 用户是否正在主动滚动（非响应式）
+      _scrollActivityTimeout: null,
+      // 滚动活动检测定时器（非响应式）
+      _isAIStreaming: false,
+      // AI是否正在流式输出（非响应式）
       userAvatar: '/static/images/avatar.png',
       botAvatar: '/static/images/assistant.png',
       chatMessages: [{
@@ -1079,6 +1107,8 @@ var _default = {
       enablePreferenceAnalysis: true,
       // 默认开启
 
+      // 🎯 新增：偏好分析动画进行中标志（完全禁用自动滚动）
+      isPreferenceAnalyzing: false,
       // 🎯 新增：对话管理相关
       currentConversationId: null,
       // 当前对话ID
@@ -1113,10 +1143,17 @@ var _default = {
         while (1) {
           switch (_context.prev = _context.next) {
             case 0:
-              console.log('页面加载开始', options);
+              console.log('🚀 页面加载开始', options);
 
               // 🎯 重置偏好分析显示标志（新会话）
               _this.hasShownPreferenceAnalysis = false;
+
+              // 🎯 重置滚动相关状态
+              _this.isUserScrolling = false;
+              _this.showBackToBottom = false;
+              _this._lastScrollTop = 0;
+              _this._lockedScrollTop = 0;
+              _this._scrollHandlingEnabled = true;
 
               // 🎯 检查是否从历史对话进入
               if (options && options.conversationId) {
@@ -1140,10 +1177,10 @@ var _default = {
                   summary: decodeURIComponent(options.summary || '')
                 };
               }
-              _context.prev = 4;
-              _context.next = 7;
+              _context.prev = 9;
+              _context.next = 12;
               return _this.initializeAssistant();
-            case 7:
+            case 12:
               // 初始化成功后，连接WebSocket
               _this.connectWebSocket();
               console.log('页面初始化与WebSocket连接流程启动');
@@ -1154,22 +1191,22 @@ var _default = {
                   _this.sendChatAnalysisRequest();
                 }, 1000);
               }
-              _context.next = 16;
+              _context.next = 21;
               break;
-            case 12:
-              _context.prev = 12;
-              _context.t0 = _context["catch"](4);
+            case 17:
+              _context.prev = 17;
+              _context.t0 = _context["catch"](9);
               console.error('页面初始化失败:', _context.t0);
               uni.showToast({
                 title: '初始化失败，请重试',
                 icon: 'none'
               });
-            case 16:
+            case 21:
             case "end":
               return _context.stop();
           }
         }
-      }, _callee, null, [[4, 12]]);
+      }, _callee, null, [[9, 17]]);
     }))();
   },
   methods: {
@@ -1585,15 +1622,125 @@ var _default = {
         });
       }
     },
-    // 滚动到底部
-    scrollToBottom: function scrollToBottom() {
+    // 处理滚动事件（高度优化版）
+    handleScroll: function handleScroll(e) {
       var _this5 = this;
+      // 如果滚动处理被禁用（弹窗打开时），直接返回
+      if (!this._scrollHandlingEnabled) {
+        return;
+      }
+      var _e$detail = e.detail,
+        scrollTop = _e$detail.scrollTop,
+        scrollHeight = _e$detail.scrollHeight;
+
+      // 🔍 降低节流阈值：只在滚动距离>3px时才处理
+      var scrollDiff = Math.abs(scrollTop - this._lastScrollTop);
+      if (scrollDiff < 3) {
+        return;
+      }
+
+      // 首次滚动时输出日志（用于调试）
+      if (!this._firstScrollLogged) {
+        this._firstScrollLogged = true;
+      }
+
+      // 🎯 标记用户正在主动滚动，防止定时器强制锁定造成卡顿
+      this._isActivelyScrolling = true;
+      if (this._scrollActivityTimeout) {
+        clearTimeout(this._scrollActivityTimeout);
+      }
+      // 600ms无滚动后才认为停止主动滚动（延长时间避免AI输出时卡顿）
+      this._scrollActivityTimeout = setTimeout(function () {
+        _this5._isActivelyScrolling = false;
+      }, 600);
+
+      // ⚠️ AI流式输出期间，不更新锁定位置，避免与DOM变化冲突
+      if (this._isAIStreaming) {
+        this._lastScrollTop = scrollTop;
+        return;
+      }
+
+      // 用户向上滚动时标记为手动滚动
+      if (scrollTop < this._lastScrollTop) {
+        // 只在状态真正改变时才更新
+        if (!this.isUserScrolling) {
+          this.isUserScrolling = true;
+          this.showBackToBottom = true;
+          this.startScrollLockMonitor();
+        }
+        this._lockedScrollTop = scrollTop;
+        this._lastScrollTop = scrollTop;
+      } else if (this.isUserScrolling) {
+        // 在手动模式下，无论scrollTop如何变化，都更新锁定位置
+        // 统一由定时器在用户停止滚动后处理强制锁定，避免handleScroll中立即回弹造成卡顿
+        this._lockedScrollTop = scrollTop;
+        this._lastScrollTop = scrollTop;
+      } else {
+        // 非手动模式，正常更新
+        this._lastScrollTop = scrollTop;
+      }
+
+      // 完全移除自动恢复滚动的逻辑
+      // 用户一旦向上滚动，就完全由用户手动控制
+      // 只有点击"回到底部"按钮才会恢复自动滚动
+    },
+    // 滚动到底部（自动）
+    scrollToBottom: function scrollToBottom() {
+      var _this6 = this;
+      // 如果用户正在手动滚动，不执行自动滚动
+      if (this.isUserScrolling) {
+        return;
+      }
       this.$nextTick(function () {
-        var lastMessageIndex = _this5.chatMessages.length - 1;
+        var lastMessageIndex = _this6.chatMessages.length - 1;
         if (lastMessageIndex < 0) return;
         // 这里使用一个较大的值来确保滚动到底部
-        _this5.scrollTop = _this5.scrollTop + 9999;
+        _this6.scrollTop = _this6.scrollTop + 9999;
       });
+    },
+    // 手动滚动到底部
+    scrollToBottomManual: function scrollToBottomManual() {
+      var _this7 = this;
+      this.isUserScrolling = false;
+      this.showBackToBottom = false;
+
+      // 停止滚动锁定监控
+      this.stopScrollLockMonitor();
+      this.$nextTick(function () {
+        var lastMessageIndex = _this7.chatMessages.length - 1;
+        if (lastMessageIndex < 0) return;
+        _this7.scrollTop = _this7.scrollTop + 9999;
+      });
+    },
+    // 启动滚动锁定监控
+    startScrollLockMonitor: function startScrollLockMonitor() {
+      var _this8 = this;
+      // 先清除旧的定时器
+      if (this._scrollLockInterval) {
+        clearInterval(this._scrollLockInterval);
+      }
+      this._scrollLockInterval = setInterval(function () {
+        // ⚠️ 关键1：AI流式输出期间完全禁用锁定，避免冲突
+        if (_this8._isAIStreaming) {
+          return;
+        }
+        // ⚠️ 关键2：只在用户完全停止主动滚动后才启用锁定
+        // 这样可以避免与AI输出时的DOM变化冲突
+        if (_this8.isUserScrolling && _this8._lockedScrollTop > 0 && !_this8._isActivelyScrolling) {
+          var currentScrollTop = _this8.scrollTop;
+          // 只有当scrollTop被AI输出拉动超过阈值时才强制恢复
+          if (Math.abs(currentScrollTop - _this8._lockedScrollTop) > 20) {
+            _this8.scrollTop = _this8._lockedScrollTop;
+          }
+        }
+      }, 150); // 稍微降低检查频率，从100ms改为150ms
+    },
+    // 停止滚动锁定监控
+    stopScrollLockMonitor: function stopScrollLockMonitor() {
+      if (this._scrollLockInterval) {
+        clearInterval(this._scrollLockInterval);
+        this._scrollLockInterval = null;
+      }
     },
     // 语音输入
     startVoiceInput: function startVoiceInput() {
@@ -1636,7 +1783,7 @@ var _default = {
     // 以下是处理从Webhook接收到的消息的逻辑
     // 注意：这部分逻辑现在需要一个服务器来接收Webhook并将其推送到小程序
     handleWebhookData: function handleWebhookData(payload) {
-      var _this6 = this;
+      var _this9 = this;
       console.log("处理Webhook数据:", payload);
       if (!payload || !payload.message) {
         console.warn("收到的Webhook数据格式不正确", payload);
@@ -1648,7 +1795,7 @@ var _default = {
       this.currentTaskId = taskId;
       if (message.actionList && Array.isArray(message.actionList)) {
         message.actionList.forEach(function (action) {
-          return _this6.handleAction(action);
+          return _this9.handleAction(action);
         });
       }
     },
@@ -1661,6 +1808,8 @@ var _default = {
         case 'streamDone':
           // 识别到中控发来的新事件类型，暂不处理，仅消除报错
           console.log("\u5DF2\u8BC6\u522B\u5E76\u5FFD\u7565Action\u7C7B\u578B: ".concat(action.type));
+          // AI流式输出结束
+          this._isAIStreaming = false;
           break;
         case 'runStepChat':
           {
@@ -1754,6 +1903,8 @@ var _default = {
               // 追加内容（流式消息）
               console.log("\u8FFD\u52A0\u5185\u5BB9\u5230\u73B0\u6709\u6D88\u606F: \"".concat(messageData.message, "\""));
               finalMessage.content += messageData.message;
+              // 标记AI正在流式输出
+              this._isAIStreaming = true;
             } else {
               // 创建新消息
               console.log("\u521B\u5EFA\u65B0\u6D88\u606F: \"".concat(messageData.message, "\""));
@@ -1766,6 +1917,8 @@ var _default = {
                 timestamp: Date.now()
               };
               this.chatMessages.push(finalMessage);
+              // 标记AI正在流式输出
+              this._isAIStreaming = true;
             }
 
             // 定位到对应的思考过程并标记完成
@@ -1802,6 +1955,9 @@ var _default = {
                 msg.title = 'AI思考完成';
               }
             });
+
+            // AI流式输出结束
+            this._isAIStreaming = false;
             this.$forceUpdate(); // 强制视图更新
           }
 
@@ -1932,7 +2088,7 @@ var _default = {
     },
     // --- WebSocket相关方法 ---
     connectWebSocket: function connectWebSocket() {
-      var _this7 = this;
+      var _this10 = this;
       // 🎯 重要：先关闭旧连接，避免累积
       if (this.websocketTask) {
         console.log('⚠️ 检测到旧的WebSocket连接，先关闭');
@@ -1962,16 +2118,16 @@ var _default = {
       });
       this.websocketTask.onOpen(function () {
         console.log('✅ WebSocket 连接已打开');
-        _this7.websocketConnected = true;
+        _this10.websocketConnected = true;
         // 清除可能存在的重连定时器
-        if (_this7.reconnectInterval) {
-          clearInterval(_this7.reconnectInterval);
-          _this7.reconnectInterval = null;
+        if (_this10.reconnectInterval) {
+          clearInterval(_this10.reconnectInterval);
+          _this10.reconnectInterval = null;
         }
         // this.addSystemMessage("智能助手连接成功！");
 
         // 新增：开启心跳
-        _this7.startHeartbeat();
+        _this10.startHeartbeat();
       });
       this.websocketTask.onMessage(function (res) {
         console.log('收到WebSocket消息:', res.data);
@@ -1985,44 +2141,44 @@ var _default = {
         try {
           var payload = JSON.parse(res.data);
           // 调用我们已经写好的Webhook处理逻辑
-          _this7.handleWebhookData(payload);
+          _this10.handleWebhookData(payload);
         } catch (e) {
           console.error('解析WebSocket消息失败:', e);
         }
       });
       this.websocketTask.onError(function (err) {
         console.error('WebSocket 连接发生错误:', err);
-        _this7.websocketConnected = false;
+        _this10.websocketConnected = false;
         // ⚠️ 不显示错误提示，避免在页面切换时产生不必要的用户困扰
       });
 
       this.websocketTask.onClose(function (res) {
         console.log('🔌 WebSocket 连接已关闭', res);
-        _this7.websocketConnected = false;
+        _this10.websocketConnected = false;
 
         // 停止心跳
-        _this7.stopHeartbeat();
+        _this10.stopHeartbeat();
 
         // ⚠️ 取消自动重连机制
         // 原因：用户离开页面后不需要重连，重新进入会自动初始化
         // 避免在后台不断尝试重连导致连接累积
 
         // 清理连接状态
-        _this7.websocketTask = null;
+        _this10.websocketTask = null;
       });
     },
     // --- 新增：心跳相关方法 ---
     startHeartbeat: function startHeartbeat() {
-      var _this8 = this;
+      var _this11 = this;
       // 先清除旧的，以防万一
       this.stopHeartbeat();
       console.log('❤️ 启动WebSocket心跳...');
       this.heartbeatInterval = setInterval(function () {
-        if (_this8.websocketConnected) {
+        if (_this11.websocketConnected) {
           var pingMessage = JSON.stringify({
             type: 'ping'
           });
-          _this8.websocketTask.send({
+          _this11.websocketTask.send({
             data: pingMessage,
             success: function success() {
               console.log('❤️ 心跳发送: ping');
@@ -2258,7 +2414,7 @@ var _default = {
     // 🎯 新增：加载并显示偏好分析（嵌入到对话中）
     loadAndShowPreferences: function loadAndShowPreferences(studentId) {
       var _arguments = arguments,
-        _this9 = this;
+        _this12 = this;
       return (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee6() {
         var moduleType, userMessageId, getDetailText, _preferenceMessage, userMessageIndex, updateAnalysisStep, response, grouped, totalCount, preferences, insight, msg, _msg, _msg2;
         return _regenerator.default.wrap(function _callee6$(_context6) {
@@ -2269,6 +2425,9 @@ var _default = {
                 userMessageId = _arguments.length > 2 && _arguments[2] !== undefined ? _arguments[2] : null;
                 _context6.prev = 2;
                 console.log("\uD83D\uDCCA \u5F00\u59CB\u52A0\u8F7D\u504F\u597D\u6570\u636E\uFF0CstudentId: ".concat(studentId, ", moduleType: ").concat(moduleType));
+
+                // 🔒 设置偏好分析进行中标志，完全禁用自动滚动
+                _this12.isPreferenceAnalyzing = true;
 
                 // 🎯 第一步：先插入一个"AI分析中"的占位符
                 getDetailText = function getDetailText(stepId, moduleType) {
@@ -2330,18 +2489,21 @@ var _default = {
                 }; // 插入占位符到对话列表
 
                 if (userMessageId) {
-                  userMessageIndex = _this9.chatMessages.findIndex(function (msg) {
+                  userMessageIndex = _this12.chatMessages.findIndex(function (msg) {
                     return msg.type === 'user' && msg.id === userMessageId;
                   });
                   if (userMessageIndex >= 0) {
-                    _this9.chatMessages.splice(userMessageIndex + 1, 0, _preferenceMessage);
+                    _this12.chatMessages.splice(userMessageIndex + 1, 0, _preferenceMessage);
                   } else {
-                    _this9.chatMessages.push(_preferenceMessage);
+                    _this12.chatMessages.push(_preferenceMessage);
                   }
                 } else {
-                  _this9.chatMessages.push(_preferenceMessage);
+                  _this12.chatMessages.push(_preferenceMessage);
                 }
-                _this9.scrollToBottom();
+                // 偏好分析期间不自动滚动
+                if (!_this12.isUserScrolling && !_this12.isPreferenceAnalyzing) {
+                  _this12.scrollToBottom();
+                }
 
                 // 🎯 模拟AI分析过程，逐步更新状态（加快速度用于演示）
                 updateAnalysisStep = /*#__PURE__*/function () {
@@ -2360,7 +2522,7 @@ var _default = {
                               return setTimeout(resolve, delay);
                             });
                           case 3:
-                            msg = _this9.chatMessages.find(function (m) {
+                            msg = _this12.chatMessages.find(function (m) {
                               return m.id === _preferenceMessage.id;
                             });
                             if (msg) {
@@ -2369,8 +2531,11 @@ var _default = {
                               });
                               if (step) {
                                 step.status = status;
-                                _this9.$forceUpdate();
-                                _this9.scrollToBottom();
+                                _this12.$forceUpdate();
+                                // 偏好分析期间不自动滚动（保持用户当前位置）
+                                // if (!this.isUserScrolling) {
+                                // 	this.scrollToBottom();
+                                // }
                               }
                             }
                           case 5:
@@ -2384,25 +2549,25 @@ var _default = {
                     return _ref.apply(this, arguments);
                   };
                 }(); // 第一步：加载数据
-                _context6.next = 11;
+                _context6.next = 12;
                 return updateAnalysisStep(1, 'loading', 50);
-              case 11:
-                _context6.next = 13;
+              case 12:
+                _context6.next = 14;
                 return uni.request({
                   url: "http://localhost:3000/api/preferences/".concat(studentId, "/").concat(moduleType),
                   method: 'GET'
                 });
-              case 13:
+              case 14:
                 response = _context6.sent;
-                _context6.next = 16;
+                _context6.next = 17;
                 return updateAnalysisStep(1, 'complete', 50);
-              case 16:
-                _context6.next = 18;
+              case 17:
+                _context6.next = 19;
                 return updateAnalysisStep(2, 'loading', 50);
-              case 18:
+              case 19:
                 console.log('📊 偏好数据响应:', response);
                 if (!(response.statusCode === 200 && response.data.success)) {
-                  _context6.next = 40;
+                  _context6.next = 41;
                   break;
                 }
                 grouped = response.data.data.grouped || {};
@@ -2411,18 +2576,18 @@ var _default = {
                 console.log('📊 分组数据:', grouped);
 
                 // 第二步：提取关键词
-                _context6.next = 26;
+                _context6.next = 27;
                 return updateAnalysisStep(2, 'complete', 100);
-              case 26:
-                _context6.next = 28;
+              case 27:
+                _context6.next = 29;
                 return updateAnalysisStep(3, 'loading', 50);
-              case 28:
-                _context6.next = 30;
+              case 29:
+                _context6.next = 31;
                 return updateAnalysisStep(3, 'complete', 100);
-              case 30:
-                _context6.next = 32;
+              case 31:
+                _context6.next = 33;
                 return updateAnalysisStep(4, 'loading', 50);
-              case 32:
+              case 33:
                 // 🎯 组装偏好数据
                 preferences = moduleType === 'book' || moduleType === 'library' ? {
                   subject: grouped.subject || [],
@@ -2439,12 +2604,12 @@ var _default = {
                   environment: grouped.environment || [],
                   facility: grouped.facility || []
                 }; // 🎯 生成AI洞察（智能总结）
-                insight = _this9.generatePreferenceInsight(preferences, moduleType, totalCount); // 第四步：生成洞察
-                _context6.next = 36;
+                insight = _this12.generatePreferenceInsight(preferences, moduleType, totalCount); // 第四步：生成洞察
+                _context6.next = 37;
                 return updateAnalysisStep(4, 'complete', 100);
-              case 36:
+              case 37:
                 // 🎯 更新为最终完成状态
-                msg = _this9.chatMessages.find(function (m) {
+                msg = _this12.chatMessages.find(function (m) {
                   return m.id === _preferenceMessage.id;
                 });
                 if (msg) {
@@ -2453,15 +2618,14 @@ var _default = {
                   msg.hasData = totalCount > 0;
                   msg.insight = insight;
                   msg.totalCount = totalCount;
-                  _this9.$forceUpdate();
-                  _this9.scrollToBottom();
+                  _this12.$forceUpdate();
                 }
-                _context6.next = 43;
+                _context6.next = 44;
                 break;
-              case 40:
+              case 41:
                 console.warn('📊 获取偏好数据失败:', response);
                 // 更新为失败状态
-                _msg = _this9.chatMessages.find(function (m) {
+                _msg = _this12.chatMessages.find(function (m) {
                   return m.id === _preferenceMessage.id;
                 });
                 if (_msg) {
@@ -2469,16 +2633,18 @@ var _default = {
                   _msg.analysisSteps.forEach(function (step) {
                     if (step.status === 'loading') step.status = 'error';
                   });
-                  _this9.$forceUpdate();
+                  _this12.$forceUpdate();
                 }
-              case 43:
-                _context6.next = 50;
+              case 44:
+                // 偏好分析完成，恢复自动滚动
+                _this12.isPreferenceAnalyzing = false;
+                _context6.next = 53;
                 break;
-              case 45:
-                _context6.prev = 45;
+              case 47:
+                _context6.prev = 47;
                 _context6.t0 = _context6["catch"](2);
                 console.error('❌ 加载偏好数据失败:', _context6.t0);
-                _msg2 = _this9.chatMessages.find(function (m) {
+                _msg2 = _this12.chatMessages.find(function (m) {
                   return m.id === preferenceMessage.id;
                 });
                 if (_msg2) {
@@ -2489,14 +2655,16 @@ var _default = {
                     }
                   });
                   _msg2.insight = '分析过程中遇到错误，请稍后重试';
-                  _this9.$forceUpdate();
+                  _this12.$forceUpdate();
                 }
-              case 50:
+                // 🔓 异常情况也要恢复自动滚动
+                _this12.isPreferenceAnalyzing = false;
+              case 53:
               case "end":
                 return _context6.stop();
             }
           }
-        }, _callee6, null, [[2, 45]]);
+        }, _callee6, null, [[2, 47]]);
       }))();
     },
     // 🎯 计算热度百分比（用于进度条显示）
@@ -2532,7 +2700,7 @@ var _default = {
     // 🎯 生成AI洞察（智能总结用户偏好）
     generatePreferenceInsight: function generatePreferenceInsight(preferences, moduleType, totalCount) {
       if (totalCount === 0) {
-        return '这是您的首次使用，系统将从本次对话开始学习您的偏好习惯';
+        return '这是您的首次使用，系统将从本次对话开始学习您的偏好';
       }
       var insights = [];
       if (moduleType === 'studyroom') {
@@ -2625,39 +2793,49 @@ var _default = {
       }
       return '新对话';
     },
-    // 保存当前对话
+    // 保存当前对话（异步版本）
     saveCurrentConversation: function saveCurrentConversation() {
-      try {
-        var userInfo = uni.getStorageSync('userInfo');
-        var userId = (userInfo === null || userInfo === void 0 ? void 0 : userInfo.studentId) || (userInfo === null || userInfo === void 0 ? void 0 : userInfo.userId);
-        if (!userId || !this.currentConversationId) {
-          console.warn('无法保存对话：缺少用户ID或对话ID');
-          return;
-        }
+      var _this13 = this;
+      return new Promise(function (resolve) {
+        // 使用 setTimeout 将保存操作推迟到下一个事件循环
+        // 避免阻塞当前的UI操作
+        setTimeout(function () {
+          try {
+            var userInfo = uni.getStorageSync('userInfo');
+            var userId = (userInfo === null || userInfo === void 0 ? void 0 : userInfo.studentId) || (userInfo === null || userInfo === void 0 ? void 0 : userInfo.userId);
+            if (!userId || !_this13.currentConversationId) {
+              console.warn('无法保存对话：缺少用户ID或对话ID');
+              resolve();
+              return;
+            }
 
-        // 生成对话标题
-        if (!this.conversationTitle || this.conversationTitle === '新对话') {
-          this.conversationTitle = this.generateConversationTitle(this.chatMessages);
-        }
+            // 生成对话标题
+            if (!_this13.conversationTitle || _this13.conversationTitle === '新对话') {
+              _this13.conversationTitle = _this13.generateConversationTitle(_this13.chatMessages);
+            }
 
-        // 保存当前对话数据
-        var conversationData = {
-          id: this.currentConversationId,
-          title: this.conversationTitle,
-          messages: this.chatMessages,
-          sessionId: this.sessionId,
-          updatedAt: Date.now(),
-          createdAt: this.conversationCreatedAt || Date.now()
-        };
-        var conversationKey = "conversation_".concat(userId, "_").concat(this.currentConversationId);
-        uni.setStorageSync(conversationKey, conversationData);
+            // 保存当前对话数据
+            var conversationData = {
+              id: _this13.currentConversationId,
+              title: _this13.conversationTitle,
+              messages: _this13.chatMessages,
+              sessionId: _this13.sessionId,
+              updatedAt: Date.now(),
+              createdAt: _this13.conversationCreatedAt || Date.now()
+            };
+            var conversationKey = "conversation_".concat(userId, "_").concat(_this13.currentConversationId);
+            uni.setStorageSync(conversationKey, conversationData);
 
-        // 更新对话列表索引
-        this.updateConversationIndex(userId, conversationData);
-        console.log('💾 已保存对话:', this.conversationTitle);
-      } catch (error) {
-        console.warn('保存对话失败:', error);
-      }
+            // 更新对话列表索引
+            _this13.updateConversationIndex(userId, conversationData);
+            console.log('💾 已保存对话:', _this13.conversationTitle);
+            resolve();
+          } catch (error) {
+            console.warn('保存对话失败:', error);
+            resolve();
+          }
+        }, 0);
+      });
     },
     // 更新对话列表索引
     updateConversationIndex: function updateConversationIndex(userId, conversationData) {
@@ -2694,11 +2872,17 @@ var _default = {
     },
     // 加载指定对话
     loadConversation: function loadConversation(conversationId) {
-      var _this10 = this;
+      var _this14 = this;
       if (!conversationId) {
         console.warn('无效的对话ID');
         return;
       }
+
+      // 重置滚动状态，确保加载对话后能正常滚动到底部
+      this.isUserScrolling = false;
+      this.showBackToBottom = false;
+      // 停止滚动锁定监控
+      this.stopScrollLockMonitor();
       try {
         var userInfo = uni.getStorageSync('userInfo');
         var userId = (userInfo === null || userInfo === void 0 ? void 0 : userInfo.studentId) || (userInfo === null || userInfo === void 0 ? void 0 : userInfo.userId);
@@ -2715,7 +2899,7 @@ var _default = {
           this.conversationCreatedAt = conversationData.createdAt;
           console.log("\uD83D\uDCE5 \u52A0\u8F7D\u5BF9\u8BDD: ".concat(this.conversationTitle, " (").concat(this.chatMessages.length, "\u6761\u6D88\u606F)"));
           this.$nextTick(function () {
-            _this10.scrollToBottom();
+            _this14.scrollToBottom();
           });
         } else {
           console.log('📝 新对话，从欢迎消息开始');
@@ -2737,18 +2921,36 @@ var _default = {
         url: '/pages/assistant/index'
       });
     },
-    // 查看历史对话列表（弹窗）
+    // 查看历史对话列表（弹窗）- 极致优化版
     viewConversationHistory: function viewConversationHistory() {
-      // 先保存当前对话
-      if (this.chatMessages.length > 1) {
-        this.saveCurrentConversation();
+      var _this15 = this;
+      console.log('🔍 打开历史对话列表');
+      var startTime = Date.now();
+
+      // 禁用滚动事件处理，避免干扰
+      this._scrollHandlingEnabled = false;
+
+      // 清理滚动相关的定时器
+      if (this._scrollTimeout) {
+        clearTimeout(this._scrollTimeout);
+        this._scrollTimeout = null;
       }
 
-      // 加载对话列表
+      // 立即加载对话列表（轻量级操作）
       this.loadConversationList();
 
-      // 显示弹窗
+      // 立即显示弹窗（不等待保存完成）
       this.showHistoryPopup = true;
+      console.log("\u2705 \u5386\u53F2\u5BF9\u8BDD\u5F39\u7A97\u5DF2\u663E\u793A (".concat(Date.now() - startTime, "ms)"));
+
+      // 异步保存当前对话（不阻塞UI）
+      if (this.chatMessages.length > 1) {
+        this.saveCurrentConversation().then(function () {
+          // 保存完成后重新加载列表，确保最新数据
+          _this15.loadConversationList();
+          console.log("\uD83D\uDCBE \u540E\u53F0\u4FDD\u5B58\u5B8C\u6210 (".concat(Date.now() - startTime, "ms)"));
+        });
+      }
     },
     // 加载对话列表
     loadConversationList: function loadConversationList() {
@@ -2770,6 +2972,9 @@ var _default = {
     // 关闭历史对话弹窗
     closeHistoryPopup: function closeHistoryPopup() {
       this.showHistoryPopup = false;
+      // 重新启用滚动事件处理
+      this._scrollHandlingEnabled = true;
+      console.log('❌ 关闭历史对话弹窗');
     },
     // 切换到指定对话
     switchToConversation: function switchToConversation(conversationId) {
@@ -2801,7 +3006,7 @@ var _default = {
     },
     // 删除对话
     deleteConversation: function deleteConversation(conversationId, index) {
-      var _this11 = this;
+      var _this16 = this;
       uni.showModal({
         title: '确认删除',
         content: '确定要删除这条对话记录吗？',
@@ -2825,11 +3030,11 @@ var _default = {
               uni.setStorageSync(indexKey, conversationIndex);
 
               // 从列表中移除
-              _this11.conversationList.splice(index, 1);
+              _this16.conversationList.splice(index, 1);
 
               // 如果删除的是当前对话，创建新对话
-              if (conversationId === _this11.currentConversationId) {
-                _this11.createNewConversation();
+              if (conversationId === _this16.currentConversationId) {
+                _this16.createNewConversation();
               }
               uni.showToast({
                 title: '已删除',
@@ -2905,6 +3110,21 @@ var _default = {
       this.stopHeartbeat();
     }
   },
+  // 监听chatMessages变化，立即恢复锁定位置
+  watch: {
+    chatMessages: {
+      handler: function handler() {
+        var _this17 = this;
+        // 如果用户在手动滚动模式，立即恢复锁定位置
+        if (this.isUserScrolling && this._lockedScrollTop > 0) {
+          this.$nextTick(function () {
+            _this17.scrollTop = _this17._lockedScrollTop;
+          });
+        }
+      },
+      deep: true
+    }
+  },
   // 🎯 新增：页面隐藏时关闭WebSocket（解决连接累积问题）
   onHide: function onHide() {
     console.log('📴 页面隐藏，关闭WebSocket连接');
@@ -2926,6 +3146,17 @@ var _default = {
   onUnload: function onUnload() {
     console.log('🔚 页面卸载');
     this.closeWebSocket();
+    // 清理滚动定时器
+    if (this._scrollTimeout) {
+      clearTimeout(this._scrollTimeout);
+      this._scrollTimeout = null;
+    }
+    if (this._scrollActivityTimeout) {
+      clearTimeout(this._scrollActivityTimeout);
+      this._scrollActivityTimeout = null;
+    }
+    // 清理滚动锁定监控
+    this.stopScrollLockMonitor();
   }
 };
 exports.default = _default;

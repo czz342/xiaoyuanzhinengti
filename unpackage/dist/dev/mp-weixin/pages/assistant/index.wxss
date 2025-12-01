@@ -2289,6 +2289,227 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ... existing styles ... */
 .assistant-page.data-v-411d5278 {
 	display: flex;
@@ -2337,6 +2558,65 @@
 	font-size: 24rpx;
 	color: #333;
 	margin-top: 10rpx;
+}
+/* 回到底部按钮 */
+.back-to-bottom-btn.data-v-411d5278 {
+	position: fixed;
+	right: 30rpx;
+	bottom: 580rpx;
+	z-index: 100;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 16rpx 24rpx;
+	border-radius: 50rpx;
+	box-shadow: 0 8rpx 16rpx rgba(102, 126, 234, 0.4);
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+	font-size: 28rpx;
+	font-weight: 500;
+	-webkit-animation: slideIn-data-v-411d5278 0.3s ease-out;
+	        animation: slideIn-data-v-411d5278 0.3s ease-out;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+.back-to-bottom-btn.data-v-411d5278:active {
+	-webkit-transform: scale(0.95);
+	        transform: scale(0.95);
+	box-shadow: 0 4rpx 8rpx rgba(102, 126, 234, 0.3);
+}
+.btn-icon.data-v-411d5278 {
+	font-size: 32rpx;
+	font-weight: bold;
+	line-height: 1;
+}
+.btn-text.data-v-411d5278 {
+	font-size: 28rpx;
+	line-height: 1;
+}
+@-webkit-keyframes slideIn-data-v-411d5278 {
+from {
+		opacity: 0;
+		-webkit-transform: translateY(20rpx);
+		        transform: translateY(20rpx);
+}
+to {
+		opacity: 1;
+		-webkit-transform: translateY(0);
+		        transform: translateY(0);
+}
+}
+@keyframes slideIn-data-v-411d5278 {
+from {
+		opacity: 0;
+		-webkit-transform: translateY(20rpx);
+		        transform: translateY(20rpx);
+}
+to {
+		opacity: 1;
+		-webkit-transform: translateY(0);
+		        transform: translateY(0);
+}
 }
 /* 聊天窗口 */
 .chat-container.data-v-411d5278 {

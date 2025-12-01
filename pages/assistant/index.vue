@@ -1,7 +1,7 @@
 <template>
 	<view class="assistant-page">
 		<!-- 聊天窗口 -->
-		<scroll-view scroll-y="true" class="chat-container" :scroll-top="scrollTop" :scroll-with-animation="true" @scrolltoupper="loadMoreMessages">
+		<scroll-view scroll-y="true" class="chat-container" :scroll-top="scrollTop" :scroll-with-animation="!isUserScrolling" @scrolltoupper="loadMoreMessages" @scroll="handleScroll">
 			<view class="chat-list">
 				<view v-for="(msg, index) in chatMessages" :key="index">
 					<!-- 🎯 新增：偏好分析块（嵌入式展示） - 升级版带AI思考过程 -->
@@ -385,6 +385,12 @@
 				</view>
 			</scroll-view>
 		
+		<!-- 回到底部按钮 -->
+		<view v-if="showBackToBottom" class="back-to-bottom-btn" @tap="scrollToBottomManual">
+			<text class="btn-icon">↓</text>
+			<text class="btn-text">回到底部</text>
+		</view>
+		
 		<!-- 动态任务追踪面板 -->
 		<view class="task-panel" v-if="ongoingTasks.length > 0">
 		<view class="panel-header">
@@ -499,10 +505,21 @@ export default {
 	data() {
 		return {
 			// !!!重要!!!: 每次启动cloudflared后，请在这里更新为新的公网地址
-			tunnelUrl: "https://models-dev-machine-trees.trycloudflare.com", 
+			tunnelUrl: "https://supporters-judgment-programmer-conviction.trycloudflare.com", 
 			
 			inputMessage: '',
 			scrollTop: 0,
+			isUserScrolling: false, // 用户是否正在手动滚动
+			showBackToBottom: false, // 是否显示回到底部按钮
+			_lastScrollTop: 0, // 上次滚动位置（非响应式）
+			_lockedScrollTop: 0, // 用户手动滚动时锁定的位置（非响应式）
+			_scrollTimeout: null, // 滚动超时定时器（非响应式）
+			_scrollHandlingEnabled: true, // 滚动处理是否启用（非响应式）
+			_scrollLockInterval: null, // 滚动锁定监控定时器（非响应式）
+			_firstScrollLogged: false, // 首次滚动日志标志（非响应式）
+			_isActivelyScrolling: false, // 用户是否正在主动滚动（非响应式）
+			_scrollActivityTimeout: null, // 滚动活动检测定时器（非响应式）
+			_isAIStreaming: false, // AI是否正在流式输出（非响应式）
 			userAvatar: '/static/images/avatar.png',
 			botAvatar: '/static/images/assistant.png',
 			chatMessages: [
@@ -584,6 +601,9 @@ export default {
 		// 🎯 新增：AI偏好分析功能开关
 		enablePreferenceAnalysis: true, // 默认开启
 		
+		// 🎯 新增：偏好分析动画进行中标志（完全禁用自动滚动）
+		isPreferenceAnalyzing: false,
+		
 		// 🎯 新增：对话管理相关
 		currentConversationId: null, // 当前对话ID
 		conversationTitle: '新对话', // 当前对话标题
@@ -606,10 +626,17 @@ export default {
 		}
 	},
 	async onLoad(options) {
-		console.log('页面加载开始', options);
+		console.log('🚀 页面加载开始', options);
 		
 		// 🎯 重置偏好分析显示标志（新会话）
 		this.hasShownPreferenceAnalysis = false;
+		
+		// 🎯 重置滚动相关状态
+		this.isUserScrolling = false;
+		this.showBackToBottom = false;
+		this._lastScrollTop = 0;
+		this._lockedScrollTop = 0;
+		this._scrollHandlingEnabled = true;
 		
 		// 🎯 检查是否从历史对话进入
 		if (options && options.conversationId) {
@@ -1000,14 +1027,126 @@ export default {
 			}
 		},
 
-		// 滚动到底部
+		// 处理滚动事件（高度优化版）
+		handleScroll(e) {
+			// 如果滚动处理被禁用（弹窗打开时），直接返回
+			if (!this._scrollHandlingEnabled) {
+				return;
+			}
+			
+			const { scrollTop, scrollHeight } = e.detail;
+
+			// 🔍 降低节流阈值：只在滚动距离>3px时才处理
+			const scrollDiff = Math.abs(scrollTop - this._lastScrollTop);
+			if (scrollDiff < 3) {
+				return;
+			}
+			
+			// 首次滚动时输出日志（用于调试）
+			if (!this._firstScrollLogged) {
+				this._firstScrollLogged = true;
+			}
+			
+			// 🎯 标记用户正在主动滚动，防止定时器强制锁定造成卡顿
+			this._isActivelyScrolling = true;
+			if (this._scrollActivityTimeout) {
+				clearTimeout(this._scrollActivityTimeout);
+			}
+			// 600ms无滚动后才认为停止主动滚动（延长时间避免AI输出时卡顿）
+			this._scrollActivityTimeout = setTimeout(() => {
+				this._isActivelyScrolling = false;
+			}, 600);
+			
+			// ⚠️ AI流式输出期间，不更新锁定位置，避免与DOM变化冲突
+			if (this._isAIStreaming) {
+				this._lastScrollTop = scrollTop;
+				return;
+			}
+				
+			// 用户向上滚动时标记为手动滚动
+			if (scrollTop < this._lastScrollTop) {
+				// 只在状态真正改变时才更新
+				if (!this.isUserScrolling) {
+					this.isUserScrolling = true;
+					this.showBackToBottom = true;
+					this.startScrollLockMonitor();
+				}
+				this._lockedScrollTop = scrollTop;
+				this._lastScrollTop = scrollTop;
+			} else if (this.isUserScrolling) {
+				// 在手动模式下，无论scrollTop如何变化，都更新锁定位置
+				// 统一由定时器在用户停止滚动后处理强制锁定，避免handleScroll中立即回弹造成卡顿
+				this._lockedScrollTop = scrollTop;
+				this._lastScrollTop = scrollTop;
+			} else {
+				// 非手动模式，正常更新
+				this._lastScrollTop = scrollTop;
+			}
+			
+			// 完全移除自动恢复滚动的逻辑
+			// 用户一旦向上滚动，就完全由用户手动控制
+			// 只有点击"回到底部"按钮才会恢复自动滚动
+		},
+		
+		// 滚动到底部（自动）
 		scrollToBottom() {
+			// 如果用户正在手动滚动，不执行自动滚动
+			if (this.isUserScrolling) {
+				return;
+			}
+			
 			this.$nextTick(() => {
 				const lastMessageIndex = this.chatMessages.length - 1;
 				if (lastMessageIndex < 0) return;
 				// 这里使用一个较大的值来确保滚动到底部
 				this.scrollTop = this.scrollTop + 9999;
 			});
+		},
+		
+		// 手动滚动到底部
+		scrollToBottomManual() {
+			this.isUserScrolling = false;
+			this.showBackToBottom = false;
+			
+			// 停止滚动锁定监控
+			this.stopScrollLockMonitor();
+			
+			this.$nextTick(() => {
+				const lastMessageIndex = this.chatMessages.length - 1;
+				if (lastMessageIndex < 0) return;
+				this.scrollTop = this.scrollTop + 9999;
+			});
+		},
+		
+		// 启动滚动锁定监控
+		startScrollLockMonitor() {
+			// 先清除旧的定时器
+			if (this._scrollLockInterval) {
+				clearInterval(this._scrollLockInterval);
+			}
+			this._scrollLockInterval = setInterval(() => {
+				// ⚠️ 关键1：AI流式输出期间完全禁用锁定，避免冲突
+				if (this._isAIStreaming) {
+					return;
+				}
+				// ⚠️ 关键2：只在用户完全停止主动滚动后才启用锁定
+				// 这样可以避免与AI输出时的DOM变化冲突
+				if (this.isUserScrolling && this._lockedScrollTop > 0 && !this._isActivelyScrolling) {
+					const currentScrollTop = this.scrollTop;
+					// 只有当scrollTop被AI输出拉动超过阈值时才强制恢复
+					if (Math.abs(currentScrollTop - this._lockedScrollTop) > 20) {
+						this.scrollTop = this._lockedScrollTop;
+					}
+				}
+			}, 150); // 稍微降低检查频率，从100ms改为150ms
+		},
+		
+		// 停止滚动锁定监控
+		stopScrollLockMonitor() {
+			if (this._scrollLockInterval) {
+				clearInterval(this._scrollLockInterval);
+				this._scrollLockInterval = null;
+			}
 		},
 		
 		// 语音输入
@@ -1067,6 +1206,8 @@ export default {
 				case 'streamDone':
 					// 识别到中控发来的新事件类型，暂不处理，仅消除报错
 					console.log(`已识别并忽略Action类型: ${action.type}`);
+					// AI流式输出结束
+					this._isAIStreaming = false;
 					break;
 
 				case 'runStepChat':
@@ -1158,6 +1299,8 @@ export default {
 							// 追加内容（流式消息）
 							console.log(`追加内容到现有消息: "${messageData.message}"`);
 							finalMessage.content += messageData.message;
+							// 标记AI正在流式输出
+							this._isAIStreaming = true;
 						} else {
 							// 创建新消息
 							console.log(`创建新消息: "${messageData.message}"`);
@@ -1169,6 +1312,8 @@ export default {
 								timestamp: Date.now()
 							};
 							this.chatMessages.push(finalMessage);
+							// 标记AI正在流式输出
+							this._isAIStreaming = true;
 						}
 
 						// 定位到对应的思考过程并标记完成
@@ -1204,6 +1349,9 @@ export default {
 							msg.title = 'AI思考完成';
 						}
 					});
+					
+					// AI流式输出结束
+					this._isAIStreaming = false;
 					
 					this.$forceUpdate(); // 强制视图更新
 				}
@@ -1677,6 +1825,9 @@ export default {
 			try {
 				console.log(`📊 开始加载偏好数据，studentId: ${studentId}, moduleType: ${moduleType}`);
 				
+				// 🔒 设置偏好分析进行中标志，完全禁用自动滚动
+				this.isPreferenceAnalyzing = true;
+				
 				// 🎯 第一步：先插入一个"AI分析中"的占位符
 				const getDetailText = (stepId, moduleType) => {
 					const texts = {
@@ -1731,7 +1882,10 @@ export default {
 				} else {
 					this.chatMessages.push(preferenceMessage);
 				}
-				this.scrollToBottom();
+				// 偏好分析期间不自动滚动
+				if (!this.isUserScrolling && !this.isPreferenceAnalyzing) {
+					this.scrollToBottom();
+				}
 				
 				// 🎯 模拟AI分析过程，逐步更新状态（加快速度用于演示）
 				const updateAnalysisStep = async (stepId, status, delay = 100) => {
@@ -1742,7 +1896,10 @@ export default {
 						if (step) {
 							step.status = status;
 							this.$forceUpdate();
-							this.scrollToBottom();
+							// 偏好分析期间不自动滚动（保持用户当前位置）
+							// if (!this.isUserScrolling) {
+							// 	this.scrollToBottom();
+							// }
 						}
 					}
 				};
@@ -1807,7 +1964,6 @@ export default {
 						msg.insight = insight;
 						msg.totalCount = totalCount;
 						this.$forceUpdate();
-						this.scrollToBottom();
 					}
 				} else {
 					console.warn('📊 获取偏好数据失败:', response);
@@ -1821,6 +1977,8 @@ export default {
 						this.$forceUpdate();
 					}
 				}
+				// 偏好分析完成，恢复自动滚动
+				this.isPreferenceAnalyzing = false;
 			} catch (error) {
 				console.error('❌ 加载偏好数据失败:', error);
 				const msg = this.chatMessages.find(m => m.id === preferenceMessage.id);
@@ -1834,6 +1992,8 @@ export default {
 					msg.insight = '分析过程中遇到错误，请稍后重试';
 					this.$forceUpdate();
 				}
+				// 🔓 异常情况也要恢复自动滚动
+				this.isPreferenceAnalyzing = false;
 			}
 		},
 		
@@ -1871,7 +2031,7 @@ export default {
 		// 🎯 生成AI洞察（智能总结用户偏好）
 		generatePreferenceInsight(preferences, moduleType, totalCount) {
 			if (totalCount === 0) {
-				return '这是您的首次使用，系统将从本次对话开始学习您的偏好习惯';
+				return '这是您的首次使用，系统将从本次对话开始学习您的偏好';
 			}
 			
 			const insights = [];
@@ -1959,41 +2119,50 @@ export default {
 			return '新对话';
 		},
 		
-		// 保存当前对话
+		// 保存当前对话（异步版本）
 		saveCurrentConversation() {
-			try {
-				const userInfo = uni.getStorageSync('userInfo');
-				const userId = userInfo?.studentId || userInfo?.userId;
-				if (!userId || !this.currentConversationId) {
-					console.warn('无法保存对话：缺少用户ID或对话ID');
-					return;
-				}
-				
-				// 生成对话标题
-				if (!this.conversationTitle || this.conversationTitle === '新对话') {
-					this.conversationTitle = this.generateConversationTitle(this.chatMessages);
-				}
-				
-				// 保存当前对话数据
-				const conversationData = {
-					id: this.currentConversationId,
-					title: this.conversationTitle,
-					messages: this.chatMessages,
-					sessionId: this.sessionId,
-					updatedAt: Date.now(),
-					createdAt: this.conversationCreatedAt || Date.now()
-				};
-				
-				const conversationKey = `conversation_${userId}_${this.currentConversationId}`;
-				uni.setStorageSync(conversationKey, conversationData);
-				
-				// 更新对话列表索引
-				this.updateConversationIndex(userId, conversationData);
-				
-				console.log('💾 已保存对话:', this.conversationTitle);
-			} catch (error) {
-				console.warn('保存对话失败:', error);
-			}
+			return new Promise((resolve) => {
+				// 使用 setTimeout 将保存操作推迟到下一个事件循环
+				// 避免阻塞当前的UI操作
+				setTimeout(() => {
+					try {
+						const userInfo = uni.getStorageSync('userInfo');
+						const userId = userInfo?.studentId || userInfo?.userId;
+						if (!userId || !this.currentConversationId) {
+							console.warn('无法保存对话：缺少用户ID或对话ID');
+							resolve();
+							return;
+						}
+						
+						// 生成对话标题
+						if (!this.conversationTitle || this.conversationTitle === '新对话') {
+							this.conversationTitle = this.generateConversationTitle(this.chatMessages);
+						}
+						
+						// 保存当前对话数据
+						const conversationData = {
+							id: this.currentConversationId,
+							title: this.conversationTitle,
+							messages: this.chatMessages,
+							sessionId: this.sessionId,
+							updatedAt: Date.now(),
+							createdAt: this.conversationCreatedAt || Date.now()
+						};
+						
+						const conversationKey = `conversation_${userId}_${this.currentConversationId}`;
+						uni.setStorageSync(conversationKey, conversationData);
+						
+						// 更新对话列表索引
+						this.updateConversationIndex(userId, conversationData);
+						
+						console.log('💾 已保存对话:', this.conversationTitle);
+						resolve();
+					} catch (error) {
+						console.warn('保存对话失败:', error);
+						resolve();
+					}
+				}, 0);
+			});
 		},
 		
 		// 更新对话列表索引
@@ -2038,6 +2207,12 @@ export default {
 				return;
 			}
 			
+			// 重置滚动状态，确保加载对话后能正常滚动到底部
+			this.isUserScrolling = false;
+			this.showBackToBottom = false;
+			// 停止滚动锁定监控
+			this.stopScrollLockMonitor();
+			
 			try {
 				const userInfo = uni.getStorageSync('userInfo');
 				const userId = userInfo?.studentId || userInfo?.userId;
@@ -2081,18 +2256,35 @@ export default {
 			});
 		},
 		
-		// 查看历史对话列表（弹窗）
+		// 查看历史对话列表（弹窗）- 极致优化版
 		viewConversationHistory() {
-			// 先保存当前对话
-			if (this.chatMessages.length > 1) {
-				this.saveCurrentConversation();
+			console.log('🔍 打开历史对话列表');
+			const startTime = Date.now();
+			
+			// 禁用滚动事件处理，避免干扰
+			this._scrollHandlingEnabled = false;
+			
+			// 清理滚动相关的定时器
+			if (this._scrollTimeout) {
+				clearTimeout(this._scrollTimeout);
+				this._scrollTimeout = null;
 			}
 			
-			// 加载对话列表
+			// 立即加载对话列表（轻量级操作）
 			this.loadConversationList();
 			
-			// 显示弹窗
+			// 立即显示弹窗（不等待保存完成）
 			this.showHistoryPopup = true;
+			console.log(`✅ 历史对话弹窗已显示 (${Date.now() - startTime}ms)`);
+			
+			// 异步保存当前对话（不阻塞UI）
+			if (this.chatMessages.length > 1) {
+				this.saveCurrentConversation().then(() => {
+					// 保存完成后重新加载列表，确保最新数据
+					this.loadConversationList();
+					console.log(`💾 后台保存完成 (${Date.now() - startTime}ms)`);
+				});
+			}
 		},
 		
 		// 加载对话列表
@@ -2118,6 +2310,9 @@ export default {
 		// 关闭历史对话弹窗
 		closeHistoryPopup() {
 			this.showHistoryPopup = false;
+			// 重新启用滚动事件处理
+			this._scrollHandlingEnabled = true;
+			console.log('❌ 关闭历史对话弹窗');
 		},
 		
 		// 切换到指定对话
@@ -2261,6 +2456,21 @@ export default {
 		}
 	},
 	
+	// 监听chatMessages变化，立即恢复锁定位置
+	watch: {
+		chatMessages: {
+			handler() {
+				// 如果用户在手动滚动模式，立即恢复锁定位置
+				if (this.isUserScrolling && this._lockedScrollTop > 0) {
+					this.$nextTick(() => {
+						this.scrollTop = this._lockedScrollTop;
+					});
+				}
+			},
+			deep: true
+		}
+	},
+	
 	// 🎯 新增：页面隐藏时关闭WebSocket（解决连接累积问题）
 	onHide() {
 		console.log('📴 页面隐藏，关闭WebSocket连接');
@@ -2284,6 +2494,17 @@ export default {
 	onUnload() {
 		console.log('🔚 页面卸载');
 		this.closeWebSocket();
+		// 清理滚动定时器
+		if (this._scrollTimeout) {
+			clearTimeout(this._scrollTimeout);
+			this._scrollTimeout = null;
+		}
+		if (this._scrollActivityTimeout) {
+			clearTimeout(this._scrollActivityTimeout);
+			this._scrollActivityTimeout = null;
+		}
+		// 清理滚动锁定监控
+		this.stopScrollLockMonitor();
 	}
 }
 </script>
@@ -2344,6 +2565,54 @@ export default {
 	font-size: 24rpx;
 	color: #333;
 	margin-top: 10rpx;
+}
+
+/* 回到底部按钮 */
+.back-to-bottom-btn {
+	position: fixed;
+	right: 30rpx;
+	bottom: 580rpx;
+	z-index: 100;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 16rpx 24rpx;
+	border-radius: 50rpx;
+	box-shadow: 0 8rpx 16rpx rgba(102, 126, 234, 0.4);
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+	font-size: 28rpx;
+	font-weight: 500;
+	animation: slideIn 0.3s ease-out;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.back-to-bottom-btn:active {
+	transform: scale(0.95);
+	box-shadow: 0 4rpx 8rpx rgba(102, 126, 234, 0.3);
+}
+
+.btn-icon {
+	font-size: 32rpx;
+	font-weight: bold;
+	line-height: 1;
+}
+
+.btn-text {
+	font-size: 28rpx;
+	line-height: 1;
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(20rpx);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 /* 聊天窗口 */

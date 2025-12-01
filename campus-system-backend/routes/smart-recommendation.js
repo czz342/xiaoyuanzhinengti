@@ -72,39 +72,30 @@ router.get('/canteen-traffic', async (req, res) => {
         // 获取所有食堂信息
         const canteens = await Canteen.list();
         
-        // 模拟人流量数据（实际项目中可以从订单表或其他数据源获取）
-        const trafficData = canteens.map(canteen => {
-            // 根据时间生成模拟人流量
-            const now = new Date();
-            const hour = now.getHours();
+        // 演示用固定人流量数据（展示最佳效果）
+        const demoTrafficData = [
+            { name: '一食堂', traffic: 85, level: 'busy' },
+            { name: '二食堂', traffic: 42, level: 'moderate' },
+            { name: '三食堂', traffic: 98, level: 'crowded' },
+            { name: '风味餐厅', traffic: 28, level: 'idle' },
+            { name: '清真食堂', traffic: 65, level: 'busy' }
+        ];
+        
+        const trafficData = canteens.map((canteen, index) => {
+            // 使用预设的演示数据，如果没有匹配的就用默认值
+            const demoData = demoTrafficData.find(demo => 
+                canteen.name.includes(demo.name.replace('食堂', '').replace('餐厅', ''))
+            ) || demoTrafficData[index % demoTrafficData.length];
             
-            let trafficLevel;
-            let trafficCount;
-            
-            if (hour >= 6 && hour < 9) {
-                // 早餐时间
-                trafficLevel = 'busy';
-                trafficCount = Math.floor(Math.random() * 200) + 300;
-            } else if (hour >= 11 && hour < 14) {
-                // 午餐时间
-                trafficLevel = 'crowded';
-                trafficCount = Math.floor(Math.random() * 300) + 500;
-            } else if (hour >= 17 && hour < 20) {
-                // 晚餐时间
-                trafficLevel = 'crowded';
-                trafficCount = Math.floor(Math.random() * 300) + 500;
-            } else {
-                // 其他时间
-                trafficLevel = 'idle';
-                trafficCount = Math.floor(Math.random() * 100) + 50;
-            }
+            const finalTrafficCount = demoData.traffic;
+            let trafficLevel = demoData.level;
             
             return {
                 id: canteen.id,
                 name: canteen.name,
                 location: canteen.location,
                 trafficLevel,
-                trafficCount,
+                trafficCount: finalTrafficCount,
                 status: canteen.status,
                 openTime: canteen.open_time,
                 closeTime: canteen.close_time

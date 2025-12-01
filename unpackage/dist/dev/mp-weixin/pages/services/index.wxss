@@ -312,6 +312,26 @@
 	margin-right: 10rpx;
 }
 
+/* 可点击卡片样式 */
+.clickable-card {
+	cursor: pointer;
+	transition: box-shadow 0.2s, -webkit-transform 0.2s;
+	transition: transform 0.2s, box-shadow 0.2s;
+	transition: transform 0.2s, box-shadow 0.2s, -webkit-transform 0.2s;
+}
+.clickable-card:active {
+	-webkit-transform: scale(0.98);
+	        transform: scale(0.98);
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+}
+.tap-hint {
+	text-align: center;
+	font-size: 26rpx;
+	color: #667eea;
+	margin-top: 20rpx;
+	font-weight: 500;
+}
+
 /* 智能助手悬浮按钮 */
 .assistant-fab {
 	position: fixed;
